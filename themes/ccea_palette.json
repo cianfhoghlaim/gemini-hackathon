@@ -1,0 +1,26 @@
+{
+  "sourceKey": "ccea.org.uk",
+  "sourceName": "CCEA - Council for the Curriculum, Examinations & Assessment",
+  "jurisdiction": "Northern Ireland",
+  "level": "GCSE/A-Level",
+  "palette": {
+    "primary": "#003478",
+    "secondary": "#F18E00",
+    "accent": "#00A651",
+    "background": "#FFFFFF",
+    "text": "#1A1A1A"
+  },
+  "typography": {
+    "heading": "Helvetica",
+    "body": "Helvetica"
+  },
+  "iconography": {
+    "logoUrl": "https://ccea.org.uk/sites/default/files/logo.png"
+  },
+  "flag": "🇬🇧",
+  "_sources": [
+    "CCEA brand guidelines (ccea.org.uk)",
+    "Northern Ireland education policy colours"
+  ],
+  "_notes": "CCEA uses navy blue with orange and green accents for Northern Ireland curriculum & examinations."
+}

@@ -1,0 +1,50 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+:root {
+  --color-primary: #00733B;
+  --color-secondary: #0E2D5C;
+  --color-accent: #F7B500;
+  --color-background: #FFFFFF;
+  --color-text: #1A1A1A;
+  --font-heading: "Merriweather", Georgia, serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+  margin: 0;
+  padding: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--color-secondary);
+}
+
+.palette-primary { color: var(--color-primary); }
+.palette-bg-primary { background-color: var(--color-primary); }
+.palette-border-primary { border-color: var(--color-primary); }
+.palette-secondary { color: var(--color-secondary); }
+.palette-accent { color: var(--color-accent); }
+.palette-bg-accent { background-color: var(--color-accent); }
+
+button.primary {
+  background-color: var(--color-primary);
+  color: var(--color-background);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+button.primary:hover {
+  background-color: var(--color-secondary);
+}

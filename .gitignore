@@ -1,0 +1,174 @@
+# ============================================================================
+# .gitignore — Python + uv + DuckDB + marimo + theming + BAML generated.
+#
+# Edit pyproject.toml or baml_extracts/*.baml, NOT the generated baml_client/
+# folder — that one lives in git but is re-created on every `baml-cli generate`.
+# ============================================================================
+
+# --- Python bytecode + caches -----------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# --- uv + virtualenvs --------------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+.uv-cache/
+
+# --- Distribution / build artefacts -----------------------------------------
+build/
+dist/
+*.egg-info/
+*.egg
+*.whl
+pip-wheel-cache/
+pip-log.txt
+
+# --- uv.lock metadata (lockfile itself IS committed) ------------------------
+# uv.lock is the canonical dependency lock — always commit it.
+
+# --- Coverage + test artefacts ------------------------------------------------
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyright_cache/
+.pyre/
+.pytype/
+.tox/
+.cache/
+nosetests.xml
+junit.xml
+*.cover
+
+# --- Environment files (.env.example IS committed) --------------------------
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+!.env.example
+
+# --- Secrets (NEVER commit) --------------------------------------------------
+**/secrets/
+**/*.pem
+**/*.key
+**/*.p12
+**/credentials.json
+**/service-account*.json
+!**/themes/**/*.json  # palette JSONs are data, not secrets
+!gemini_hackathon/theming.py
+
+# --- DuckDB ------------------------------------------------------------------
+*.duckdb
+*.duckdb.wal
+*.duckdb-shm
+*.duckdb-journal
+data/*.duckdb
+data/*.duckdb.*
+
+# --- marimo + notebooks ------------------------------------------------------
+notebooks/__marimo__/
+notebooks/.marimo/
+*.marimo.ipynb
+.marimo/
+
+# --- BAML --------------------------------------------------------------------
+# Generated client lives at baml_client/ — commit it (it's reproducible
+# from baml_extracts/*.baml + baml_config.yaml).
+baml_client/
+web/baml_client/
+# Cache + local logs:
+.baml/
+*.baml.j2
+
+# --- web/ (TanStack Start frontend) -----------------------------------------
+web/node_modules/
+web/dist/
+web/.next/
+web/.nuxt/
+web/.tanstack/
+web/.vinxi/
+web/build/
+.vite/
+.parcel-cache/
+
+# --- TypeScript / Node -------------------------------------------------------
+node_modules/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# --- IDE / editor ------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# --- Jupyter -----------------------------------------------------------------
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# --- OS junk -----------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# --- Docker / compose --------------------------------------------------------
+.docker/
+docker-compose.override.yml
+
+# --- Misc --------------------------------------------------------------------
+*.log
+*.tmp
+*.bak
+*.orig
+*.rej
+.cache/
+.local/
+.serverless/
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+# --- Local stack traces / logs ----------------------------------------------
+*.trace
+*.core
+core.*# Generated caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.pyc
+*.pyo
+
+# Generated BAML clients
+baml_client/
+web/baml_client/
+
+# Convex generated types
+web/convex/_generated/
+
+# Database files
+*.duckdb
+*.duckdb.wal
+
+# Misc
+.DS_Store

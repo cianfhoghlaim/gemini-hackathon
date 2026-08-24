@@ -1,0 +1,53 @@
+{
+  "sourceKey": "ncca.ie",
+  "sourceName": "NCCA - National Council for Curriculum and Assessment",
+  "jurisdiction": "Ireland",
+  "level": "Senior Cycle (LC + JC)",
+  "officialUrl": "https://www.curriculumonline.ie",
+  "palette": {
+    "primary": "#00733B",
+    "primaryDark": "#00471F",
+    "primaryLight": "#4FA776",
+    "secondary": "#0E2D5C",
+    "secondaryDark": "#061637",
+    "secondaryLight": "#3C5684",
+    "accent": "#FFB81C",
+    "background": "#FFFFFF",
+    "backgroundAlt": "#F5F5F5",
+    "surface": "#FAFAFA",
+    "border": "#E5E5E5",
+    "text": "#1A1A1A",
+    "textMuted": "#666666",
+    "success": "#28A745",
+    "warning": "#FFC107",
+    "error": "#DC3545"
+  },
+  "typography": {
+    "heading": "Barlow",
+    "headingFallback": "Helvetica Neue, Arial, sans-serif",
+    "body": "Georgia",
+    "bodyFallback": "Georgia, Times New Roman, serif",
+    "monospace": "Source Code Pro, monospace"
+  },
+  "iconography": {
+    "logoUrl": "https://www.curriculumonline.ie/Publishing/PICS/Logo_2017.png",
+    "faviconUrl": "https://www.curriculumonline.ie/favicon.ico",
+    "symbol": "shamrock"
+  },
+  "flag": "🇮🇪",
+  "characteristics": {
+    "typeface": "geometric sans serif (Barlow) paired with elegant serif (Georgia)",
+    "personality": "authoritative, educational, Irish national identity",
+    "primaryTone": "forest green with deep navy blue accent",
+    "derivedFrom": "NCCA official brand guidelines + curriculumonline.ie"
+  },
+  "subjects": ["mathematics", "applied_mathematics", "chemistry", "physics", "biology", "geography", "gaeilge", "english", "french", "history", "business", "accounting", "art", "music", "computer_science"],
+  "languages": ["en", "ga"],
+  "pdfs": 134,
+  "lineage": {
+    "extractedBy": "ExtractSourcePalette v1.0.0",
+    "extractedFromPdf": "scr-advisory-report_en.pdf",
+    "confidence": 0.92,
+    "extractedAt": "2026-08-23T00:00:00Z"
+  }
+}

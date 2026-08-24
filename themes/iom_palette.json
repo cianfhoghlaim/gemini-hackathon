@@ -1,0 +1,53 @@
+{
+  "sourceKey": "gov.im/education",
+  "sourceName": "Isle of Man Government - Department of Education, Sport and Culture",
+  "jurisdiction": "Isle of Man",
+  "level": "GCSE + A-Level + Local",
+  "officialUrl": "https://www.gov.im/education",
+  "palette": {
+    "primary": "#003D7D",
+    "primaryDark": "#002A5A",
+    "primaryLight": "#1E5599",
+    "secondary": "#D30731",
+    "secondaryDark": "#8E0420",
+    "secondaryLight": "#E5394A",
+    "accent": "#FFB81C",
+    "background": "#FFFFFF",
+    "backgroundAlt": "#F7F7F7",
+    "surface": "#FCFCFC",
+    "border": "#DCDCDC",
+    "text": "#1A1A1A",
+    "textMuted": "#666666",
+    "success": "#28A745",
+    "warning": "#FFA500",
+    "error": "#D30731"
+  },
+  "typography": {
+    "heading": "Open Sans",
+    "headingFallback": "Helvetica, Arial, sans-serif",
+    "body": "Open Sans",
+    "bodyFallback": "Helvetica, Arial, sans-serif",
+    "monospace": "Source Code Pro, monospace"
+  },
+  "iconography": {
+    "logoUrl": "https://www.gov.im/media/logos/isle-of-man-government.png",
+    "faviconUrl": "https://www.gov.im/favicon.ico",
+    "symbol": "triskelion"
+  },
+  "flag": "🇮🇲",
+  "characteristics": {
+    "typeface": "Open Sans (clean and accessible)",
+    "personality": "Isle of Man, Celtic, island nation",
+    "primaryTone": "Manx blue with crimson triskelion + gold",
+    "derivedFrom": "Isle of Man Government brand + Manx triskelion symbolism"
+  },
+  "subjects": ["mathematics", "english", "biology", "chemistry", "physics", "history", "geography", "computer_science", "manx", "religious_studies", "business_studies", "art_and_design", "music"],
+  "languages": ["en", "gv"],
+  "pdfs": 0,
+  "lineage": {
+    "extractedBy": "ExtractSourcePalette v1.0.0",
+    "extractedFromPdf": "n/a (brand guidelines source)",
+    "confidence": 0.80,
+    "extractedAt": "2026-08-23T00:00:00Z"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "sourceKey": "ocr.org.uk",
+  "sourceName": "OCR - Oxford Cambridge and RSA Examinations",
+  "jurisdiction": "England (OCR)",
+  "level": "GCSE/A-Level",
+  "palette": {
+    "primary": "#003D7D",
+    "secondary": "#E10076",
+    "accent": "#FFD100",
+    "background": "#FFFFFF",
+    "text": "#1A1A1A"
+  },
+  "typography": {
+    "heading": "Helvetica",
+    "body": "Helvetica"
+  },
+  "iconography": {
+    "logoUrl": "https://www.ocr.org.uk/images/logo.svg"
+  },
+  "flag": "🇬🇧",
+  "_sources": [
+    "OCR brand guidelines (ocr.org.uk)",
+    "Cambridge Assessment corporate identity",
+    "GDS color conventions for educational bodies"
+  ],
+  "_notes": "OCR (Oxford Cambridge and RSA) is part of Cambridge Assessment. Royal blue + magenta accent."
+}

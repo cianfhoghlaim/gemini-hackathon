@@ -1,0 +1,214 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gemini-hackathon"
+version = "0.1.0"
+description = "BIEP Hackathon v3: theming-only Python package for the Google All-Things-Agentic hackathon"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+license = { text = "MIT" }
+authors = [
+    { name = "Cian Mac An Deise", email = "[email protected]" },
+]
+keywords = [
+    "hackathon",
+    "gemini",
+    "agentic",
+    "theming",
+    "education",
+    "british-isles-curriculum",
+    "baml",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Education",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Typing :: Typed",
+]
+dependencies = [
+    # Data ingestion (DLT + MotherDuck + DuckDB)
+    "dlt>=1.0,<2.0",
+    "duckdb>=1.0",
+    "motherduck>=0.10",
+    "ibis-framework[duckdb]>=9.0",
+    # LLM routing + extraction (BAML + LiteLLM)
+    "baml-py>=0.223.0",
+    "litellm>=1.50",
+    # Observability (Langfuse + structlog)
+    "langfuse>=3.0",
+    "structlog>=24.0",
+    # Agent memory (Letta)
+    "letta>=0.50",
+    # Web scraping + PDF
+    "firecrawl-py>=1.0",
+    "pypdf>=4.0",
+    # Reactive notebooks
+    "marimo>=0.10",
+]
+
+[project.scripts]
+gemini-hackathon = "gemini_hackathon.cli:main"
+
+[project.urls]
+Repository = "https://github.com/cianfhoghlaim/gemini-hackathon"
+Documentation = "https://cianfhoghlaim.github.io/gemini-hackathon"
+"BAML reference" = "https://docs.boundaryml.com"
+
+# ---------------------------------------------------------------------------
+# Dependency groups (PEP 735) — canonical 2026 uv convention
+# ---------------------------------------------------------------------------
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.6",
+    "mypy>=1.10",
+    "types-PyYAML",
+    "baml-py[testing]>=0.223.0",
+]
+docs = [
+    "marimo>=0.10",
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+]
+lint = [
+    "ruff>=0.6",
+]
+
+# ---------------------------------------------------------------------------
+# Hatchling build config
+# ---------------------------------------------------------------------------
+
+[tool.hatch.build.targets.wheel]
+packages = ["gemini_hackathon"]
+include = ["gemini_hackathon/py.typed"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "gemini_hackathon",
+    "themes",
+    "baml_extracts/*.baml",
+    "README.md",
+    "LICENSE",
+]
+
+# ---------------------------------------------------------------------------
+# uv config — modern 2026 conventions
+# ---------------------------------------------------------------------------
+
+[tool.uv]
+default-groups = ["dev", "docs", "lint"]
+managed = true
+package = true
+
+[tool.uv.pip]
+extra-index-url = ["https://pypi.org/simple"]
+
+# ---------------------------------------------------------------------------
+# Ruff — lint + format
+# ---------------------------------------------------------------------------
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["gemini_hackathon", "tests"]
+
+[tool.ruff.lint]
+# Dignified-Python-312 aware: E/F/W (pycodestyle/pyflakes), I (isort),
+# N (pep8-naming), UP (pyupgrade), B (bugbear), A (builtins),
+# C4 (comprehensions), SIM (simplify), RUF (ruff-specific)
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF", "PT", "RET", "PL"]
+ignore = [
+    "E501",  # line-too-long (formatter handles)
+    "B008",  # function call in default argument — common in Pydantic
+    "PLR0913", # too-many-arguments — explicit > implicit in agent tool signatures
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "PLR2004", "PT004"]
+"baml_extracts/**/*.py" = ["TID252"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["gemini_hackathon"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+# ---------------------------------------------------------------------------
+# mypy — strict mode (dignified-python-312)
+# ---------------------------------------------------------------------------
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+plugins = ["pydantic.mypy"]
+mypy_path = "src"
+
+[[tool.mypy.overrides]]
+# BAML generated client + third-party agent libs lack inline type stubs
+module = [
+    "baml_client.*",
+    "letta.*",
+    "litellm.*",
+    "firecrawl.*",
+    "langfuse.*",
+    "motherduck.*",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Tests can be looser
+module = ["tests.*"]
+disallow_untyped_defs = false
+
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = ["-ra", "-q", "--strict-markers", "--strict-config"]
+asyncio_mode = "auto"
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning:baml_client.*",
+    "ignore::DeprecationWarning:litellm.*",
+]
+
+# ---------------------------------------------------------------------------
+# Coverage (optional but useful for CI badge)
+# ---------------------------------------------------------------------------
+
+[tool.coverage.run]
+branch = true
+source = ["gemini_hackathon"]
+omit = ["tests/*", "**/__main__.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]
+show_missing = true
+fail_under = 70

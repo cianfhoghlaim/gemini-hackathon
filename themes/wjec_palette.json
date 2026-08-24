@@ -1,0 +1,53 @@
+{
+  "sourceKey": "wjec.co.uk",
+  "sourceName": "WJEC - Welsh Joint Education Committee",
+  "jurisdiction": "Wales",
+  "level": "GCSE + A-Level",
+  "officialUrl": "https://www.wjec.co.uk/qualifications",
+  "palette": {
+    "primary": "#1F3A93",
+    "primaryDark": "#0F1D4D",
+    "primaryLight": "#4A5FB0",
+    "secondary": "#D30731",
+    "secondaryDark": "#8E0420",
+    "secondaryLight": "#E5394A",
+    "accent": "#00B140",
+    "background": "#FFFFFF",
+    "backgroundAlt": "#F8F8F8",
+    "surface": "#FCFCFC",
+    "border": "#DCDCDC",
+    "text": "#1A1A1A",
+    "textMuted": "#666666",
+    "success": "#00B140",
+    "warning": "#FFA500",
+    "error": "#D30731"
+  },
+  "typography": {
+    "heading": "Open Sans",
+    "headingFallback": "Helvetica, Arial, sans-serif",
+    "body": "Open Sans",
+    "bodyFallback": "Helvetica, Arial, sans-serif",
+    "monospace": "Source Code Pro, monospace"
+  },
+  "iconography": {
+    "logoUrl": "https://www.wjec.co.uk/wp-content/themes/wjec/dist/images/wjec-logo.png",
+    "faviconUrl": "https://www.wjec.co.uk/favicon.ico",
+    "symbol": "dragon"
+  },
+  "flag": "🏴󠁧󠁢󠁷󠁬󠁳󠁿",
+  "characteristics": {
+    "typeface": "Open Sans (open and accessible)",
+    "personality": "bilingual, Welsh national identity, modern",
+    "primaryTone": "Welsh blue with red dragon accent + green leek",
+    "derivedFrom": "WJEC brand guidelines + Welsh dragon symbolism"
+  },
+  "subjects": ["mathematics", "further_mathematics", "english_literature", "english_language", "biology", "chemistry", "physics", "history", "geography", "religious_studies", "business", "computer_science", "welsh_first_language", "welsh_second_language"],
+  "languages": ["en", "cy"],
+  "pdfs": 0,
+  "lineage": {
+    "extractedBy": "ExtractSourcePalette v1.0.0",
+    "extractedFromPdf": "n/a (brand guidelines source)",
+    "confidence": 0.85,
+    "extractedAt": "2026-08-23T00:00:00Z"
+  }
+}

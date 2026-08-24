@@ -1,0 +1,26 @@
+{
+  "sourceKey": "qualifications.pearson.com",
+  "sourceName": "Pearson Edexcel - Qualifications",
+  "jurisdiction": "England (Pearson)",
+  "level": "GCSE/A-Level",
+  "palette": {
+    "primary": "#0066CC",
+    "secondary": "#00A3E0",
+    "accent": "#FFC72C",
+    "background": "#FFFFFF",
+    "text": "#1A1A1A"
+  },
+  "typography": {
+    "heading": "Inter",
+    "body": "Inter"
+  },
+  "iconography": {
+    "logoUrl": "https://qualifications.pearson.com/images/logo.svg"
+  },
+  "flag": "🇬🇧",
+  "_sources": [
+    "Pearson Edexcel brand guidelines",
+    "Pearson corporate identity"
+  ],
+  "_notes": "Pearson Edexcel uses a corporate blue palette with cyan and gold accents."
+}

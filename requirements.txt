@@ -1,0 +1,30 @@
+# Mirror of pyproject.toml dependencies for pip users.
+# Canonical dependency source is pyproject.toml — edit that file first.
+# Run `uv sync` (preferred) or `pip install -r requirements.txt` (fallback).
+
+# Data ingestion (DLT + MotherDuck + DuckDB + Ibis)
+dlt>=1.0,<2.0
+duckdb>=1.0
+motherduck>=0.10
+ibis-framework[duckdb]>=9.0
+
+# LLM routing + extraction (BAML + LiteLLM)
+baml-py>=0.223.0
+litellm>=1.50
+
+# Observability (Langfuse + structlog)
+langfuse>=3.0
+structlog>=24.0
+
+# Agent memory (Letta)
+letta>=0.50
+
+# Web scraping + PDF
+firecrawl-py>=1.0
+pypdf>=4.0
+
+# Reactive notebooks
+marimo>=0.10
+
+# --- dev (not auto-installed by `pip install -r requirements.txt`) ---
+# Install with: pip install -r requirements.txt -r requirements-dev.txt

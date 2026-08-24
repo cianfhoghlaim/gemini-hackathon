@@ -1,0 +1,97 @@
+name: deploy-docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "notebooks/**"
+      - "docs/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "baml_extracts/**"
+      - ".github/workflows/deploy-docs.yml"
+  workflow_dispatch:
+
+# Only one docs deploy at a time (the second push cancels the first).
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write  # required to push the gh-pages branch
+
+jobs:
+  build-docs:
+    name: build marimo notebooks to static HTML
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history for mkdocs / marimo revision metadata
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+
+      - name: Sync dependencies
+        run: uv sync --all-extras --python 3.12
+
+      - name: Generate BAML client (needed by some notebooks)
+        run: uv run baml-cli generate
+
+      - name: Export marimo notebooks to static HTML
+        # `--no-show-code` keeps the notebooks readable on mobile.
+        # Falls back to a single index.html if no notebooks exist.
+        run: |
+          set -euo pipefail
+          mkdir -p site
+          if ls notebooks/*.py >/dev/null 2>&1; then
+            for nb in notebooks/*.py; do
+              name="$(basename "$nb" .py)"
+              echo "Exporting $nb -> site/$name.html"
+              uv run marimo export html --no-show-code --no-include-inputs "$nb" -o "site/$name.html"
+            done
+          else
+            echo "No notebooks found — exporting a placeholder index.html"
+            echo '<!doctype html><meta charset="utf-8"><title>gemini-hackathon docs</title><h1>No notebooks yet</h1>' > site/index.html
+          fi
+
+      - name: Inject landing page
+        # Builds an index.html that links to every exported notebook.
+        run: |
+          python - <<'PY'
+          import pathlib
+          root = pathlib.Path("site")
+          htmls = sorted(p.stem for p in root.glob("*.html") if p.stem != "index")
+          items = "\n".join(
+              f'<li><a href="{name}.html">{name}</a></li>' for name in htmls
+          ) or "<li><em>No notebooks exported yet.</em></li>"
+          (root / "index.html").write_text(
+              "<!doctype html><meta charset='utf-8'>"
+              "<title>gemini-hackathon — exported notebooks</title>"
+              "<style>body{font:16px/1.5 system-ui;margin:2rem auto;max-width:40rem;padding:0 1rem}"
+              "h1{font-weight:600}a{color:#00733B}</style>"
+              f"<h1>gemini-hackathon</h1>"
+              f"<p>Exported marimo notebooks ({len(htmls)} total):</p>"
+              f"<ul>{items}</ul>"
+          )
+          PY
+
+      - name: Add .nojekyll (preserve _next, etc.)
+        run: touch site/.nojekyll
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          publish_branch: gh-pages
+          keep_history: true
+          user_name: "github-actions[bot]"
+          user_email: "41898282+github-actions[bot]@users.noreply.github.com"
+          commit_message: "docs: deploy ${{ github.sha }}"

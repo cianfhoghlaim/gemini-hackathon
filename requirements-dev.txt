@@ -1,0 +1,8 @@
+# Dev dependencies (mirrors pyproject.toml [dependency-groups].dev)
+pytest>=8.0
+pytest-cov>=5.0
+pytest-asyncio>=0.23
+ruff>=0.6
+mypy>=1.10
+types-PyYAML
+baml-py[testing]>=0.223.0

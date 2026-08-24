@@ -1,0 +1,201 @@
+# ============================================================================
+# mise.toml — task runner + tool version pinner for gemini-hackathon.
+#
+# Canonical 2026 mise-en-place configuration. Per the constraint "NOT
+# Makefile-only", this is the *primary* task source — `make` is the
+# compatibility shim (see Makefile).
+#
+# Usage:
+#   mise install          # installs pinned tool versions
+#   mise tasks            # lists every task
+#   mise run lint         # alias for the canonical lint task
+#   mise run baml-test    # canonical BAML smoke tests
+# ============================================================================
+
+[env]
+# Make every Python invocation honour the project .venv
+MISE_PROJECT_ROOT = "{{ config_root }}"
+UV_PROJECT_ENVIRONMENT = "{{ config_root }}/.venv"
+
+# Disable auto-install by default; `mise install` is explicit.
+MISE_AUTO_INSTALL = "false"
+
+# --- Pinned tool versions ---------------------------------------------------
+[tools]
+python        = "3.12"
+uv            = "0.5.x"
+ruff          = "0.6.x"
+mypy          = "1.10.x"
+baml-cli      = "0.223.x"
+# node is optional — only needed if you build the web/ TanStack Start frontend
+node          = "20"
+docker        = "latest"
+
+# --- Task aliases (back-compat with the legacy `mise run` colon-form) -------
+[aliases]
+# canonical alias: setup -> sync
+"sync:all"    = "sync"
+"deps:install" = "sync"
+"test:fast"   = "test -- -x --ff"
+"format:check" = "lint:format-check"
+
+[settings]
+# Always load these env vars (from .env or shell)
+experimental = true
+
+# ============================================================================
+# Tasks — every block below is a `mise run <name>` entry.
+# All tasks are TOML-form, the canonical 2026 mise convention.
+# ============================================================================
+
+[tasks.setup]
+description = "Full bootstrap: install uv, sync deps, create .env, verify theming + DLT"
+run = "./setup.sh"
+
+[tasks.sync]
+description = "uv sync --all-extras (deps + dev + docs + lint groups)"
+run = "uv sync --all-extras"
+
+[tasks.install]
+description = "alias for sync"
+depends = ["sync"]
+
+# ---- lint + format --------------------------------------------------------
+
+[tasks.lint]
+description = "ruff check . (lint)"
+run = "uv run ruff check ."
+sources = ["pyproject.toml", "gemini_hackathon/**/*.py", "tests/**/*.py", "dlt_pipelines/**/*.py"]
+
+[tasks."lint:fix"]
+description = "ruff check . --fix (lint + auto-fix)"
+run = "uv run ruff check . --fix"
+
+[tasks.format]
+description = "ruff format . (in-place)"
+run = "uv run ruff format ."
+
+[tasks."lint:format-check"]
+description = "ruff format --check . (CI mode)"
+run = "uv run ruff format --check ."
+
+# ---- typecheck ------------------------------------------------------------
+
+[tasks.typecheck]
+description = "mypy gemini_hackathon/ (strict, dignified-python-312)"
+depends = ["baml:generate"]
+run = "uv run mypy gemini_hackathon/"
+
+# ---- tests ----------------------------------------------------------------
+
+[tasks.test]
+description = "pytest tests/ -v"
+depends = ["baml:generate"]
+run = "uv run pytest tests/ -v"
+
+[tasks."test:cov"]
+description = "pytest tests/ -v --cov=gemini_hackathon"
+depends = ["baml:generate"]
+run = "uv run pytest tests/ -v --cov=gemini_hackathon --cov-report=term-missing --cov-report=xml"
+
+[tasks."test:fast"]
+description = "pytest -x --ff (stop on first failure)"
+run = "uv run pytest tests/ -x --ff"
+
+# ---- baml ------------------------------------------------------------------
+
+[tasks."baml:generate"]
+description = "baml-cli generate (re-emit baml_client/ + web/baml_client/)"
+run = "uv run baml-cli generate"
+sources = ["baml_extracts/**/*.baml"]
+
+[tasks."baml:test"]
+description = "baml-cli test (extraction smoke tests)"
+depends = ["baml:generate"]
+run = "uv run baml-cli test"
+
+[tasks."baml:coverage"]
+description = "baml-cli test --coverage (per-function pass-rate)"
+depends = ["baml:generate"]
+run = "uv run baml-cli test --coverage"
+
+[tasks."baml:lint"]
+description = "baml-cli lint (parser + schema validation)"
+run = "uv run baml-cli lint"
+
+# ---- run -------------------------------------------------------------------
+
+[tasks.run]
+description = "Launch the gemini-hackathon CLI"
+depends = ["baml:generate"]
+run = "uv run python -m gemini_hackathon.cli"
+
+[tasks.shell]
+description = "Drop into a uv-managed Python REPL"
+run = "uv run python"
+
+# ---- notebook + docs ------------------------------------------------------
+
+[tasks.notebook]
+description = "marimo edit notebooks/ (reactive UI)"
+run = "uv run marimo edit notebooks/"
+
+[tasks.docs]
+description = "Export marimo notebooks to site/ (for gh-pages deploy)"
+run = """
+mkdir -p site
+for nb in notebooks/*.py; do
+  [ -f "$nb" ] || continue
+  name=$(basename "$nb" .py)
+  uv run marimo export html --no-show-code --no-include-inputs "$nb" -o "site/$name.html"
+done
+touch site/.nojekyll
+"""
+
+[tasks."docs:serve"]
+description = "Serve site/ on http://localhost:8000"
+run = "cd site && python -m http.server 8000"
+
+# ---- docker ---------------------------------------------------------------
+
+[tasks."docker:build"]
+description = "docker build -t gemini-hackathon:dev ."
+run = "docker build -t gemini-hackathon:dev ."
+
+[tasks.dev]
+description = "docker compose up --build (local stack: app + ollama + duckdb vol)"
+run = "docker compose up --build"
+
+[tasks.down]
+description = "docker compose down -v (wipe the duckdb volume)"
+run = "docker compose down -v"
+
+# ---- clean ----------------------------------------------------------------
+
+[tasks.clean]
+description = "Remove build artefacts + caches"
+run = """
+rm -rf \
+  .venv/ \
+  .mypy_cache/ \
+  .ruff_cache/ \
+  .pytest_cache/ \
+  .coverage \
+  coverage.xml \
+  htmlcov/ \
+  build/ \
+  dist/ \
+  *.egg-info/ \
+  site/
+find . -type d -name __pycache__ -prune -exec rm -rf {} +
+"""
+
+[tasks."clean:data"]
+description = "Nuke the DuckDB file (DESTRUCTIVE)"
+run = "rm -f data/*.duckdb data/*.duckdb.wal"
+
+# ---- ci aggregate ---------------------------------------------------------
+
+[tasks.ci]
+description = "Run the full CI pass locally (lint + format + typecheck + test + baml-test)"
+depends = ["lint", "lint:format-check", "typecheck", "test", "baml:test"]

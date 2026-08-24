@@ -1,0 +1,56 @@
+{
+  "sourceKey": "ccea.org.uk/safeguarding",
+  "sourceName": "CCEA - Safeguarding (Northern Ireland)",
+  "policyScope": "National (Northern Ireland)",
+  "officialUrl": "https://ccea.org.uk/about-us/safeguarding",
+  "palette": {
+    "primary": "#003478",
+    "primaryDark": "#001D44",
+    "primaryLight": "#1A4B96",
+    "secondary": "#F18E00",
+    "secondaryDark": "#B36B00",
+    "secondaryLight": "#F8A82A",
+    "accent": "#00853F",
+    "background": "#FFFFFF",
+    "backgroundAlt": "#F8F8F8",
+    "surface": "#FCFCFC",
+    "border": "#DCDCDC",
+    "text": "#1A1A1A",
+    "textMuted": "#666666",
+    "success": "#00853F",
+    "warning": "#F18E00",
+    "error": "#DC3545"
+  },
+  "typography": {
+    "heading": "Open Sans",
+    "headingFallback": "Helvetica, Arial, sans-serif",
+    "body": "Open Sans",
+    "bodyFallback": "Helvetica, Arial, sans-serif",
+    "monospace": "Source Code Pro, monospace"
+  },
+  "iconography": {
+    "logoUrl": "https://ccea.org.uk/sites/default/files/styles/large/public/2020-08/CCEA_Logo_Transparent_2.png",
+    "faviconUrl": "https://ccea.org.uk/favicon.ico",
+    "symbol": "star"
+  },
+  "flag": "🇬🇧",
+  "characteristics": {
+    "typeface": "Open Sans (clear and accessible)",
+    "personality": "Northern Irish, professional, safeguarding focus",
+    "primaryTone": "CCEA navy blue with warm orange accent",
+    "derivedFrom": "CCEA brand guidelines + DE NI safeguarding"
+  },
+  "policies": [
+    "Safeguarding and Child Protection - https://ccea.org.uk/about-us/safeguarding",
+    "Pastoral Care in Schools - https://ccea.org.uk/learning-resources/pastoral-care",
+    "Anti-Bullying - https://ccea.org.uk/learning-resources/anti-bullying",
+    "Online Safety - https://ccea.org.uk/learning-resources/online-safety",
+    "Special Educational Needs - https://ccea.org.uk/special-educational-needs"
+  ],
+  "lineage": {
+    "extractedBy": "ExtractSourcePalette v1.0.0",
+    "extractedFromPdf": "CCEA brand guidelines + DE NI safeguarding",
+    "confidence": 0.88,
+    "extractedAt": "2026-08-23T00:00:00Z"
+  }
+}

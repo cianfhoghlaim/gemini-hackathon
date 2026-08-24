@@ -1,0 +1,53 @@
+{
+  "sourceKey": "aqa.org.uk",
+  "sourceName": "AQA - Assessment and Qualifications Alliance",
+  "jurisdiction": "England",
+  "level": "A-Level + GCSE",
+  "officialUrl": "https://www.aqa.org.uk",
+  "palette": {
+    "primary": "#00457C",
+    "primaryDark": "#002D52",
+    "primaryLight": "#356EA0",
+    "secondary": "#ED1C24",
+    "secondaryDark": "#B01218",
+    "secondaryLight": "#FF4753",
+    "accent": "#FFB81C",
+    "background": "#FFFFFF",
+    "backgroundAlt": "#F7F7F7",
+    "surface": "#FCFCFC",
+    "border": "#E0E0E0",
+    "text": "#1A1A1A",
+    "textMuted": "#666666",
+    "success": "#28A745",
+    "warning": "#FFA500",
+    "error": "#ED1C24"
+  },
+  "typography": {
+    "heading": "AQA Sans",
+    "headingFallback": "Helvetica, Arial, sans-serif",
+    "body": "AQA Sans",
+    "bodyFallback": "Helvetica, Arial, sans-serif",
+    "monospace": "Courier New, monospace"
+  },
+  "iconography": {
+    "logoUrl": "https://www.aqa.org.uk/ui/img/core/logo.png",
+    "faviconUrl": "https://www.aqa.org.uk/favicon.ico",
+    "symbol": "diamond"
+  },
+  "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+  "characteristics": {
+    "typeface": "AQA Sans (custom geometric sans serif)",
+    "personality": "authoritative, professional, premium examination body",
+    "primaryTone": "deep navy blue with signature red accent",
+    "derivedFrom": "AQA brand guidelines 2024"
+  },
+  "subjects": ["mathematics", "further_mathematics", "english_literature", "english_language", "biology", "chemistry", "physics", "psychology", "history", "geography", "business", "economics", "computer_science", "art_and_design"],
+  "languages": ["en"],
+  "pdfs": 0,
+  "lineage": {
+    "extractedBy": "ExtractSourcePalette v1.0.0",
+    "extractedFromPdf": "n/a (brand guidelines source)",
+    "confidence": 0.88,
+    "extractedAt": "2026-08-23T00:00:00Z"
+  }
+}

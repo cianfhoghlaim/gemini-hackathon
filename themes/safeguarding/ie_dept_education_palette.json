@@ -1,0 +1,58 @@
+{
+  "sourceKey": "gov.ie/education",
+  "sourceName": "Department of Education and Skills (Ireland)",
+  "policyScope": "National",
+  "officialUrl": "https://www.gov.ie/en/department-of-education",
+  "palette": {
+    "primary": "#00563F",
+    "primaryDark": "#003D2C",
+    "primaryLight": "#2E7F65",
+    "secondary": "#00689D",
+    "secondaryDark": "#004870",
+    "secondaryLight": "#3B8DC0",
+    "accent": "#FFB81C",
+    "background": "#FFFFFF",
+    "backgroundAlt": "#F5F5F5",
+    "surface": "#FAFAFA",
+    "border": "#D5D5D5",
+    "text": "#1A1A1A",
+    "textMuted": "#5C5C5C",
+    "success": "#28A745",
+    "warning": "#FFA500",
+    "error": "#C8102E"
+  },
+  "typography": {
+    "heading": "Open Sans",
+    "headingFallback": "Helvetica, Arial, sans-serif",
+    "body": "Open Sans",
+    "bodyFallback": "Helvetica, Arial, sans-serif",
+    "monospace": "Source Code Pro, monospace"
+  },
+  "iconography": {
+    "logoUrl": "https://www.gov.ie/images/logo.png",
+    "faviconUrl": "https://www.gov.ie/favicon.ico",
+    "symbol": "harp"
+  },
+  "flag": "🇮🇪",
+  "characteristics": {
+    "typeface": "Open Sans (clean and accessible)",
+    "personality": "Irish government, official, authoritative",
+    "primaryTone": "Irish government green with blue accent + gold harp",
+    "derivedFrom": "Department of Education and Skills (Ireland) brand guidelines"
+  },
+  "policies": [
+    "Online Learning Environments - https://www.gov.ie/en/department-of-education/publications/the-potential-of-online-learning-environments",
+    "Technology for Certification and Reporting - https://www.gov.ie/en/department-of-education/publications/the-potential-of-technology-to-support-online-certification-and-reporting",
+    "Senior Cycle L1 + L2 Programme Statement - https://www.curriculumonline.ie/senior-cycle/programme-statements",
+    "Key Competencies in Senior Cycle - https://www.curriculumonline.ie/senior-cycle/key-competencies",
+    "SCR Advisory Report - https://www.curriculumonline.ie/circulars",
+    "Child Protection Guidelines - https://www.tusla.ie/services/educational-welfare-services",
+    "Anti-Bullying Procedures - https://www.gov.ie/en/department-of-education/publications/cinste-anti-bullying-procedures-for-primary-and-post-primary-schools"
+  ],
+  "lineage": {
+    "extractedBy": "ExtractSourcePalette v1.0.0",
+    "extractedFromPdf": "scr-advisory-report_en.pdf",
+    "confidence": 0.91,
+    "extractedAt": "2026-08-23T00:00:00Z"
+  }
+}

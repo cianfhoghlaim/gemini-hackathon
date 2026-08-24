@@ -1,0 +1,28 @@
+{
+  "sourceKey": "gov.uk/dfe",
+  "sourceName": "Department for Education (UK)",
+  "jurisdiction": "United Kingdom",
+  "level": "Policy",
+  "policyScope": "Keeping Children Safe in Education (KCSiE) 2026",
+  "palette": {
+    "primary": "#1D70B8",
+    "secondary": "#003078",
+    "accent": "#FFDD00",
+    "background": "#FFFFFF",
+    "text": "#0B0C0C"
+  },
+  "typography": {
+    "heading": "GDS Transport",
+    "body": "GDS Transport"
+  },
+  "iconography": {
+    "logoUrl": "https://www.gov.uk/assets/government-logo.svg"
+  },
+  "flag": "🇬🇧",
+  "_sources": [
+    "GOV.UK Design System - Transport palette",
+    "DfE corporate identity",
+    "Keeping Children Safe in Education 2026 - cover page"
+  ],
+  "_notes": "DfE uses the standard GDS Transport palette: #1D70B8 blue, #003078 dark blue, #FFDD00 yellow accent."
+}

@@ -1,0 +1,53 @@
+{
+  "sourceKey": "sqa.org.uk",
+  "sourceName": "SQA - Scottish Qualifications Authority",
+  "jurisdiction": "Scotland",
+  "level": "National 5 + Higher + Advanced Higher",
+  "officialUrl": "https://www.sqa.org.uk/sqa/56904.html",
+  "palette": {
+    "primary": "#003D7D",
+    "primaryDark": "#002A5A",
+    "primaryLight": "#1E5599",
+    "secondary": "#C8102E",
+    "secondaryDark": "#8A0B1F",
+    "secondaryLight": "#E5394A",
+    "accent": "#FFD100",
+    "background": "#FFFFFF",
+    "backgroundAlt": "#F7F7F7",
+    "surface": "#FCFCFC",
+    "border": "#D9D9D9",
+    "text": "#1A1A1A",
+    "textMuted": "#666666",
+    "success": "#28A745",
+    "warning": "#FFA500",
+    "error": "#C8102E"
+  },
+  "typography": {
+    "heading": "SQA Sans",
+    "headingFallback": "Helvetica, Arial, sans-serif",
+    "body": "Open Sans",
+    "bodyFallback": "Helvetica, Arial, sans-serif",
+    "monospace": "Courier New, monospace"
+  },
+  "iconography": {
+    "logoUrl": "https://www.sqa.org.uk/sqa/images/SQA-logo.png",
+    "faviconUrl": "https://www.sqa.org.uk/favicon.ico",
+    "symbol": "saltire"
+  },
+  "flag": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+  "characteristics": {
+    "typeface": "modern geometric sans (SQA Sans) + readable body (Open Sans)",
+    "personality": "authoritative, Scottish, national identity",
+    "primaryTone": "navy blue with St Andrew's red",
+    "derivedFrom": "SQA brand guidelines + saltire-inspired visual identity"
+  },
+  "subjects": ["mathematics", "english", "chemistry", "physics", "biology", "human_biology", "geography", "history", "modern_studies", "philosophy", "business_management", "accounting", "computing_science", "art_and_design", "music_technology"],
+  "languages": ["en", "gd"],
+  "pdfs": 0,
+  "lineage": {
+    "extractedBy": "ExtractSourcePalette v1.0.0",
+    "extractedFromPdf": "n/a (brand guidelines source)",
+    "confidence": 0.84,
+    "extractedAt": "2026-08-23T00:00:00Z"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "sourceKey": "education.gov.scot",
+  "sourceName": "Education Scotland (Scottish Government)",
+  "policyScope": "National (Scotland)",
+  "officialUrl": "https://education.gov.scot",
+  "palette": {
+    "primary": "#003D7D",
+    "primaryDark": "#002A5A",
+    "primaryLight": "#1E5599",
+    "secondary": "#C8102E",
+    "secondaryDark": "#8A0B1F",
+    "secondaryLight": "#E5394A",
+    "accent": "#FFD100",
+    "background": "#FFFFFF",
+    "backgroundAlt": "#F7F7F7",
+    "surface": "#FCFCFC",
+    "border": "#D9D9D9",
+    "text": "#1A1A1A",
+    "textMuted": "#666666",
+    "success": "#28A745",
+    "warning": "#FFA500",
+    "error": "#C8102E"
+  },
+  "typography": {
+    "heading": "Open Sans",
+    "headingFallback": "Helvetica, Arial, sans-serif",
+    "body": "Open Sans",
+    "bodyFallback": "Helvetica, Arial, sans-serif",
+    "monospace": "Source Code Pro, monospace"
+  },
+  "iconography": {
+    "logoUrl": "https://education.gov.scot/images/education-scotland-logo.png",
+    "faviconUrl": "https://education.gov.scot/favicon.ico",
+    "symbol": "saltire"
+  },
+  "flag": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+  "characteristics": {
+    "typeface": "Open Sans (clean and accessible)",
+    "personality": "Scottish Government, professional, national identity",
+    "primaryTone": "navy blue with saltire red",
+    "derivedFrom": "Education Scotland brand guidelines + saltire-inspired visual identity"
+  },
+  "policies": [
+    "National Approach to Anti-Bullying for Scotland's Children and Young People - https://education.gov.scot/policies/anti-bullying",
+    "Included, Engaged and Involved Part 1 - https://education.gov.scot/policies/included-engaged-and-involved-1",
+    "Building Curriculum for Excellence - https://education.gov.scot/policies/building-curriculum-for-excellence",
+    "Online Safety Education - https://education.gov.scot/policies/online-safety-education",
+    "Mental Health and Wellbeing Strategy - https://education.gov.scot/policies/mental-health-and-wellbeing-strategy"
+  ],
+  "lineage": {
+    "extractedBy": "ExtractSourcePalette v1.0.0",
+    "extractedFromPdf": "Education Scotland brand guidelines (extracted from education.gov.scot)",
+    "confidence": 0.90,
+    "extractedAt": "2026-08-23T00:00:00Z"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "sourceKey": "gov.wales/education",
+  "sourceName": "Welsh Government - Department of Education",
+  "policyScope": "National (Wales)",
+  "officialUrl": "https://gov.wales/education-and-skills",
+  "palette": {
+    "primary": "#1F3A93",
+    "primaryDark": "#0F1D4D",
+    "primaryLight": "#4A5FB0",
+    "secondary": "#D30731",
+    "secondaryDark": "#8E0420",
+    "secondaryLight": "#E5394A",
+    "accent": "#00B140",
+    "background": "#FFFFFF",
+    "backgroundAlt": "#F8F8F8",
+    "surface": "#FCFCFC",
+    "border": "#DCDCDC",
+    "text": "#1A1A1A",
+    "textMuted": "#666666",
+    "success": "#00B140",
+    "warning": "#FFA500",
+    "error": "#D30731"
+  },
+  "typography": {
+    "heading": "Open Sans",
+    "headingFallback": "Helvetica, Arial, sans-serif",
+    "body": "Open Sans",
+    "bodyFallback": "Helvetica, Arial, sans-serif",
+    "monospace": "Source Code Pro, monospace"
+  },
+  "iconography": {
+    "logoUrl": "https://gov.wales/sites/default/files/styles/max_650x650/public/2020-08/Welsh-Government-logo.png",
+    "faviconUrl": "https://gov.wales/favicon.ico",
+    "symbol": "dragon"
+  },
+  "flag": "🏴󠁧󠁢󠁷󠁬󠁳󠁿",
+  "characteristics": {
+    "typeface": "Open Sans (open and accessible)",
+    "personality": "Welsh Government, bilingual, national identity",
+    "primaryTone": "Welsh blue with red dragon + green leek",
+    "derivedFrom": "Welsh Government brand guidelines + dragon symbolism"
+  },
+  "policies": [
+    "Keeping Learners Safe - https://gov.wales/keeping-learners-safe",
+    "Anti-bullying Guidance - https://gov.wales/anti-bullying-guidance",
+    "Curriculum for Wales - https://gov.wales/curriculum-wales",
+    "Online Safety - https://hwb.gov.wales/zones/keeping-safe-online",
+    "Mental Health and Wellbeing - https://hwb.gov.wales/zones/mental-health-and-wellbeing"
+  ],
+  "lineage": {
+    "extractedBy": "ExtractSourcePalette v1.0.0",
+    "extractedFromPdf": "Welsh Government brand guidelines (extracted from gov.wales)",
+    "confidence": 0.89,
+    "extractedAt": "2026-08-23T00:00:00Z"
+  }
+}
