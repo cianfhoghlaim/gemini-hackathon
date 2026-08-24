@@ -442,12 +442,15 @@ def test_fleet_agui_emits_expected_event_sequence() -> None:
     llm_response = LLMResponse(
         content="hello world",
         model="minimax-m3",
+        backend="minimax",
         tier=1,
+        family="text_llm",
+        role="default",
         latency_ms=10,
         tokens_in=1,
         tokens_out=1,
         cost_usd=0.0,
-        attempts=[TierAttempt(tier=1, model="minimax-m3", latency_ms=10, succeeded=True)],
+        attempts=[TierAttempt(tier=1, family="text_llm", role="default", model="minimax-m3", backend="minimax", latency_ms=10, succeeded=True)],
     )
     response = AgentResponse(
         agent="adaptive_tutor",

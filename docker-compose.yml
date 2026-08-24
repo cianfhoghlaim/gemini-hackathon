@@ -1,10 +1,22 @@
 # ============================================================================
-# docker-compose.yml — local development stack for gemini-hackathon.
+# docker-compose.yml — local development stack for gemini_hackathon.
 #
+# Stack topology (Phase 1 — ollama removed):
 #  - gemini-hackathon : the application (builds from Dockerfile)
-#  - ollama           : serves unsloth/gemma-4-26B-A4B-it-GGUF locally
-#  - duckdb           : a named volume that holds the .duckdb file (so the
-#                       app + any marimo notebook share the same data)
+#  - llama-swap       : shared OCR/VLM OpenAI-compatible gateway (:8080)
+#  - duckdb           : a named-volume mount point for the .duckdb file
+#
+# The Unsloth Studio backend runs OUTSIDE Docker on the host at
+# :8888 (it is a host process per cianfhoghlaim/bonneagar/stacks/unsloth).
+# Docker containers reach it via http://host.docker.internal:8888/v1.
+# The same goes for the Gemini 3.5 backend: Vertex AI is reached via
+# GOOGLE_CLOUD_PROJECT / ADC, AI Studio via GEMINI_API_KEY — neither needs
+# a container.
+#
+# Three UNSLOTH_BASE_URL values cover the deployment matrix:
+#   - Local host dev   :  http://127.0.0.1:8888/v1
+#   - Docker dev       :  http://host.docker.internal:8888/v1  (set here)
+#   - GCE hackathon VM :  http://UNSLOTH_VM_INTERNAL_IP:8888/v1  (set in .env)
 #
 # Usage:
 #   docker compose up --build
@@ -25,64 +37,80 @@ services:
     env_file:
       - .env
     environment:
-      UNSLOTH_BASE_URL: http://ollama:11434/v1
-      UNSLOTH_MODEL: ${UNSLOTH_MODEL:-unsloth/gemma-4-26B-A4B-it-GGUF}
-      UNSLOTH_API_KEY: ${UNSLOTH_API_KEY:-ollama}
+      # Tier 2 — Gemma 4 26B-A4B via Unsloth Studio on the host.
+      UNSLOTH_BASE_URL: ${UNSLOTH_BASE_URL:-http://host.docker.internal:8888/v1}
+      UNSLOTH_API_KEY: ${UNSLOTH_API_KEY}
+      # Tier 1 — Gemini 3.5: Vertex (default) or AI Studio (toggle).
+      GEMINI_BACKEND: ${GEMINI_BACKEND:-vertex}
+      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT}
+      GOOGLE_CLOUD_LOCATION: ${GOOGLE_CLOUD_LOCATION:-us-central1}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      # OCR/VLM — shared llama-swap service.
+      LLAMA_SWAP_BASE_URL: ${LLAMA_SWAP_BASE_URL:-http://llama-swap:8080/v1}
+      LLAMASWAP_API_KEY: ${LLAMASWAP_API_KEY:-not-required}
+      # Data plane
       DUCKDB_PATH: /app/data/gemini.duckdb
+      MOTHERDUCK_TOKEN: ${MOTHERDUCK_TOKEN}
+      # Image gen
+      INVOKEAI_BASE_URL: ${INVOKEAI_BASE_URL:-http://invokeai:9090/v1}
+      COMFYUI_BASE_URL: ${COMFYUI_BASE_URL:-http://comfyui:8188}
+      # Observability
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-https://cloud.langfuse.com}
+      # Profile gating — docs + UI read this to decide what to expose.
+      MODEL_PROFILE: ${MODEL_PROFILE:-hackathon}
     volumes:
       - duckdb-data:/app/data
       - gemini-themes:/app/themes
       - gemini-cache:/app/.cache
-      # Mount the source for live reload in dev (comment out for prod builds):
       - ./gemini_hackathon:/app/gemini_hackathon:ro
       - ./baml_extracts:/app/baml_extracts:ro
       - ./dlt_pipelines:/app/dlt_pipelines:ro
     ports:
       - "8080:8080"
+    extra_hosts:
+      # host.docker.internal lets the container reach the host's Unsloth
+      # Studio. Docker Desktop does this on macOS/Linux by default but we
+      # declare it explicitly so the contract is portable to GCE.
+      - "host.docker.internal:host-gateway"
     depends_on:
-      ollama:
+      llama-swap:
         condition: service_started
     networks:
       - gh-net
 
   # ---------------------------------------------------------------------------
-  # Local Unsloth / Ollama-compatible inference server
+  # llama-swap — OCR / VLM OpenAI-compatible gateway
+  # Serves qwen3-vl-8b + the Gemma 4 family + paddleocr-vl-1.6 + others.
+  # Reuses the cianfhoghlaim/bonneagar/stacks/llama-swap config file.
   # ---------------------------------------------------------------------------
-  ollama:
-    image: ollama/ollama:latest
-    container_name: gemini-hackathon-ollama
+  llama-swap:
+    image: ghcr.io/mostlygeek/llama-swap:cpu
+    container_name: gemini-hackathon-llama-swap
     restart: unless-stopped
     volumes:
-      - ollama-models:/root/.ollama
+      # Mount the canonical llama-swap config + GGUF model directory from
+      # the cianfhoghlaim monorepo when developing locally; in the GCE
+      # hackathon deploy this is a fresh build with weights pulled from HF.
+      - ../cianfhoghlaim/bonneagar/stacks/llama-swap/config.yaml:/app/config.yaml:ro
+      - ${LLAMA_MODELS_DIR:-../cianfhoghlaim/stedding/models/llama}:/models:ro
     ports:
-      - "11434:11434"
-    environment:
-      OLLAMA_HOST: 0.0.0.0:11434
-      OLLAMA_KEEP_ALIVE: 30m
-      OLLAMA_NUM_PARALLEL: 1
-      OLLAMA_MAX_LOADED_MODELS: 1
-    # GPU passthrough — uncomment on a Linux host with an NVIDIA GPU:
-    #   deploy:
-    #     resources:
-    #       reservations:
-    #         devices:
-    #           - driver: nvidia
-    #             count: all
-    #             capabilities: [gpu]
+      - "8080:8080"
     healthcheck:
-      test: ["CMD-SHELL", "ollama list || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/v1/models || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 90s
     networks:
       - gh-net
 
   # ---------------------------------------------------------------------------
-  # DuckDB file storage
-  # (a real DuckDB instance does not exist as a service — the app owns the
-  # .duckdb file. This service exists only to declare the named volume so
-  # any other compose-attached notebook or CLI tool can mount the same data.)
+  # DuckDB file storage.
+  # DuckDB has no service binary; the application owns the .duckdb file.
+  # This alpine container exists only to declare the named volume so any
+  # attached notebook or CLI can mount the same data.
   # ---------------------------------------------------------------------------
   duckdb:
     image: alpine:3.20
@@ -100,8 +128,6 @@ volumes:
     name: gemini-hackathon-themes
   gemini-cache:
     name: gemini-hackathon-cache
-  ollama-models:
-    name: gemini-hackathon-ollama-models
 
 networks:
   gh-net:

@@ -1,7 +1,9 @@
-"""gemini_hackathon - the theming-only Python package.
+"""gemini_hackathon — the public-demo Python package.
 
-This is the entry point for the gemini_hackathon public demo
-(per the BIEP Hackathon v3 specification).
+Public API:
+    theming: palette loading + per-source palette extraction (BAML stub)
+    models:  registry of every model the project routes through
+    call_llm: dual-profile LiteLLM router with model-exclusion guard
 """
 
 from .theming import (
@@ -12,12 +14,30 @@ from .theming import (
     JURISDICTION_SOURCES,
     SAFEGUARDING_SOURCES,
 )
+from .models import (
+    MODEL_REGISTRY,
+    ModelRegistry,
+    ModelRegistryEntry,
+    ModelFamily,
+    ModelRole,
+    ModelProfile,
+    model_for,
+)
 
 __all__ = [
+    # theming
     "Palette",
     "load_palette",
     "list_all_palettes",
     "extract_source_palette_from_pdf",
     "JURISDICTION_SOURCES",
     "SAFEGUARDING_SOURCES",
+    # models
+    "MODEL_REGISTRY",
+    "ModelRegistry",
+    "ModelRegistryEntry",
+    "ModelFamily",
+    "ModelRole",
+    "ModelProfile",
+    "model_for",
 ]

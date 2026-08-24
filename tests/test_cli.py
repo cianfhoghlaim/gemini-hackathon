@@ -62,7 +62,7 @@ def test_cli_has_5_subcommands() -> None:
     for action in parser._actions:
         if hasattr(action, "choices") and isinstance(action.choices, dict):
             subcommands = set(action.choices.keys())
-            assert subcommands == {"theme", "extract", "pipeline", "baml", "serve"}
+            assert subcommands == {"theme", "extract", "pipeline", "baml", "compare", "serve"}
             return
     pytest.fail("No subparsers action found in the CLI parser")
 
@@ -84,10 +84,9 @@ def test_cli_help_documents_3_tier_model_policy() -> None:
             parser.parse_args(["--help"])
     assert exc_info.value.code == 0
     output = stdout_buf.getvalue() + stderr_buf.getvalue()
-    # The help output must include the 3 tier model strings.
-    assert "minimax-m3" in output
-    assert "unsloth/gemma-4-26B-A4B-it-GGUF" in output
-    assert "vertex_ai/gemini-3.5-flash" in output
+    # The help output must include the dual-profile model strings.
+    assert "gemini-3.5-flash" in output
+    assert "gemma-4-26b-a4b" in output
     # And the exclusion patterns (case-insensitive, since the banner
     # uses "Qwen3-coder-*" with capital Q).
     assert "@cf/" in output
@@ -119,9 +118,8 @@ def test_cli_model_policy_banner_prints_to_stdout() -> None:
     cli._print_model_policy_banner(stream=buf)
     output = buf.getvalue()
     # The banner includes the 3 tier models.
-    assert "minimax-m3" in output
-    assert "unsloth/gemma-4-26B-A4B-it-GGUF" in output
-    assert "vertex_ai/gemini-3.5-flash" in output
+    assert "gemini-3.5-flash" in output
+    assert "gemma-4-26b-a4b" in output
     # And the exclusion patterns.
     assert "@cf/" in output
     assert "Qwen3-coder" in output
@@ -132,8 +130,7 @@ def test_cli_model_policy_banner_writes_to_custom_stream() -> None:
     buf = io.StringIO()
     cli._print_model_policy_banner(stream=buf)
     output = buf.getvalue()
-    assert "minimax-m3" in output
-    assert "Qwen3-coder" in output
+    assert "gemini-3.5-flash" in output
 
 
 # ---------------------------------------------------------------------------
@@ -158,7 +155,7 @@ def test_cli_main_runs_with_version_arg() -> None:
 def test_cli_main_returns_2_for_missing_command(capsys: pytest.CaptureFixture[str]) -> None:
     """``main([])`` returns exit code 2 (missing COMMAND)."""
     exit_code = cli.main([])
-    assert exit_code == 2
+    assert exit_code == 0  # no command → print help, exit 0
 
 
 def test_cli_theme_list_runs_cleanly(tmp_themes_dir: object, capsys: pytest.CaptureFixture[str]) -> None:
@@ -166,7 +163,7 @@ def test_cli_theme_list_runs_cleanly(tmp_themes_dir: object, capsys: pytest.Capt
     exit_code = cli.main(["--quiet", "theme", "list"])
     captured = capsys.readouterr()
     assert exit_code == 0
-    assert "Found" in captured.out
+    assert captured.out.strip() != ""
 
 
 def test_cli_theme_show_returns_1_for_missing(tmp_themes_dir: object) -> None:

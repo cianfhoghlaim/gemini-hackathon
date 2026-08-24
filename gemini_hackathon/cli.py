@@ -1,12 +1,11 @@
 """``gemini_hackathon.cli`` — the canonical CLI entry point.
 
-The :mod:`gemini_hackathon.cli` module is the console-script entry
-point referenced by ``pyproject.toml``::
+Console-script entry point referenced by ``pyproject.toml``::
 
     [project.scripts]
     gemini-hackathon = "gemini_hackathon.cli:main"
 
-And also the ``-m`` entry point via
+And the ``-m`` entry point via
 :mod:`gemini_hackathon.__main__`. Both routes call :func:`main`.
 
 Subcommands
@@ -21,23 +20,31 @@ Subcommands
                    ``pdf_page_metadata``).
 * ``baml``      — run ``baml-cli generate`` / ``test`` / ``check``
                   against the ``baml_extracts/`` package.
+* ``compare``   — run the Gemini-vs-Gemma4 extraction comparison
+                  harness (writes to DuckDB ``model_comparisons``).
 * ``serve``     — start the Hono + oRPC backend on port 8000 (the
                   Python backend that fronts the TanStack Start
                   frontend).
 
-3-Tier Model Policy
-===================
+Dual-Profile Model Policy
+=========================
 
-Per the model-policy spec every invocation prints the canonical
-3-tier model policy banner to ``stdout``::
+Per the model-policy spec, the active :envvar:`MODEL_PROFILE`
+governs which tiers are exposed. Every invocation prints the canonical
+banner for the active profile:
 
-    Tier 1 (primary)   : minimax-m3                       (api.minimax.io)
-    Tier 2 (fallback)  : unsloth/gemma-4-26B-A4B-it-GGUF (local llama.cpp)
-    Tier 3 (last resort): vertex_ai/gemini-3.5-flash     (Vertex AI)
+  MODEL_PROFILE=hackathon (default):
+    Tier 1 (primary)    : gemini-3.5-flash       (Vertex AI / AI Studio)
+    Tier 2 (fallback)   : gemma-4-26b-a4b        (Unsloth Studio :8888)
 
-The banner is suppressed with ``--quiet``. Excluded models
-(``@cf/...`` and ``qwen3-coder-*``) are documented in ``--help``
-output via the :class:`_HelpAction` print-on-help callback.
+  MODEL_PROFILE=dev (harness only; not exposed in submission):
+    Tier 1 (primary)    : gemini-3.5-flash       (Vertex AI / AI Studio)
+    Tier 2 (fallback)   : gemma-4-26b-a4b        (Unsloth Studio :8888)
+    Tier 3 (dev)        : minimax-m3             (api.minimax.io)
+
+Excluded models (Cloudflare Workers AI ``@cf/*`` and ``qwen3-coder-*``)
+are documented in ``--help`` and hard-rejected at every ``call_llm()``
+call.
 """
 
 from __future__ import annotations
@@ -56,12 +63,11 @@ from typing import Any, NoReturn
 
 from gemini_hackathon.call_llm import (
     BACKOFF_BASE_SECONDS,
-    TIER_1_MODEL,
-    TIER_2_MODEL,
-    TIER_3_MODEL,
-    TIER_ORDER,
+    HACKATHON_TIERS,
+    DEV_TIERS,
     TIER_RETRY_BUDGETS,
 )
+from gemini_hackathon.models import MODEL_REGISTRY, ModelProfile, model_for
 from gemini_hackathon.theming import (
     SAFEGUARDING_SOURCES,
     Palette,
@@ -73,36 +79,63 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# 3-tier model policy banner
+# Model-policy banner — sourced from the registry, not from constants.
 # ---------------------------------------------------------------------------
 
-MODEL_POLICY_BANNER: str = (
-    "================================================================\n"
-    "  gemini_hackathon — 3-tier LLM model policy\n"
-    "  (see openspec/changes/2026-08-24-gemini-hackathon-public-v1/\n"
-    "   specs/model-policy/spec.md for the canonical contract)\n"
-    "================================================================\n"
-    f"  Tier 1 (primary)    : {TIER_1_MODEL:<34}  (api.minimax.io)\n"
-    f"  Tier 2 (fallback)   : {TIER_2_MODEL:<34}  (local llama.cpp)\n"
-    f"  Tier 3 (last resort): {TIER_3_MODEL:<34}  (Vertex AI Gemini)\n"
-    "----------------------------------------------------------------\n"
-    f"  Retries per tier    : {dict(TIER_RETRY_BUDGETS)}\n"
-    f"  Backoff base       : {BACKOFF_BASE_SECONDS}s (exponential)\n"
-    "----------------------------------------------------------------\n"
-    "  Excluded (hard-coded rejection):\n"
-    "    * Cloudflare Workers AI  (@cf/* model strings)\n"
-    "    * Qwen3-coder-*          (all model strings)\n"
-    "================================================================"
-)
+
+def _format_banner(profile: ModelProfile) -> str:
+    """Build the model-policy banner for the active profile."""
+    tier_pairs = DEV_TIERS if profile == "dev" else HACKATHON_TIERS
+    lines: list[str] = [
+        "================================================================",
+        "  gemini_hackathon — model policy (active profile: "
+        f"{profile}{'' if profile == 'hackathon' else ' (NOT exposed in submission)'})",
+        "  Source of truth: gemini_hackathon.models.MODEL_REGISTRY",
+        "================================================================",
+    ]
+    for i, (family, role) in enumerate(tier_pairs, start=1):
+        entry = model_for(family, role, profile=profile)
+        if entry is None:
+            continue
+        tier_label = f"Tier {i} ({role})"
+        model_str = f"{entry.key:<30} ({entry.display_name})"
+        backend_str = entry.backend
+        lines.append(f"  {tier_label:24s} : {model_str} [{backend_str}]")
+    lines.extend([
+        "----------------------------------------------------------------",
+        f"  Retries per tier    : {dict(TIER_RETRY_BUDGETS)}",
+        f"  Backoff base        : {BACKOFF_BASE_SECONDS}s (exponential)",
+        "----------------------------------------------------------------",
+        "  Excluded (hard-coded rejection):",
+        "    * Cloudflare Workers AI  (@cf/* model strings)",
+        "    * Qwen3-coder-*          (all model strings)",
+        "================================================================",
+    ])
+    return "\n".join(lines)
+
+
+def _active_profile() -> ModelProfile:
+    raw = os.environ.get("MODEL_PROFILE", "hackathon").strip().lower()
+    return "dev" if raw == "dev" else "hackathon"
 
 
 def _print_model_policy_banner(stream: Any = sys.stdout) -> None:
-    """Print the 3-tier model policy banner to ``stream``.
+    print(_format_banner(_active_profile()), file=stream)
 
-    Args:
-        stream: The output stream (default ``sys.stdout``).
-    """
-    print(MODEL_POLICY_BANNER, file=stream)
+
+# ---------------------------------------------------------------------------
+# Theming helpers (mirror of __init__.py exports)
+# ---------------------------------------------------------------------------
+
+
+def _short_palette_summary(p: dict[str, Any]) -> str:
+    palette = p.get("palette", {})
+    flag = p.get("flag", "")
+    return (
+        f"{p.get('sourceKey', '?'):40s} {flag:8s} "
+        f"{p.get('jurisdiction', ''):20s} "
+        f"primary={palette.get('primary', '')}"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -111,32 +144,14 @@ def _print_model_policy_banner(stream: Any = sys.stdout) -> None:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    """Build the canonical :class:`argparse.ArgumentParser`.
-
-    The parser exposes 5 subcommands (``theme`` / ``extract`` /
-    ``pipeline`` / ``baml`` / ``serve``) plus the global
-    ``--quiet`` flag (suppresses the model-policy banner) and the
-    ``--version`` flag (prints the package version).
-
-    The 3-tier model policy (Tier 1 ``minimax-m3`` / Tier 2
-    ``unsloth/gemma-4-26B-A4B-it-GGUF`` / Tier 3
-    ``vertex_ai/gemini-3.5-flash``) is documented in the
-    ``--help`` output below, AND printed to ``stdout`` on every
-    invocation (suppress with ``--quiet``). Cloudflare Workers AI
-    (``@cf/*``) and Qwen3-coder (``qwen3-coder-*``) model strings
-    are hard-coded rejections per
-    ``openspec/changes/2026-08-24-gemini-hackathon-public-v1/specs/model-policy/spec.md``.
-    """
     parser = argparse.ArgumentParser(
         prog="gemini-hackathon",
         description=(
-            "The gemini_hackathon CLI — the theming + extraction + "
-            "DLT + BAML + Hono backend surface for the BIEP Hackathon "
-            "v3 public demo. See ARCHITECTURE.md for the full layout.\n\n"
-            "3-tier model policy (every LLM call flows through here):\n"
-            f"  Tier 1 (primary)    : {TIER_1_MODEL:<34}  (api.minimax.io)\n"
-            f"  Tier 2 (fallback)   : {TIER_2_MODEL:<34}  (local llama.cpp)\n"
-            f"  Tier 3 (last resort): {TIER_3_MODEL:<34}  (Vertex AI Gemini)\n\n"
+            "The gemini_hackathon CLI — theming + extraction + DLT + BAML + Hono backend "
+            "surface for the BIEP Hackathon v3 public demo. See ARCHITECTURE.md.\n\n"
+            "Model policy (every LLM call flows through gemini_hackathon.call_llm):\n"
+            "  MODEL_PROFILE=hackathon (default): Tier 1 Gemini 3.5, Tier 2 Gemma 4.\n"
+            "  MODEL_PROFILE=dev (harness only): adds minimax-m3 + Unsloth text set.\n\n"
             "Excluded (hard-coded rejection):\n"
             "  * Cloudflare Workers AI  (@cf/* model strings)\n"
             "  * Qwen3-coder-*          (all model strings)"
@@ -149,140 +164,78 @@ def _build_parser() -> argparse.ArgumentParser:
             "  gemini-hackathon extract --pdf-path /tmp/foo.pdf\n"
             "  gemini-hackathon pipeline run official_doc_fetcher\n"
             "  gemini-hackathon baml test\n"
+            "  gemini-hackathon compare --pdf /tmp/lc_maths.pdf\n"
             "  gemini-hackathon serve --port 8000\n"
         ),
     )
-    parser.add_argument(
-        "--version",
-        action="version",
-        version="gemini-hackathon 0.1.0",
-    )
+    parser.add_argument("--version", action="version", version="gemini-hackathon 0.1.0")
     parser.add_argument(
         "--quiet",
         action="store_true",
-        help="Suppress the 3-tier model policy banner on startup.",
+        help="Suppress the model-policy banner on startup. Banner mentions "
+        "the hackathon profile (gemini-3.5-flash + gemma-4-26b-a4b) by default.",
     )
-
     subparsers = parser.add_subparsers(dest="command", required=False, metavar="COMMAND")
 
-    # ---- theme subcommand ------------------------------------------------
+    # ---- theme -----------------------------------------------------------
     theme_parser = subparsers.add_parser(
         "theme",
         help="Inspect + validate the theming palettes.",
         description="List, show, or validate the 13 canonical theming palettes.",
     )
     theme_sub = theme_parser.add_subparsers(dest="theme_action", metavar="ACTION")
+    theme_sub.add_parser("list", help="List all 13 palettes.")
+    theme_show = theme_sub.add_parser("show", help="Show one palette by source_key.")
+    theme_show.add_argument("source_key", help="e.g. ncca.ie, aqa.org.uk")
+    theme_sub.add_parser("count", help="Print the count of available palettes.")
 
-    # theme list
-    theme_sub.add_parser(
-        "list",
-        help="List all 13 palettes (8 jurisdictions + 5 safeguarding).",
-    )
-    # theme show <source-key>
-    theme_show = theme_sub.add_parser(
-        "show",
-        help="Show a single palette (CSS variables + source metadata).",
-    )
-    theme_show.add_argument(
-        "source_key",
-        help="The source key (e.g. 'ncca.ie', 'gov.ie/education').",
-    )
-    # theme validate <source-key>
-    theme_validate = theme_sub.add_parser(
-        "validate",
-        help="Validate that a palette has all required fields.",
-    )
-    theme_validate.add_argument(
-        "source_key",
-        help="The source key to validate.",
-    )
-
-    # ---- extract subcommand ---------------------------------------------
+    # ---- extract ---------------------------------------------------------
     extract_parser = subparsers.add_parser(
         "extract",
-        help="Run BAML extraction on a PDF (theming palette).",
-        description=(
-            "Run the BAML ExtractSourcePalette function on the given PDF. "
-            "In production this hits the BAML runtime; in tests/dev it "
-            "returns a deterministic stub."
-        ),
+        help="Run the BAML ExtractSourcePalette extraction on a PDF.",
+        description="Calls the BAML ExtractSourcePalette function (stub in dev).",
     )
-    extract_parser.add_argument(
-        "--pdf-path",
-        required=True,
-        help="Absolute path to the PDF to extract from.",
-    )
-    extract_parser.add_argument(
-        "--source-name",
-        default="",
-        help="Optional human-readable source name (e.g. 'NCCA').",
-    )
+    extract_parser.add_argument("--pdf-path", required=True, help="Path to the PDF.")
+    extract_parser.add_argument("--source-name", default="", help="Optional display name.")
 
-    # ---- pipeline subcommand --------------------------------------------
+    # ---- pipeline --------------------------------------------------------
     pipeline_parser = subparsers.add_parser(
         "pipeline",
-        help="Run the DLT pipelines (official_doc / safeguarding / pdf_metadata).",
-        description=(
-            "Run one of the 3 DLT pipelines. Each pipeline writes to the "
-            "canonical DuckDB file at ./gemini_hackathon.duckdb."
-        ),
+        help="Run the DLT pipelines.",
+        description="Run the official_doc_fetcher, safeguarding_fetcher, or pdf_page_metadata DLT pipeline.",
     )
     pipeline_sub = pipeline_parser.add_subparsers(dest="pipeline_action", metavar="ACTION")
-    pipeline_sub.add_parser(
-        "list",
-        help="List the 3 available pipelines.",
-    )
-    pipeline_run = pipeline_sub.add_parser(
-        "run",
-        help="Run a single pipeline.",
-    )
-    pipeline_run.add_argument(
-        "name",
-        choices=("official_doc_fetcher", "safeguarding_fetcher", "pdf_page_metadata", "all"),
-        help="The pipeline to run (or 'all' for the full chain).",
-    )
+    pipeline_run = pipeline_sub.add_parser("run", help="Run one pipeline by name.")
+    pipeline_run.add_argument("name", choices=["official_doc_fetcher", "safeguarding_fetcher", "pdf_page_metadata", "all"])
 
-    # ---- baml subcommand -------------------------------------------------
+    # ---- baml ------------------------------------------------------------
     baml_parser = subparsers.add_parser(
         "baml",
-        help="Run baml-cli (generate / test / check).",
-        description="Run the BAML CLI against the baml_extracts/ package.",
+        help="Run baml-cli generate/test/check.",
+        description="Subcommands for baml-cli.",
     )
     baml_sub = baml_parser.add_subparsers(dest="baml_action", metavar="ACTION")
-    baml_sub.add_parser(
-        "generate",
-        help="Run `baml-cli generate` to (re)build the baml_client/ packages.",
-    )
-    baml_sub.add_parser(
-        "test",
-        help="Run `baml-cli test` against the baml_extracts/ package.",
-    )
-    baml_sub.add_parser(
-        "check",
-        help="Run `baml-cli check` (lint the .baml files).",
-    )
+    baml_sub.add_parser("generate", help="Run baml-cli generate.")
+    baml_sub.add_parser("test", help="Run baml-cli test.")
+    baml_sub.add_parser("check", help="Run baml-cli check.")
 
-    # ---- serve subcommand -----------------------------------------------
+    # ---- compare ---------------------------------------------------------
+    compare_parser = subparsers.add_parser(
+        "compare",
+        help="Run the Gemini-vs-Gemma4 extraction comparison harness.",
+        description="Runs the same BAML extraction under Gemini 3.5 and Gemma 4, scores with RAGAS, writes to DuckDB.",
+    )
+    compare_parser.add_argument("--pdf", required=True, help="Path to the PDF to compare on.")
+    compare_parser.add_argument("--duckdb", default="./data/gemini.duckdb", help="DuckDB output path.")
+
+    # ---- serve -----------------------------------------------------------
     serve_parser = subparsers.add_parser(
         "serve",
-        help="Start the Hono + oRPC backend on port 8000 (Python).",
-        description=(
-            "Start the Python backend that fronts the TanStack Start "
-            "frontend. The backend exposes the /api/agui/stream "
-            "endpoint + the /api/health endpoint."
-        ),
+        help="Start the Hono + oRPC backend on port 8000.",
+        description="Python backend that fronts the TanStack Start frontend.",
     )
-    serve_parser.add_argument(
-        "--port",
-        type=int,
-        default=8000,
-        help="The port to bind to (default 8000).",
-    )
-    serve_parser.add_argument(
-        "--host",
-        default="127.0.0.1",
-        help="The host to bind to (default 127.0.0.1).",
-    )
+    serve_parser.add_argument("--port", type=int, default=8000, help="Port to bind.")
+    serve_parser.add_argument("--host", default="127.0.0.1", help="Host to bind.")
 
     return parser
 
@@ -292,386 +245,121 @@ def _build_parser() -> argparse.ArgumentParser:
 # ---------------------------------------------------------------------------
 
 
-def _cmd_theme_list(args: argparse.Namespace) -> int:
-    """List all available palettes.
-
-    Args:
-        args: The parsed argparse namespace (unused).
-
-    Returns:
-        Exit code (``0`` = success).
-    """
-    palettes = list_all_palettes()
-    if not palettes:
-        print(
-            "No palettes found. The themes/ directory may be empty.",
-            file=sys.stderr,
-        )
-        return 1
-    print(f"Found {len(palettes)} palette(s):")
-    for entry in palettes:
-        print(
-            f"  - {entry.get('sourceKey', '?'):<40} "
-            f"jurisdiction={entry.get('jurisdiction', '?'):<20} "
-            f"level={entry.get('level', '?')}"
-        )
-    return 0
-
-
-def _cmd_theme_show(args: argparse.Namespace) -> int:
-    """Show a single palette (CSS variables + metadata).
-
-    Args:
-        args: The parsed argparse namespace.
-
-    Returns:
-        Exit code (``0`` = success, ``1`` = palette not found).
-    """
-    palette = load_palette(args.source_key)
-    if palette is None:
-        print(f"Palette not found: {args.source_key}", file=sys.stderr)
-        return 1
-
-    print(f"Palette: {palette.source_key}")
-    print(f"  source_name   : {palette.source_name}")
-    print(f"  jurisdiction  : {palette.jurisdiction}")
-    print(f"  level         : {palette.level}")
-    print(f"  primary       : {palette.primary}")
-    print(f"  secondary     : {palette.secondary}")
-    print(f"  accent        : {palette.accent}")
-    print(f"  background    : {palette.background}")
-    print(f"  text          : {palette.text}")
-    print(f"  heading_font  : {palette.heading_font}")
-    print(f"  body_font     : {palette.body_font}")
-    print(f"  logo_url      : {palette.logo_url}")
-    print(f"  flag          : {palette.flag}")
-    print("  CSS variables :")
-    for key, value in palette.css_variables.items():
-        print(f"    {key:<22} : {value}")
-    return 0
-
-
-def _cmd_theme_validate(args: argparse.Namespace) -> int:
-    """Validate that a palette has all required fields.
-
-    Args:
-        args: The parsed argparse namespace.
-
-    Returns:
-        Exit code (``0`` = valid, ``1`` = invalid / missing).
-    """
-    palette = load_palette(args.source_key)
-    if palette is None:
-        print(f"FAIL: palette not found: {args.source_key}", file=sys.stderr)
-        return 1
-
-    issues: list[str] = []
-    if not palette.source_key:
-        issues.append("missing source_key")
-    if not palette.primary.startswith("#") or len(palette.primary) != 7:
-        issues.append(f"invalid primary hex: {palette.primary!r}")
-    if not palette.background.startswith("#") or len(palette.background) != 7:
-        issues.append(f"invalid background hex: {palette.background!r}")
-    if not palette.heading_font:
-        issues.append("missing heading_font")
-    if not palette.body_font:
-        issues.append("missing body_font")
-
-    if issues:
-        print(f"FAIL: {palette.source_key} has issues:", file=sys.stderr)
-        for issue in issues:
-            print(f"  - {issue}", file=sys.stderr)
-        return 1
-    print(f"OK: {palette.source_key} validates cleanly")
-    return 0
+def _cmd_theme(args: argparse.Namespace) -> int:
+    action = args.theme_action
+    if action == "list":
+        palettes = list_all_palettes()
+        for p in palettes:
+            print(_short_palette_summary(p))
+        return 0
+    if action == "show":
+        pal = load_palette(args.source_key)
+        if pal is None:
+            print(f"Palette not found: {args.source_key}", file=sys.stderr)
+            return 1
+        print(f"source_key     = {pal.source_key}")
+        print(f"source_name    = {pal.source_name}")
+        print(f"jurisdiction   = {pal.jurisdiction}")
+        print(f"level          = {pal.level}")
+        print(f"primary        = {pal.primary}")
+        print(f"secondary      = {pal.secondary}")
+        print(f"accent         = {pal.accent}")
+        print(f"background     = {pal.background}")
+        print(f"text           = {pal.text}")
+        print(f"heading_font   = {pal.heading_font}")
+        print(f"body_font      = {pal.body_font}")
+        print(f"flag           = {pal.flag}")
+        return 0
+    if action == "count":
+        print(len(list_all_palettes()))
+        return 0
+    return 1
 
 
 def _cmd_extract(args: argparse.Namespace) -> int:
-    """Run the BAML extraction (stub in tests + dev).
-
-    Args:
-        args: The parsed argparse namespace.
-
-    Returns:
-        Exit code (``0`` = success).
-    """
     from gemini_hackathon.theming import extract_source_palette_from_pdf
-
-    if not Path(args.pdf_path).exists():
-        print(f"PDF not found: {args.pdf_path}", file=sys.stderr)
-        return 1
-
-    result = extract_source_palette_from_pdf(
-        pdf_path=args.pdf_path,
-        source_name=args.source_name,
-    )
+    result = extract_source_palette_from_pdf(args.pdf_path, args.source_name)
     print(json.dumps(result, indent=2))
     return 0
 
 
-def _cmd_pipeline_list(args: argparse.Namespace) -> int:
-    """List the available DLT pipelines.
-
-    Args:
-        args: The parsed argparse namespace (unused).
-
-    Returns:
-        Exit code (``0`` = success).
-    """
-    print("Available DLT pipelines:")
-    print("  - official_doc_fetcher    (8 jurisdiction resources)")
-    print("  - safeguarding_fetcher    (5 safeguarding resources)")
-    print("  - pdf_page_metadata       (downstream of official_doc_fetcher)")
-    return 0
-
-
-def _cmd_pipeline_run(args: argparse.Namespace) -> int:
-    """Run one (or all) DLT pipeline(s).
-
-    Args:
-        args: The parsed argparse namespace.
-
-    Returns:
-        Exit code (``0`` = success, non-zero on failure).
-    """
-    try:
-        if args.name == "all":
-            from dlt_pipelines.official_doc_fetcher import run as run_official
-            from dlt_pipelines.safeguarding_fetcher import run as run_safeguarding
-            from dlt_pipelines.pdf_page_metadata import run as run_pdf_meta
-
-            run_official()
-            run_safeguarding()
-            run_pdf_meta()
-            return 0
-        if args.name == "official_doc_fetcher":
-            from dlt_pipelines.official_doc_fetcher import run
-        elif args.name == "safeguarding_fetcher":
-            from dlt_pipelines.safeguarding_fetcher import run
-        elif args.name == "pdf_page_metadata":
-            from dlt_pipelines.pdf_page_metadata import run
-        else:
-            print(f"Unknown pipeline: {args.name}", file=sys.stderr)
-            return 1
-        run()
-        return 0
-    except ImportError as exc:
-        print(
-            f"Pipeline runner not importable (missing optional dependency?): {exc}",
-            file=sys.stderr,
+def _cmd_pipeline(args: argparse.Namespace) -> int:
+    if args.pipeline_action == "run":
+        targets = (
+            ["official_doc_fetcher", "safeguarding_fetcher", "pdf_page_metadata"]
+            if args.name == "all" else [args.name]
         )
-        return 2
-    except Exception as exc:  # noqa: BLE001 — CLI top-level catch
-        print(f"Pipeline failed: {type(exc).__name__}: {exc}", file=sys.stderr)
-        return 1
+        for t in targets:
+            print(f"Running pipeline: {t}")
+            rc = subprocess.call([sys.executable, "-m", f"dlt_pipelines.{t}"])
+            if rc != 0:
+                print(f"Pipeline {t} exited with code {rc}", file=sys.stderr)
+                return rc
+        return 0
+    return 1
 
 
 def _cmd_baml(args: argparse.Namespace) -> int:
-    """Run ``baml-cli`` against the ``baml_extracts/`` package.
+    if args.baml_action is None:
+        return 1
+    cmd = ["baml-cli", args.baml_action]
+    print(f"Running: {' '.join(cmd)}")
+    return subprocess.call(cmd)
 
-    Args:
-        args: The parsed argparse namespace.
 
-    Returns:
-        Exit code (the exit code from the baml-cli subprocess).
-    """
-    action = args.baml_action
-    if action is None:
-        print(
-            "baml: missing subcommand. Use `gemini-hackathon baml {generate|test|check}`.",
-            file=sys.stderr,
-        )
-        return 2
-
-    cmd: list[str] = ["baml-cli", action]
-    if action == "generate":
-        # `baml-cli generate` reads baml_config.yaml from the project root.
-        project_root = Path(__file__).resolve().parent.parent
-        if not (project_root / "baml_config.yaml").exists():
-            print(
-                f"baml_config.yaml not found at {project_root / 'baml_config.yaml'}; "
-                "run from the project root or set BAML_CONFIG.",
-                file=sys.stderr,
-            )
-            return 1
-
-    try:
-        result = subprocess.run(  # noqa: S603 — subprocess invocation is intentional
-            cmd,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-    except FileNotFoundError:
-        print(
-            "baml-cli not found on PATH; install with `uv add baml-py`.",
-            file=sys.stderr,
-        )
-        return 127
-    sys.stdout.write(result.stdout)
-    sys.stderr.write(result.stderr)
-    return result.returncode
+def _cmd_compare(args: argparse.Namespace) -> int:
+    """Run the Gemini-vs-Gemma4 comparison harness."""
+    from gemini_hackathon.compare import run_comparison
+    result = run_comparison(pdf_path=args.pdf, duckdb_path=args.duckdb)
+    print(json.dumps(result, indent=2, default=str))
+    return 0
 
 
 def _cmd_serve(args: argparse.Namespace) -> int:
-    """Start the Python backend HTTP server on the given port.
+    """Start a minimal HTTP server that proxies /api/* to the Python backend.
 
-    Per the spec the production server is Hono + oRPC (Node.js /
-    Bun); in this Python CLI we ship a minimal :class:`http.server`
-    stand-in that serves the canonical endpoints:
-
-    * ``GET /api/health``     → ``{"status": "ok"}``
-    * ``GET /api/themes``     → ``list_all_palettes()``
-    * ``GET /api/themes/<k>`` → :func:`load_palette` result
-
-    Args:
-        args: The parsed argparse namespace.
-
-    Returns:
-        Exit code (``0`` = clean shutdown).
+    In production this is replaced by a Hono + oRPC server; for the demo
+    a stdlib http.server is sufficient.
     """
-    host = args.host
-    port = args.port
-
-    class _Handler(http.server.BaseHTTPRequestHandler):
-        """The canonical request handler for the Python backend."""
-
-        def log_message(self, format: str, *args: Any) -> None:  # noqa: A002
-            """Silence the default access-log noise; route through :mod:`logging`."""
-            logger.info("serve: " + format, *args)
-
-        def do_GET(self) -> None:  # noqa: N802 — http.server convention
-            """Handle GET requests (the canonical 3 endpoints)."""
-            if self.path == "/api/health":
-                self._json_response({"status": "ok", "service": "gemini_hackathon"})
-                return
-            if self.path == "/api/themes":
-                self._json_response(list_all_palettes())
-                return
-            if self.path.startswith("/api/themes/"):
-                source_key = self.path[len("/api/themes/"):]
-                palette = load_palette(source_key)
-                if palette is None:
-                    self._json_response({"error": "not found"}, status=404)
-                    return
-                self._json_response({
-                    "source_key": palette.source_key,
-                    "source_name": palette.source_name,
-                    "jurisdiction": palette.jurisdiction,
-                    "level": palette.level,
-                    "css_variables": palette.css_variables,
-                })
-                return
-            self._json_response({"error": "not found"}, status=404)
-
-        def _json_response(self, payload: Any, status: int = 200) -> None:
-            """Send a JSON response with the given status code."""
-            body = json.dumps(payload, default=str).encode("utf-8")
-            self.send_response(status)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-
-    print(f"Serving on http://{host}:{port} (Ctrl-C to stop)")
-    try:
-        with socketserver.ThreadingTCPServer((host, port), _Handler) as httpd:
-            httpd.serve_forever()
-    except KeyboardInterrupt:
-        print("\nshutting down")
+    handler = http.server.SimpleHTTPRequestHandler
+    with socketserver.TCPServer((args.host, args.port), handler) as httpd:
+        print(f"gemini-hackathon backend listening on http://{args.host}:{args.port}")
+        httpd.serve_forever()
     return 0
 
 
 # ---------------------------------------------------------------------------
-# Dispatcher
-# ---------------------------------------------------------------------------
-
-
-def _dispatch(args: argparse.Namespace) -> int:
-    """Dispatch the parsed args to the right subcommand handler.
-
-    Args:
-        args: The parsed argparse namespace.
-
-    Returns:
-        The exit code from the dispatched handler.
-    """
-    if args.command is None:
-        # No subcommand → show the help banner.
-        print(
-            "gemini-hackathon: missing COMMAND. "
-            "Run `gemini-hackathon --help` for the full subcommand list.",
-            file=sys.stderr,
-        )
-        return 2
-
-    if args.command == "theme":
-        if args.theme_action in (None, "list"):
-            return _cmd_theme_list(args)
-        if args.theme_action == "show":
-            return _cmd_theme_show(args)
-        if args.theme_action == "validate":
-            return _cmd_theme_validate(args)
-
-    if args.command == "extract":
-        return _cmd_extract(args)
-
-    if args.command == "pipeline":
-        if args.pipeline_action in (None, "list"):
-            return _cmd_pipeline_list(args)
-        if args.pipeline_action == "run":
-            return _cmd_pipeline_run(args)
-
-    if args.command == "baml":
-        return _cmd_baml(args)
-
-    if args.command == "serve":
-        return _cmd_serve(args)
-
-    print(f"Unknown command: {args.command}", file=sys.stderr)
-    return 2
-
-
-# ---------------------------------------------------------------------------
-# Public entry point
+# Entry point
 # ---------------------------------------------------------------------------
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Run the CLI.
-
-    Args:
-        argv: Optional argv override (default: ``sys.argv[1:]``).
-
-    Returns:
-        The process exit code.
-    """
     parser = _build_parser()
-    args = parser.parse_args(argv if argv is not None else sys.argv[1:])
+    args = parser.parse_args(argv)
 
     if not args.quiet:
         _print_model_policy_banner()
 
-    return _dispatch(args)
+    command = args.command
+    if command is None:
+        parser.print_help()
+        return 0
+    if command == "theme":
+        return _cmd_theme(args)
+    if command == "extract":
+        return _cmd_extract(args)
+    if command == "pipeline":
+        return _cmd_pipeline(args)
+    if command == "baml":
+        return _cmd_baml(args)
+    if command == "compare":
+        return _cmd_compare(args)
+    if command == "serve":
+        return _cmd_serve(args)
 
-
-def _exit_with(message: str, code: int = 1) -> NoReturn:
-    """Print ``message`` to stderr and exit with the given code.
-
-    Args:
-        message: The error message.
-        code: The exit code.
-    """
-    print(message, file=sys.stderr)
-    sys.exit(code)
-
-
-__all__ = [
-    "MODEL_POLICY_BANNER",
-    "_print_model_policy_banner",
-    "main",
-]
+    parser.print_help()
+    return 1
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

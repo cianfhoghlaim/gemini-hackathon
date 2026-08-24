@@ -440,12 +440,23 @@ class _FakeCallLLM:
         return LLMResponse(
             content=self.return_content,
             model="minimax-m3",
+            backend="minimax",
             tier=1,
+            family="text_llm",
+            role="default",
             latency_ms=42,
             tokens_in=128,
             tokens_out=64,
             cost_usd=0.0001,
-            attempts=[TierAttempt(tier=1, model="minimax-m3", latency_ms=42, succeeded=True)],
+            attempts=[TierAttempt(
+                tier=1,
+                family="text_llm",
+                role="default",
+                model="minimax-m3",
+                backend="minimax",
+                latency_ms=42,
+                succeeded=True,
+            )],
         )
 
 
