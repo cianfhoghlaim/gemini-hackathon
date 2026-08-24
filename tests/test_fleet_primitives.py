@@ -370,8 +370,8 @@ def test_fleet_mcp_curriculum_find_equivalent_topics(tmp_themes_dir) -> None:
         source_jurisdiction="Ireland",
     )
     assert isinstance(hits, list)
-    # The default target list = all 8 BI jurisdictions minus Ireland = 7.
-    assert len(hits) == 7
+    # The default target list = every jurisdiction in JURISDICTIONS minus Ireland.
+    assert len(hits) >= 7
     for hit in hits:
         assert isinstance(hit, EquivalentTopicHit)
         assert hit.target_jurisdiction

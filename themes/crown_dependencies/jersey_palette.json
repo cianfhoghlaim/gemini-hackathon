@@ -1,0 +1,27 @@
+{
+  "sourceKey": "gov.je/education",
+  "sourceName": "States of Jersey - Education Department",
+  "jurisdiction": "Jersey",
+  "level": "GCSE/A-Level/Baccalauréat",
+  "palette": {
+    "primary": "#C8102E",
+    "secondary": "#FFD700",
+    "accent": "#1A1A1A",
+    "background": "#FFFFFF",
+    "text": "#1A1A1A"
+  },
+  "typography": {
+    "heading": "Helvetica",
+    "body": "Helvetica"
+  },
+  "iconography": {
+    "logoUrl": "https://www.gov.je/SiteCollectionImages/crest.png"
+  },
+  "flag": "🇯🇪",
+  "language": "EN + FR (hybrid)",
+  "_sources": [
+    "States of Jersey Education Department brand",
+    "Jersey's GCSE + French Baccalauréat hybrid framework"
+  ],
+  "_notes": "Jersey runs the English GCSE + the French Baccalauréat as a hybrid. Red + gold + dark text reflect the coat of arms."
+}

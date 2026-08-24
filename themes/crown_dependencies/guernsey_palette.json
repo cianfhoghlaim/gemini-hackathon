@@ -1,0 +1,27 @@
+{
+  "sourceKey": "gov.gg/education",
+  "sourceName": "States of Guernsey - Education Services",
+  "jurisdiction": "Guernsey",
+  "level": "GCSE/A-Level/Local",
+  "palette": {
+    "primary": "#005EB8",
+    "secondary": "#E4002B",
+    "accent": "#FFD100",
+    "background": "#FFFFFF",
+    "text": "#1A1A1A"
+  },
+  "typography": {
+    "heading": "Georgia",
+    "body": "Helvetica"
+  },
+  "iconography": {
+    "logoUrl": "https://www.gov.gg/article/171606/Logo-and-brand"
+  },
+  "flag": "🇬🇬",
+  "language": "EN",
+  "_sources": [
+    "States of Guernsey Education brand guidelines",
+    "Guernsey's GCSE + A-Level + Local qualifications framework"
+  ],
+  "_notes": "Guernsey's blue + red + gold; runs the English GCSE + A-Level + a small Local qualifications layer."
+}

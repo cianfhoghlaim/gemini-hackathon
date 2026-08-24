@@ -11,8 +11,11 @@ from .theming import (
     load_palette,
     list_all_palettes,
     extract_source_palette_from_pdf,
-    JURISDICTION_SOURCES,
+    JURISDICTIONS,
+    BOARDS,
+    SAFEGUARDING_BODIES,
     SAFEGUARDING_SOURCES,
+    CANONICAL_TO_FILE,
 )
 from .models import (
     MODEL_REGISTRY,
@@ -30,8 +33,11 @@ __all__ = [
     "load_palette",
     "list_all_palettes",
     "extract_source_palette_from_pdf",
-    "JURISDICTION_SOURCES",
+    "JURISDICTIONS",
+    "BOARDS",
+    "SAFEGUARDING_BODIES",
     "SAFEGUARDING_SOURCES",
+    "CANONICAL_TO_FILE",
     # models
     "MODEL_REGISTRY",
     "ModelRegistry",

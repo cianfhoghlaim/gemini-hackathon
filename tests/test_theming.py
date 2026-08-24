@@ -20,7 +20,7 @@ from __future__ import annotations
 import pytest
 
 from gemini_hackathon.theming import (
-    JURISDICTION_SOURCES,
+    JURISDICTIONS,
     SAFEGUARDING_SOURCES,
     Palette,
     extract_source_palette_from_pdf,
@@ -181,24 +181,12 @@ def test_load_palette_missing_returns_none(tmp_themes_dir: object) -> None:
     assert palette is None
 
 
-def test_list_all_palettes_returns_13(tmp_themes_dir: object) -> None:
-    """The canonical theming roster is 13 sources (8 + 5).
-
-    Asserts:
-
-    * :func:`list_all_palettes` returns at least 8 entries (the
-      function as written only globs the top-level ``*_palette.json``
-      files — i.e. the 8 jurisdictions — not the safeguarding
-      subdirectory).
-    * All 5 safeguarding sources can be loaded individually via
-      :func:`load_palette` (the safeguarding subdir is accessed via
-      the keyed API).
-    * Combined, the canonical 13 sources are all reachable.
-    """
+def test_list_all_palettes_includes_jurisdiction_files(tmp_themes_dir: object) -> None:
+    """Within the tmp_themes_dir fixture, every jurisdiction + safeguarding palette is listed."""
     palettes = list_all_palettes()
     assert isinstance(palettes, list)
-    assert len(palettes) >= 8, (
-        f"Expected at least 8 jurisdiction palettes, got {len(palettes)}"
+    assert len(palettes) >= 13, (
+        f"Expected at least 13 palette fixtures, got {len(palettes)}"
     )
 
     # Every listed palette must carry the canonical 4 keys.
@@ -214,7 +202,7 @@ def test_list_all_palettes_returns_13(tmp_themes_dir: object) -> None:
         assert load_palette(safe_key) is not None
 
     # Combined count = 8 jurisdictions + 5 safeguarding = 13.
-    jurisdiction_count = len(JURISDICTION_SOURCES)
+    jurisdiction_count = len(JURISDICTIONS)
     safeguarding_count = len(SAFEGUARDING_SOURCES)
     assert jurisdiction_count + safeguarding_count == 13
 

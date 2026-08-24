@@ -169,6 +169,7 @@ ALL_SOURCE_KEYS: tuple[str, ...] = (
 
 #: Source-key → jurisdiction mapping (mirrors JURISDICTION_SOURCES + SAFEGUARDING_SOURCES).
 SOURCE_JURISDICTION: dict[str, str] = {
+    # Jurisdictions (7) + England boards (3) = 10 top-level files
     "ncca.ie": "Ireland",
     "aqa.org.uk": "England",
     "ocr.org.uk": "England",
@@ -177,6 +178,9 @@ SOURCE_JURISDICTION: dict[str, str] = {
     "wjec.co.uk": "Wales",
     "ccea.org.uk": "Northern Ireland",
     "gov.im/education": "Isle of Man",
+    "gov.je/education": "Jersey",
+    "gov.gg/education": "Guernsey",
+    # Safeguarding (5)
     "gov.ie/education": "Ireland",
     "gov.uk/dfe": "England",
     "education.gov.scot": "Scotland",
@@ -256,20 +260,28 @@ def tmp_themes_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     themes_dir = tmp_path / "themes"
     themes_dir.mkdir()
 
-    # 8 jurisdiction palettes (the user-facing files live in the top dir).
-    jurisdiction_keys = (
-        "ncca.ie",
-        "aqa.org.uk",
-        "ocr.org.uk",
-        "qualifications.pearson.com",
-        "sqa.org.uk",
-        "wjec.co.uk",
-        "ccea.org.uk",
-        "gov.im/education",
-    )
-    for source_key in jurisdiction_keys:
-        filename = f"{source_key.replace('/', '_').replace('.', '_')}_palette.json"
+    # Jurisdiction + England-board palettes (each at its canonical path).
+    # 7 jurisdictions + 3 England boards = 10 top-level jurisdiction files.
+    jurisdiction_canonical = {
+        "ncca.ie":     "ncca_palette.json",
+        "aqa.org.uk":  "aqa_palette.json",
+        "ocr.org.uk":  "ocr_palette.json",
+        "qualifications.pearson.com": "pearson_palette.json",
+        "sqa.org.uk":  "sqa_palette.json",
+        "wjec.co.uk":  "wjec_palette.json",
+        "ccea.org.uk": "ccea_palette.json",
+        "gov.im/education": "iom_palette.json",
+    }
+    for source_key, filename in jurisdiction_canonical.items():
         (themes_dir / filename).write_text(
+            json.dumps(_make_palette_payload(source_key), indent=2),
+            encoding="utf-8",
+        )
+
+    # 2 Crown Dependencies (Jersey + Guernsey) under crown_dependencies/.
+    (themes_dir / "crown_dependencies").mkdir()
+    for stem, source_key in (("jersey", "gov.je/education"), ("guernsey", "gov.gg/education")):
+        (themes_dir / "crown_dependencies" / f"{stem}_palette.json").write_text(
             json.dumps(_make_palette_payload(source_key), indent=2),
             encoding="utf-8",
         )
