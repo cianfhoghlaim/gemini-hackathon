@@ -16,10 +16,10 @@ import { v } from "convex/values";
 
 export const listPaletteMetadata = query({
   args: { sourceKey: v.optional(v.string()) },
-  handler: async (ctx, args) => {
+  handler: async (ctx: any, args: any) => {
     let q = ctx.db.query("palettes");
     if (args.sourceKey !== undefined) {
-      q = q.withIndex("by_source_key", (qq) => qq.eq("sourceKey", args.sourceKey!));
+      q = q.withIndex("by_source_key", (qq: any) => qq.eq("sourceKey", args.sourceKey!));
     }
     return await q.collect();
   },
@@ -27,20 +27,20 @@ export const listPaletteMetadata = query({
 
 export const getPaletteMetadata = query({
   args: { sourceKey: v.string() },
-  handler: async (ctx, { sourceKey }) => {
+  handler: async (ctx: any, {sourceKey}: any) => {
     return await ctx.db
       .query("palettes")
-      .withIndex("by_source_key", (q) => q.eq("sourceKey", sourceKey))
+      .withIndex("by_source_key", (q: any) => q.eq("sourceKey", sourceKey))
       .first();
   },
 });
 
 export const listPalettesByAxis = query({
   args: { axis: v.union(v.literal("jurisdiction"), v.literal("board"), v.literal("safeguarding")) },
-  handler: async (ctx, { axis }) => {
+  handler: async (ctx: any, {axis}: any) => {
     return await ctx.db
       .query("palettes")
-      .withIndex("by_axis", (q) => q.eq("axis", axis))
+      .withIndex("by_axis", (q: any) => q.eq("axis", axis))
       .collect();
   },
 });

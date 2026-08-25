@@ -156,6 +156,15 @@ description = "Boot the Python backend on a free port, hit /api/health + /api/th
 depends = ["baml:generate"]
 run = "uv run python scripts/backend_smoke.py"
 
+[tasks.e2e]
+description = "Full E2E: smoke + backend:test + compare:demo (everything offline)"
+depends = ["baml:generate"]
+run = "uv run python scripts/smoke_test.py && uv run python scripts/backend_smoke.py && uv run python scripts/compare_demo.py | tail -20"
+
+[tasks."smoke:web"]
+description = "Smoke test the web/ TS surface (typecheck + Lint)"
+run = "cd web && bun run typecheck"
+
 [tasks.web]
 description = "Start the TanStack Start web surface (port 3000)"
 run = "cd web && bun run dev"

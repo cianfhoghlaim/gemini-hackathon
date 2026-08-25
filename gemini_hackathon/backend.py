@@ -155,7 +155,36 @@ class _BackendHandler(BaseHTTPRequestHandler):
                 metadata={"endpoint": "/api/chat/completions"},
             )
         except Exception as e:  # noqa: BLE001
-            self._write_json(500, {"error": type(e).__name__, "detail": str(e)})
+            err_type = type(e).__name__
+            # Pretty-print the failure mode so the UI can render a useful
+            # error instead of "Internal Server Error".
+            detail = str(e) or "(no detail)"
+            hint = None
+            if err_type == "TypeError":
+                hint = (
+                    "call_llm raised TypeError — usually a router/credential "
+                    "issue. Check GOOGLE_CLOUD_PROJECT (Vertex) or GEMINI_API_KEY "
+                    "(AI Studio), and UNSLOTH_BASE_URL/UNSLOTH_API_KEY."
+                )
+            elif err_type == "LLMCallError":
+                hint = (
+                    "All 3 tiers failed. The most common cause is a missing "
+                    "API key or unreachable backend — check the env vars above."
+                )
+            elif err_type == "ModelExcludedError":
+                hint = (
+                    "The requested model is excluded by policy (Cloudflare "
+                    "Workers AI or Qwen3-coder). Pick a different model."
+                )
+            payload = {
+                "error": err_type,
+                "detail": detail[:500],
+                "model_pin": model_pin,
+                "active_profile": _active_profile(),
+            }
+            if hint:
+                payload["hint"] = hint
+            self._write_json(500, payload)
             return
 
         # OpenAI-compatible response.

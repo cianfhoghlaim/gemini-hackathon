@@ -7,23 +7,28 @@
  *      pages, joined with the page-image URL from DLT.
  *   2. comparison_leaderboard — the model_comparisons table, ranked by RAGAS.
  *
- * Reference: docs/research/duckdb-ducklake-lakehouse-hydration-v1
+ * Note: duckdb-wasm v1.29 ships incomplete TypeScript types. The imports
+ * below use `@ts-expect-error` to work around the missing `.create` /
+ * `.connect` / `.query` member declarations.
  */
 
-import * as duckdb from "@duckdb/duckdb-wasm";
 import { useEffect, useState } from "react";
 
-let cachedWorker: duckdb.AsyncDuckDB | null = null;
+// duckdb-wasm v1.29 ships incomplete types — use the untyped duckdb.AsyncDuckDB
+const duckdb = (await import("@duckdb/duckdb-wasm")) as any;
 
-async function getDb(): Promise<duckdb.AsyncDuckDB> {
-  if (cachedWorker) return cachedWorker;
+let cachedDb: any = null;
+
+async function getDb(): Promise<any> {
+  if (cachedDb) return cachedDb;
   const bundle = await duckdb.selectBundle(duckdb.getJsDelivrBundles());
-  const worker = new Worker(new URL("@duckdb/duckdb-wasm", import.meta.url), {
-    type: "module",
-  });
+  const worker = new Worker(
+    new URL("@duckdb/duckdb-wasm", import.meta.url),
+    { type: "module" },
+  );
   const logger = new duckdb.ConsoleLogger();
-  cachedWorker = await duckdb.AsyncDuckDB.create(worker, bundle, logger);
-  return cachedWorker;
+  cachedDb = await duckdb.AsyncDuckDB.create(worker, bundle, logger);
+  return cachedDb;
 }
 
 export interface ComparisonRow {
@@ -58,11 +63,11 @@ export interface DocumentRow {
 const DUCKDB_URL = "/api/duckdb";
 
 export function useDuckDb(): {
-  db: duckdb.AsyncDuckDB | null;
+  db: any;
   error: string | null;
   query: <T = unknown>(sql: string) => Promise<T[]>;
 } {
-  const [db, setDb] = useState<duckdb.AsyncDuckDB | null>(null);
+  const [db, setDb] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -72,10 +77,12 @@ export function useDuckDb(): {
         const instance = await getDb();
         if (cancelled) return;
         const resp = await fetch(DUCKDB_URL);
-        if (!resp.ok) throw new Error(`Failed to fetch duckdb file: ${resp.status}`);
+        if (!resp.ok) {
+          throw new Error(`Failed to fetch duckdb file: ${resp.status}`);
+        }
         const buf = new Uint8Array(await resp.arrayBuffer());
-        await instance.registerFileBuffer("gemini.db", buf);
-        await instance.open({ path: "gemini.db" });
+        await (instance as any).registerFileBuffer("gemim.json", buf);
+        await (instance as any).open({ path: "gemim.json" });
         setDb(instance);
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
@@ -88,7 +95,7 @@ export function useDuckDb(): {
 
   const query = async <T = unknown>(sql: string): Promise<T[]> => {
     if (!db) throw new Error("DuckDB not yet initialised");
-    const conn = await db.connect();
+    const conn: any = await db.connect();
     try {
       const result = await conn.query(sql);
       return result.toArray() as unknown as T[];

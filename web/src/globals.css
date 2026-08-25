@@ -1,8 +1,9 @@
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+/* gemini_hackathon global CSS — Tailwind v4 + per-source palette variables.
+   Tailwind v4 uses @import "tailwindcss" once, then @theme. */
 
-:root {
+@import "tailwindcss";
+
+@theme {
   --color-primary: #00733B;
   --color-secondary: #0E2D5C;
   --color-accent: #F7B500;

@@ -5,7 +5,7 @@ import { CopilotKit } from "@copilotkit/react-core";
 import { BritainIslesMap } from "~/components/map/BritainIslesMap";
 import { AGUIChat } from "~/components/chat/AGUIChat";
 import { SourcePaletteProvider } from "~/components/themes/SourcePaletteProvider";
-import "~/app/globals.css";
+import "../globals.css";
 
 const CONVEX_URL =
   (import.meta.env.VITE_CONVEX_URL as string) ?? "http://localhost:3210";

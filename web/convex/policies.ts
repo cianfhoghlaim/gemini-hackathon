@@ -3,17 +3,17 @@ import { mutation, query } from "./_generated/server";
 
 export const listPolicies = query({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx: any) => {
     return await ctx.db.query("policies").collect();
   },
 });
 
 export const getPolicy = query({
   args: { sourceKey: v.string() },
-  handler: async (ctx, { sourceKey }) => {
+  handler: async (ctx: any, {sourceKey}: any) => {
     return await ctx.db
       .query("policies")
-      .withIndex("by_source_key", (q) => q.eq("sourceKey", sourceKey))
+      .withIndex("by_source_key", (q: any) => q.eq("sourceKey", sourceKey))
       .collect();
   },
 });
@@ -26,10 +26,10 @@ export const upsertPolicy = mutation({
     lastUpdated: v.optional(v.string()),
     pdfPath: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx: any, args: any) => {
     const existing = await ctx.db
       .query("policies")
-      .withIndex("by_source_key", (q) =>
+      .withIndex("by_source_key", (q: any) =>
         q.eq("sourceKey", args.sourceKey).eq("policyUrl", args.policyUrl),
       )
       .first();

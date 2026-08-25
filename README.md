@@ -104,26 +104,34 @@ These land now so the certificate substrate is additive, not a schema migration.
 ## Quick Start
 
 ```bash
-# 1. Install + run the BAML generator
-uv sync
-uv run baml-cli generate
+# 1. Verify the Python package offline
+uv run python scripts/smoke_test.py
+# → 11/11 steps green
 
-# 2. Run the DLT pipelines (downloads 134 LC PDFs + 5 safeguarding policies)
+# 2. Generate BAML clients + run BAML smoke tests
+uv run baml-cli generate
+uv run baml-cli test
+
+# 3. Boot the Python backend on a free port, hit /api/health, kill it
+uv run python scripts/backend_smoke.py
+# → /api/health + /api/themes + /api/models all green
+
+# 4. Run the Gemini-vs-Gemma4 comparison harness (writes to DuckDB)
+uv run python scripts/compare_demo.py
+# → 3 models compared, RAGAS score 1.0, DuckDB row written
+
+# 5. Run the DLT pipelines (downloads 134 LC PDFs + 5 safeguarding policies)
 uv run python -m dlt_pipelines.official_doc_fetcher
 uv run python -m dlt_pipelines.safeguarding_fetcher
 
-# 3. Verify theming
-uv run python -c "from gemini_hackathon import list_all_palettes; print(len(list_all_palettes()))"
-# → 15 (7 jurisdictions + 3 boards + 5 safeguarding)
-
-# 4. Run the Gemini-vs-Gemma4 comparison harness
-uv run gemini-hackathon compare --pdf /tmp/lc_chem_2024.pdf
-
-# 5. Frontend (separate package)
+# 6. Frontend (separate package — see docs/DEV_DEPLOY.md for the full guide)
 cd web
 bun install
-bun run dev
+bun run dev   # Vite on :3000
 ```
+
+The 4 quick commands (smoke + backend:test + compare:demo + web dev) live in `mise.toml` — `mise run smoke && mise run backend:test && mise run compare:demo && cd web && bun run dev`.
+
 
 ## Architecture
 

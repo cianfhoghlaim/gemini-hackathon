@@ -14,12 +14,12 @@ export const listSubjects = query({
     sourceKey: v.optional(v.string()),
     jurisdiction: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx: any, args: any) => {
     let q = ctx.db.query("subjects");
     if (args.sourceKey !== undefined) {
-      q = q.withIndex("by_source_key", (qq) => qq.eq("sourceKey", args.sourceKey!));
+      q = q.withIndex("by_source_key", (qq: any) => qq.eq("sourceKey", args.sourceKey!));
     } else if (args.jurisdiction !== undefined) {
-      q = q.withIndex("by_jurisdiction", (qq) => qq.eq("jurisdiction", args.jurisdiction!));
+      q = q.withIndex("by_jurisdiction", (qq: any) => qq.eq("jurisdiction", args.jurisdiction!));
     }
     return await q.collect();
   },
@@ -35,10 +35,10 @@ export const upsertSubject = mutation({
     level: v.string(),
     syllabusUrl: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx: any, args: any) => {
     const existing = await ctx.db
       .query("subjects")
-      .withIndex("by_subject_slug", (q) =>
+      .withIndex("by_subject_slug", (q: any) =>
         q.eq("sourceKey", args.sourceKey).eq("subjectSlug", args.subjectSlug),
       )
       .first();
@@ -63,12 +63,12 @@ export const seedSubjectsFromDLT = mutation({
       }),
     ),
   },
-  handler: async (ctx, { sourceKey, jurisdiction, subjects }) => {
+  handler: async (ctx: any, { sourceKey, jurisdiction, subjects }: any) => {
     let n = 0;
     for (const s of subjects) {
       const existing = await ctx.db
         .query("subjects")
-        .withIndex("by_subject_slug", (q) =>
+        .withIndex("by_subject_slug", (q: any) =>
           q.eq("sourceKey", sourceKey).eq("subjectSlug", s.slug),
         )
         .first();
