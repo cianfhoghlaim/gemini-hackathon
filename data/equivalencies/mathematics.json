@@ -1,0 +1,85 @@
+{
+  "subject": "Mathematics",
+  "source_jurisdiction": "Ireland (NCCA LC)",
+  "subjects": [
+    "Ireland", "England (AQA)", "England (OCR)", "England (Pearson)",
+    "Scotland", "Wales", "Northern Ireland", "Jersey", "Guernsey", "Isle of Man"
+  ],
+  "rows": [
+    {
+      "sourceTopic": "Algebra & Functions",
+      "equivalents": {
+        "Ireland": "Algebra & Functions",
+        "England (AQA)": "Algebra and functions",
+        "England (OCR)": "Algebra",
+        "England (Pearson)": "Pure Mathematics 1 — Algebra",
+        "Scotland": "Expressions and Functions",
+        "Wales": "Algebra and Functions",
+        "Northern Ireland": "Algebra",
+        "Jersey": "GCSE Mathematics (Edexcel International)",
+        "Guernsey": "GCSE Mathematics",
+        "Isle of Man": "GCSE Mathematics (Edexcel International)"
+      }
+    },
+    {
+      "sourceTopic": "Complex Numbers",
+      "equivalents": {
+        "Ireland": "Complex Numbers",
+        "England (AQA)": "Complex numbers (A-Level Further)",
+        "England (OCR)": "Complex numbers",
+        "England (Pearson)": "Pure 2 — Complex numbers",
+        "Scotland": "Complex numbers (AH)",
+        "Wales": "Complex numbers",
+        "Northern Ireland": "Complex numbers (A2)",
+        "Jersey": "A-Level Further Maths",
+        "Guernsey": "A-Level Further Maths",
+        "Isle of Man": "A-Level Further Maths"
+      }
+    },
+    {
+      "sourceTopic": "Calculus (Differentiation & Integration)",
+      "equivalents": {
+        "Ireland": "Differentiation & Integration",
+        "England (AQA)": "Calculus",
+        "England (OCR)": "Calculus",
+        "England (Pearson)": "Pure 2 — Calculus",
+        "Scotland": "Differentiation & Integration",
+        "Wales": "Calculus",
+        "Northern Ireland": "Calculus",
+        "Jersey": "Calculus",
+        "Guernsey": "Calculus",
+        "Isle of Man": "Calculus"
+      }
+    },
+    {
+      "sourceTopic": "Mechanics (Forces, Motion, Momentum)",
+      "equivalents": {
+        "Ireland": "Forces & Motion",
+        "England (AQA)": "Mechanics",
+        "England (OCR)": "Mechanics",
+        "England (Pearson)": "Applied 1 — Mechanics",
+        "Scotland": "Mechanics",
+        "Wales": "Mechanics",
+        "Northern Ireland": "Mechanics",
+        "Jersey": "Mechanics",
+        "Guernsey": "Mechanics",
+        "Isle of Man": "Mechanics"
+      }
+    },
+    {
+      "sourceTopic": "Statistics & Probability",
+      "equivalents": {
+        "Ireland": "Probability & Statistics",
+        "England (AQA)": "Statistics",
+        "England (OCR)": "Statistics",
+        "England (Pearson)": "Applied 1 — Statistics",
+        "Scotland": "Statistics",
+        "Wales": "Statistics",
+        "Northern Ireland": "Statistics",
+        "Jersey": "Statistics",
+        "Guernsey": "Statistics",
+        "Isle of Man": "Statistics"
+      }
+    }
+  ]
+}

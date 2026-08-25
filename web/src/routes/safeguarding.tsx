@@ -1,59 +1,80 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useLoaderData } from "@tanstack/react-router";
 import { usePalette } from "~/components/themes/SourcePaletteProvider";
 
-const POLICY_NAMES: Record<string, string> = {
-  "gov.ie/education": "DEIS Plan 2017 + Well-Being Policy Statement",
-  "gov.uk/dfe": "Keeping Children Safe in Education (KCSiE) 2026",
-  "education.gov.scot": "Included, Engaged and Involved",
-  "gov.wales/education": "Keeping Learners Safe",
-  "ccea.org.uk/safeguarding": "Safeguarding and Child Protection",
-};
+interface SafeguardingEntry {
+  sourceKey: string;
+  sourceName: string;
+  policyScope: string;
+}
+
+const ENTRIES: SafeguardingEntry[] = [
+  { sourceKey: "gov.ie/education",         sourceName: "Ireland Dept of Education",   policyScope: "DEIS Plan 2017 + Well-Being Policy Statement" },
+  { sourceKey: "gov.uk/dfe",               sourceName: "UK Dept for Education",        policyScope: "Keeping Children Safe in Education (KCSiE) 2026" },
+  { sourceKey: "education.gov.scot",       sourceName: "Scotland Education",          policyScope: "Included, Engaged and Involved" },
+  { sourceKey: "gov.wales/education",      sourceName: "Wales Education",             policyScope: "Keeping Learners Safe" },
+  { sourceKey: "ccea.org.uk/safeguarding", sourceName: "CCEA Safeguarding (NI)",       policyScope: "Safeguarding and Child Protection" },
+];
 
 export const Route = createFileRoute("/safeguarding")({
+  loader: () => ENTRIES,
   component: SafeguardingPage,
 });
 
 function SafeguardingPage() {
+  const entries = useLoaderData({ from: "/safeguarding" }) as SafeguardingEntry[];
   const { current } = usePalette();
-  if (!current) return null;
-  const isSafeguarding = current.policyScope !== undefined;
-  const policyName =
-    POLICY_NAMES[current.sourceKey] ??
-    "Adopt the active palette to view safeguarding context.";
+  const isSafeguarding = current?.sourceKey?.includes("/") ?? false;
+
   return (
-    <div className="max-w-3xl">
-      <h2 className="text-3xl font-[var(--font-heading)] mb-2">
-        Safeguarding context
-      </h2>
-      <p className="text-sm text-[var(--color-secondary)]/70 mb-6">
-        {current.sourceName}
-        {current.policyScope ? ` - ${current.policyScope}` : ""}
-      </p>
-      {isSafeguarding ? (
-        <article
-          className="prose p-6 rounded-lg"
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <header>
+        <h2 className="text-3xl font-[var(--font-heading)] text-[var(--color-primary)]">
+          Safeguarding policy context
+        </h2>
+        <p className="mt-2 text-sm text-[var(--color-text)]/70">
+          Per-source child-protection policy scope. Click a safeguarding
+          palette (any palette button with a "/" in its name) to see the
+          active policy rendered against the active source.
+        </p>
+      </header>
+
+      {!isSafeguarding && (
+        <div
+          className="rounded border p-4 text-sm"
           style={{
-            borderLeft: `4px solid var(--color-primary)`,
+            borderColor: "var(--color-accent)",
             background: "var(--color-background)",
           }}
         >
-          <h3 className="text-xl font-[var(--font-heading)] mb-2">
-            {policyName}
-          </h3>
-          <p className="text-sm">
-            The active palette reflects this safeguarding body's brand colours,
-            typography, and policy scope. Educational content presented in this
-            jurisdiction should be filtered against this policy context.
-          </p>
-        </article>
-      ) : (
-        <p>
           Switch to a safeguarding palette (gov.ie/education, gov.uk/dfe,
-          education.gov.scot, gov.wales/education, or ccea.org.uk/safeguarding)
-          via the buttons on the home page to view applied safeguarding
-          context.
-        </p>
+          education.gov.scot, gov.wales/education, ccea.org.uk/safeguarding)
+          to see applied policy.
+        </div>
       )}
+
+      <section className="grid grid-cols-1 gap-3">
+        {entries.map((e) => (
+          <article
+            key={e.sourceKey}
+            className="rounded border p-4"
+            style={{
+              borderLeft: `4px solid ${current?.sourceKey === e.sourceKey ? "var(--color-primary)" : "var(--color-secondary)/30"}`,
+              background: "var(--color-background)",
+            }}
+          >
+            <header className="flex items-baseline justify-between">
+              <h3 className="font-[var(--font-heading)] text-lg">{e.sourceName}</h3>
+              <code className="text-xs text-[var(--color-secondary)]/60">{e.sourceKey}</code>
+            </header>
+            <p className="mt-2 text-sm">{e.policyScope}</p>
+            {current?.sourceKey === e.sourceKey && (
+              <p className="mt-2 text-xs italic text-[var(--color-primary)]">
+                ↑ Active palette
+              </p>
+            )}
+          </article>
+        ))}
+      </section>
     </div>
   );
 }

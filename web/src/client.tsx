@@ -1,8 +1,9 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";
-import { router } from "./router";
-import "../components/SourcePaletteProvider";
+import { getRouter } from "./router";
+
+const router = getRouter();
 
 const rootElement = document.getElementById("root");
 if (!rootElement) throw new Error("No #root element");
