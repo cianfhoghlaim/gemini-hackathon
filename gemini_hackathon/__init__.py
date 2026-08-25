@@ -4,6 +4,11 @@ Public API:
     theming: palette loading + per-source palette extraction (BAML stub)
     models:  registry of every model the project routes through
     call_llm: dual-profile LiteLLM router with model-exclusion guard
+    ocr:     capability-dispatched OCR/VLM pipeline (Phase 2)
+    assets:  generative asset pipeline (Phase 8)
+    compare: Gemini-vs-Gemma comparison harness (Phase 4)
+    observability: structlog + Langfuse + MLflow port (Phase 10)
+    backend: stdlib HTTP server exposing /api/chat/completions + /api/themes
 """
 
 from .theming import (

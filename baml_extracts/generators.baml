@@ -12,7 +12,7 @@
 generator python {
   output_type "python/pydantic"
   output_dir  "../baml_client"
-  version     "0.223.0"
+  version     "0.222.0"
   // version pinned via pyproject.toml (baml-py>=0.223.0,<0.224.0)
   // client_type_handler baml_client.runtime_types.Runtime
 }
@@ -20,6 +20,6 @@ generator python {
 generator typescript {
   output_type "typescript"
   output_dir  "../web/baml_client"
-  version     "0.223.0"
+  version     "0.222.0"
   // emitted as a self-contained ESM package importable from web/apps/*
 }

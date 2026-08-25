@@ -24,7 +24,7 @@ function ExtractAssetPrompt(
   learning_outcome_text: string,
   palette_json: string
 ) -> AssetPrompt {
-  client Gemini
+  client Vertex
   prompt #"
     You are an art director for the BIEP Hackathon.
 

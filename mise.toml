@@ -114,6 +114,22 @@ description = "baml-cli test (extraction smoke tests)"
 depends = ["baml:generate"]
 run = "uv run baml-cli test"
 
+[tasks.smoke]
+description = "Canonical E2E smoke test - every feature path (no network)"
+run = "python scripts/smoke_test.py"
+
+[tasks."smoke:quick"]
+description = "Quick E2E smoke - skips the comparison-harness DuckDB write"
+run = "python scripts/smoke_test.py --quick"
+
+[tasks."smoke:verbose"]
+description = "Verbose E2E smoke - prints every detail"
+run = "python scripts/smoke_test.py --verbose"
+
+[tasks."compare:demo"]
+description = "Run the Gemini-vs-Gemma4 comparison harness on a sample PDF"
+run = "python scripts/compare_demo.py"
+
 [tasks."baml:coverage"]
 description = "baml-cli test --coverage (per-function pass-rate)"
 depends = ["baml:generate"]
@@ -129,6 +145,20 @@ run = "uv run baml-cli lint"
 description = "Launch the gemini-hackathon CLI"
 depends = ["baml:generate"]
 run = "uv run python -m gemini_hackathon.cli"
+
+[tasks.backend]
+description = "Start the Python backend on port 8000 (OpenAI-compatible /api/chat/completions)"
+depends = ["baml:generate"]
+run = "uv run python -m gemini_hackathon.backend"
+
+[tasks."backend:test"]
+description = "Boot the Python backend on a free port, hit /api/health + /api/themes + /api/models, kill it"
+depends = ["baml:generate"]
+run = "uv run python scripts/backend_smoke.py"
+
+[tasks.web]
+description = "Start the TanStack Start web surface (port 3000)"
+run = "cd web && bun run dev"
 
 [tasks.shell]
 description = "Drop into a uv-managed Python REPL"

@@ -259,10 +259,15 @@ def _write_to_duckdb(rows: list[ComparisonRow], duckdb_path: str) -> None:
                 captured_at TIMESTAMP
             )
         """)
+        cols = (
+            "pdf_sha256, pdf_path, prompt_template, model_key, model_alias, "
+            "backend, profile, family, role, content, latency_ms, tokens_in, "
+            "tokens_out, cost_usd, ragas_score, ragas_breakdown, captured_at"
+        )
+        placeholders = ",".join(["?"] * 17)
         for r in rows:
             con.execute(
-                "INSERT INTO model_comparisons VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
-                "?, ?, ?, ?, ?, ?)",
+                f"INSERT INTO model_comparisons ({cols}) VALUES ({placeholders})",
                 [
                     r.pdf_sha256, r.pdf_path, r.prompt_template, r.model_key,
                     r.model_alias, r.backend, r.profile, r.family, r.role,
