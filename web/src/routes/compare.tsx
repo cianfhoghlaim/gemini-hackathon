@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ComparisonLeaderboard } from "~/components/comparison/Leaderboard";
-import { DocumentExplorer } from "~/components/comparison/DocumentExplorer";
+import { ComparisonLeaderboard } from "../components/comparison/Leaderboard";
+import { DocumentExplorer } from "../components/comparison/DocumentExplorer";
 
 export const Route = createFileRoute("/compare")({
   component: ComparePage,

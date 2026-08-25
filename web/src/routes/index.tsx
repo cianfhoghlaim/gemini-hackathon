@@ -1,144 +1,174 @@
+/**
+ * The home page — per-subnation landing for the active session.
+ *
+ * Behaviour:
+ *   - For an unauthenticated user: shows the onboarding picker
+ *     ("Where are you studying or working?" — Ireland / England / More)
+ *   - For an onboarded user: shows their subnation's home (role-conditional
+ *     quick actions + the archipelagic unity ribbon)
+ *   - The map is now an "onboarding" affordance, not a swap.
+ */
+
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BritainIslesMap } from "~/components/map/BritainIslesMap";
-import { usePalette } from "~/components/themes/SourcePaletteProvider";
+import { useSession } from "../components/session/SessionContext";
+import { OnboardingPicker } from "../components/onboarding/OnboardingPicker";
+import { ArchipelagicRibbon } from "../components/session/ArchipelagicRibbon";
+import { useEffect, useState } from "react";
+import { getSession, saveSession, defaultSession, type SessionState } from "./_session";
+import type { ActiveSubnation, Role, Cycle } from "../types/session";
+import { SUBNATIONS, DEFAULT_SUBNATIONS, EXPANSION_SUBNATIONS, AVAILABLE_SUBNATIONS, SUBJECT_CATALOGUE } from "../types/session";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
 function HomePage() {
-  const { palettes, current, setPalette } = usePalette();
+  const { session, setSession } = useSession();
+  const [hydrated, setHydrated] = useState(false);
 
-  // Quick capability banner — visible to judges at first glance.
-  const tierRows = [
-    { tier: "1 (primary)",  model: "gemini-3.5-flash",       backend: "Vertex AI / AI Studio" },
-    { tier: "2 (fallback)", model: "gemma-4-26b-a4b",        backend: "Unsloth Studio :8888" },
-  ];
+  useEffect(() => {
+    if (!session) {
+      const existing = getSession();
+      if (existing) setSession(existing);
+    }
+    setHydrated(true);
+  }, [session, setSession]);
+
+  if (!hydrated) {
+    return (
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="text-sm text-[var(--color-text)]/60">Loading session…</div>
+      </div>
+    );
+  }
+
+  // Unauthenticated: show the onboarding picker.
+  if (!session || !session.onboarded) {
+    return <OnboardingPicker onComplete={(s) => { saveSession(s); setSession(s); }} />;
+  }
+
+  return <SubnationHome session={session} />;
+}
+
+function SubnationHome({ session }: { session: SessionState }) {
+  const sub = SUBNATIONS.find((s) => s.code === session.subnation) ?? SUBNATIONS[0];
+  const cycleSubjects = (SUBJECT_CATALOGUE[session.subnation] ?? []).filter(
+    (s) => !session.cycle || s.cycle === session.cycle,
+  );
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-8">
-      {/* Hero */}
-      <header className="text-center">
-        <h2 className="text-4xl font-[var(--font-heading)] text-[var(--color-primary)]">
-          Per-Source Theming Across the British Isles
-        </h2>
-        <p className="mt-4 text-base text-[var(--color-text)]/70 max-w-2xl mx-auto">
-          {current?.sourceName ?? "Loading palettes..."} — every official source,
-          one adaptive theme.
-        </p>
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
+      {/* The archipelagic unity ribbon — one row, one palette, all 8 nations */}
+      <ArchipelagicRibbon activeSubnation={sub.code} />
+
+      {/* The user's home subnation header */}
+      <header className="flex items-baseline gap-4">
+        <h1 className="text-4xl font-[var(--font-heading)] text-[var(--color-primary)]">
+          {sub.flag} {sub.name}
+        </h1>
+        <span className="text-sm text-[var(--color-text)]/60">
+          {sub.awardingBody} · {sub.awardingBodyShort}
+        </span>
+        <Link
+          to="/archipelago"
+          className="ml-auto text-sm text-[var(--color-secondary)] underline"
+        >
+          See all 8 nations →
+        </Link>
       </header>
 
-      {/* Model policy banner — judges see this first */}
-      <section
-        className="rounded-lg border p-4"
-        style={{
-          borderColor: "var(--color-primary)",
-          background: "var(--color-background)",
-        }}
-      >
-        <h3 className="text-sm uppercase tracking-wide text-[var(--color-secondary)]">
-          Active model policy (hackathon profile)
-        </h3>
-        <table className="mt-2 w-full text-sm">
-          <thead>
-            <tr className="text-left">
-              <th className="py-1">Tier</th>
-              <th className="py-1">Model</th>
-              <th className="py-1">Backend</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tierRows.map((row) => (
-              <tr key={row.tier} className="border-t border-[var(--color-secondary)]/10">
-                <td className="py-2 font-mono">{row.tier}</td>
-                <td className="py-2 font-mono">{row.model}</td>
-                <td className="py-2">{row.backend}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="mt-2 text-xs text-[var(--color-secondary)]/60">
-          Excluded by policy: Cloudflare Workers AI (@cf/*) and Qwen3-coder-*.
-          Dev profile adds minimax-m3 + the wider Unsloth Studio text set.
-        </p>
+      {/* Role-conditional quick actions */}
+      <section className="grid grid-cols-2 gap-3">
+        {session.role === "student" && (
+          <>
+            <QuickAction to="/subjects" label="My subjects" sub={`${cycleSubjects.length} in ${sub.name}`} />
+            <QuickAction to="/agents" label="Ask the agent" sub="Composes your subnation + role + cycle" />
+            <QuickAction to="/safeguarding" label="Safeguarding in effect" sub={sub.awardingBody} />
+            <QuickAction to="/find-resources" label="Find resources that help" sub="Cross-national discovery" />
+          </>
+        )}
+        {session.role === "parent" && (
+          <>
+            <QuickAction to="/subjects" label="What your child is studying" sub={`${cycleSubjects.length} subjects`} />
+            <QuickAction to="/safeguarding" label="Safeguarding in effect" sub={sub.safeguardingSourceKey} />
+            <QuickAction to="/find-resources" label="Find resources across nations" sub="Cross-national discovery" />
+            <QuickAction to="/agents" label="Ask the agent" sub="Curriculum explainer" />
+          </>
+        )}
+        {session.role === "teacher" && (
+          <>
+            <QuickAction to="/agents" label="Mark a paper" sub="Per-question mark breakdown" />
+            <QuickAction to="/find-resources" label="Find resources that help" sub="Cross-national" />
+            <QuickAction to="/subjects" label="Curriculum changes" sub="Per-subnation change sensor" />
+            <QuickAction to="/safeguarding" label="Safeguarding in effect" sub={sub.safeguardingSourceKey} />
+          </>
+        )}
       </section>
 
-      {/* Map + sidebar */}
-      <section className="grid grid-cols-2 gap-6">
-        <div>
-          <h3 className="text-2xl font-[var(--font-heading)] mb-3">
-            British Isles — click a region
-          </h3>
-          <div className="h-96 rounded-lg overflow-hidden border border-[var(--color-primary)]/30">
-            <BritainIslesMap />
-          </div>
-        </div>
-        <div>
-          <h3 className="text-2xl font-[var(--font-heading)] mb-3">
-            Or pick from {palettes.length} palettes
-          </h3>
-          <div className="flex flex-wrap gap-2 max-h-96 overflow-y-auto">
-            {palettes.map((p) => (
-              <button
-                key={p.sourceKey}
-                type="button"
-                onClick={() => setPalette(p.sourceKey)}
-                className="px-3 py-1.5 text-sm rounded-full border transition"
+      {/* The active subjects for the home subnation */}
+      <section>
+        <h2 className="text-2xl font-[var(--font-heading)] mb-3">
+          {sub.name} subjects
+        </h2>
+        {cycleSubjects.length === 0 ? (
+          <p className="text-sm text-[var(--color-text)]/60">
+            No subjects found for {sub.name} in this cycle yet.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {cycleSubjects.map((s) => (
+              <Link
+                key={`${s.sourceKey}-${s.cycle}-${s.name}`}
+                to="/find-resources"
+                search={{ subject: s.name }}
+                className="block p-3 rounded border hover:shadow-md transition"
                 style={{
-                  background:
-                    current?.sourceKey === p.sourceKey
-                      ? p.palette.primary
-                      : "var(--color-background)",
-                  color:
-                    current?.sourceKey === p.sourceKey
-                      ? p.palette.background
-                      : p.palette.primary,
-                  borderColor: p.palette.primary,
+                  borderColor: "var(--color-secondary)/20",
+                  background: "var(--color-background)",
                 }}
-                title={`${p.sourceName} — ${p.jurisdiction}`}
               >
-                {p.flag ?? ""} {p.sourceName.split(" - ")[0]}
-              </button>
+                <h3 className="font-[var(--font-heading)] text-lg">{s.name}</h3>
+                <p className="text-xs text-[var(--color-text)]/60">
+                  {s.cycle.replace(/_/g, " ")}
+                  {s.examBoard ? ` · ${s.examBoard}` : ""}
+                </p>
+              </Link>
             ))}
           </div>
-        </div>
+        )}
       </section>
 
-      {/* Feature surface — links to the rest */}
-      <section className="grid grid-cols-4 gap-4">
-        <FeatureLink to="/subjects"     title="Subjects"     desc="Per-source subject catalogue (from DLT)" />
-        <FeatureLink to="/safeguarding" title="Safeguarding" desc="Child protection context per jurisdiction" />
-        <FeatureLink to="/equivalency"  title="Equivalencies" desc="Cross-jurisdiction topic mapping" />
-        <FeatureLink to="/compare"      title="Comparisons"   desc="Gemini vs Gemma 4 leaderboard (DuckDB-WASM)" />
-      </section>
-
-      {/* Quick-start */}
-      <section className="rounded border border-[var(--color-secondary)]/20 p-4 text-sm">
-        <h3 className="font-[var(--font-heading)] mb-2">Quick-start (offline)</h3>
-        <pre className="bg-black/5 rounded p-3 text-xs overflow-x-auto">
-{`# From the repo root
-mise run smoke          # 11-step offline E2E
-mise run backend:test   # Python backend /api/health probe
-mise run compare:demo   # Gemini vs Gemma 4 harness -> DuckDB
-cd web && bun run dev    # Vite on :3000 (this window)`}
-        </pre>
-      </section>
+      {/* Change home link */}
+      <p className="text-xs text-[var(--color-text)]/50 text-center pt-4">
+        Studying or working somewhere else?{" "}
+        <button
+          onClick={() => {
+            if (typeof window !== "undefined") {
+              window.localStorage.removeItem("gh.session.v1");
+              window.location.reload();
+            }
+          }}
+          className="underline"
+        >
+          Change home
+        </button>
+      </p>
     </div>
   );
 }
 
-function FeatureLink({ to, title, desc }: { to: string; title: string; desc: string }) {
+function QuickAction({ to, label, sub }: { to: string; label: string; sub: string }) {
   return (
     <Link
       to={to}
-      className="rounded border p-3 hover:shadow-md transition"
+      className="block p-4 rounded border hover:shadow-md transition"
       style={{
         borderColor: "var(--color-secondary)/20",
         background: "var(--color-background)",
       }}
     >
-      <h4 className="font-[var(--font-heading)] text-lg">{title}</h4>
-      <p className="text-xs text-[var(--color-text)]/60 mt-1">{desc}</p>
+      <h3 className="font-[var(--font-heading)] text-lg">{label}</h3>
+      <p className="text-xs text-[var(--color-text)]/60 mt-1">{sub}</p>
     </Link>
   );
 }

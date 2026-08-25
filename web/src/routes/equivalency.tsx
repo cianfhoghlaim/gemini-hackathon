@@ -1,7 +1,7 @@
 import { createFileRoute, useLoaderData } from "@tanstack/react-router";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { usePalette } from "~/components/themes/SourcePaletteProvider";
+import { usePalette } from "../components/themes/SourcePaletteProvider";
 
 interface EquivalencyRow {
   sourceTopic: string;

@@ -231,7 +231,73 @@ def _now_epoch() -> int:
     return int(time.time())
 
 
-def main(argv: list[str] | None = None) -> int:
+# ---------------------------------------------------------------------------
+# Session-aware routes
+# ---------------------------------------------------------------------------
+# These are the routes the web app's /find-resources + /agents pages
+# call. They bypass the generic LLM router and dispatch directly to the
+# ADK agent's tool implementations — the in-process tools (lookup,
+# retrieve, find_similar, mark, retrieve_safeguarding) are
+# deterministic and don't need a real LLM call in dev.
+
+
+class _SessionToolHandler(BaseHTTPRequestHandler):
+    """Routes that call ADK tools directly (no LLM round-trip in dev)."""
+
+    server_version = "gemini_hackathon/0.1"
+
+    def log_message(self, format, *args):  # noqa: A002
+        logger.info(format, *args)
+
+    def do_OPTIONS(self):  # noqa: N802
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Session-Id")
+        self.end_headers()
+
+    def do_POST(self):  # noqa: N802
+        if self.path == "/api/agents/find-resources":
+            self._handle_find_resources()
+        else:
+            self._write_json(404, {"error": "not_found", "path": self.path})
+
+    def _handle_find_resources(self):
+        from .agents.tools import find_similar_resources
+
+        body = self._read_body()
+        if body is None:
+            return
+
+        active_subnation = body.get("active_subnation", "ireland")
+        subject_id = body.get("subject_id", "ncca_maths_lc")
+        topic = body.get("topic", "")
+        k = int(body.get("k", 8))
+
+        if not topic:
+            self._write_json(400, {"error": "topic_required"})
+            return
+
+        results = find_similar_resources(
+            active_subnation=active_subnation,
+            subject_id=subject_id,
+            topic=topic,
+            k=k,
+        )
+        self._write_json(200, {
+            "results": results,
+            "active_subnation": active_subnation,
+            "topic": topic,
+            "count": len(results),
+        })
+
+
+# ---------------------------------------------------------------------------
+# Route registration — main + session tool handler
+# ---------------------------------------------------------------------------
+
+
+def main(argv=None):
     parser = argparse.ArgumentParser(prog="gemini_hackathon.backend")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--host", default="127.0.0.1")
@@ -243,8 +309,6 @@ def main(argv: list[str] | None = None) -> int:
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
 
-    # Pre-import the gemini_hackathon package so the registry + router are
-    # ready before any request comes in.
     from . import list_all_palettes, MODEL_REGISTRY
     profile = _active_profile()
     palettes = list_all_palettes()
@@ -254,7 +318,26 @@ def main(argv: list[str] | None = None) -> int:
         profile, len(palettes), len(entries),
     )
 
-    httpd = ThreadingHTTPServer((args.host, args.port), _BackendHandler)
+    # Compose two handlers behind one ThreadingHTTPServer: the main
+    # backend handler (for /api/themes, /api/chat/completions, ...) and
+    # the session tool handler (for /api/agents/*).
+    class _RoutingHandler(_BackendHandler, _SessionToolHandler):
+        def do_POST(self):  # noqa: N802
+            if self.path.startswith("/api/agents/"):
+                _SessionToolHandler.do_POST(self)
+            else:
+                _BackendHandler.do_POST(self)
+        def do_GET(self):  # noqa: N802
+            _BackendHandler.do_GET(self)
+        def do_OPTIONS(self):  # noqa: N802
+            # CORS preflight — both handlers do the same thing.
+            self.send_response(204)
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Session-Id")
+            self.end_headers()
+
+    httpd = ThreadingHTTPServer((args.host, args.port), _RoutingHandler)
     logger.info("backend.listening host=%s port=%d", args.host, args.port)
     try:
         httpd.serve_forever()

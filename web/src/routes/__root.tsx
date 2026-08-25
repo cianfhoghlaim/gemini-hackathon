@@ -1,10 +1,19 @@
-import { type ReactNode } from "react";
+/**
+ * Root layout for the gemini_hackathon public demo.
+ *
+ * Wraps every page with:
+ *   - SourcePaletteProvider: resolves the per-source palette (the visual layer)
+ *   - ConvexProvider: real-time database for runtime data
+ *   - SessionProvider: per-tab user identity (subnation + role + cycle) — the
+ *     load-bearing piece for per-route content scoping
+ *   - CopilotKit: AG-UI streaming chat
+ */
+
 import { Outlet, Link, createRootRoute } from "@tanstack/react-router";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { CopilotKit } from "@copilotkit/react-core";
-import { BritainIslesMap } from "~/components/map/BritainIslesMap";
-import { AGUIChat } from "~/components/chat/AGUIChat";
-import { SourcePaletteProvider } from "~/components/themes/SourcePaletteProvider";
+import { SourcePaletteProvider } from "../components/themes/SourcePaletteProvider";
+import { SessionProvider } from "../components/session/SessionContext";
 import "../globals.css";
 
 const CONVEX_URL =
@@ -24,10 +33,10 @@ function RootComponent() {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>gemini_hackathon - Per-Source Theming Across the British Isles</title>
+        <title>gemini_hackathon — One platform for the British Isles</title>
         <meta
           name="description"
-          content="A theming + agentic system that adapts to the official source of every British-Isles jurisdiction and safeguarding body."
+          content="A theming + agentic platform for students, parents, and teachers in the British Isles."
         />
         <link
           rel="stylesheet"
@@ -36,34 +45,32 @@ function RootComponent() {
       </head>
       <body>
         <SourcePaletteProvider>
-          <ConvexProvider client={convex}>
-            <CopilotKit runtimeUrl={COPILOTKIT_RUNTIME_URL} agent="gemini_hackathon_root">
-              <div className="min-h-screen flex flex-col bg-[var(--color-background)] text-[var(--color-text)] font-[var(--font-body)]">
-                <header className="border-b border-[var(--color-secondary)]/20 px-6 py-4 flex items-center justify-between">
-                  <h1 className="text-2xl font-[var(--font-heading)] text-[var(--color-primary)]">
-                    gemini_hackathon
-                  </h1>
-                  <nav className="flex gap-4 text-sm">
-                    <Link to="/" className="hover:text-[var(--color-accent)]">Home</Link>
-                    <Link to="/subjects" className="hover:text-[var(--color-accent)]">Subjects</Link>
-                    <Link to="/safeguarding" className="hover:text-[var(--color-accent)]">Safeguarding</Link>
-                    <Link to="/equivalency" className="hover:text-[var(--color-accent)]">Equivalencies</Link>
-                  </nav>
-                </header>
-                <main className="flex-1 flex">
-                  <aside className="w-80 border-r border-[var(--color-secondary)]/20 p-4">
-                    <BritainIslesMap />
-                  </aside>
-                  <section className="flex-1 p-6">
+          <SessionProvider>
+            <ConvexProvider client={convex}>
+              <CopilotKit runtimeUrl={COPILOTKIT_RUNTIME_URL} agent="gemini_hackathon_agent">
+                <div className="min-h-screen flex flex-col bg-[var(--color-background)] text-[var(--color-text)] font-[var(--font-body)]">
+                  <header className="border-b border-[var(--color-secondary)]/20 px-6 py-4 flex items-center justify-between">
+                    <Link to="/" className="text-2xl font-[var(--font-heading)] text-[var(--color-primary)]">
+                      gemini_hackathon
+                    </Link>
+                    <nav className="flex gap-4 text-sm">
+                      <Link to="/subjects" className="hover:text-[var(--color-accent)]">Subjects</Link>
+                      <Link to="/safeguarding" className="hover:text-[var(--color-accent)]">Safeguarding</Link>
+                      <Link to="/find-resources" className="hover:text-[var(--color-accent)]">Find resources</Link>
+                      <Link to="/agents" className="hover:text-[var(--color-accent)]">Agent</Link>
+                      <Link to="/archipelago" className="hover:text-[var(--color-accent)]">Archipelago</Link>
+                    </nav>
+                  </header>
+                  <main className="flex-1">
                     <Outlet />
-                  </section>
-                  <aside className="w-96 border-l border-[var(--color-secondary)]/20 p-4">
-                    <AGUIChat />
-                  </aside>
-                </main>
-              </div>
-            </CopilotKit>
-          </ConvexProvider>
+                  </main>
+                  <footer className="border-t border-[var(--color-secondary)]/20 px-6 py-4 text-xs text-[var(--color-text)]/50 text-center">
+                    gemini_hackathon — Google ADK + Vertex AI (Gemini 3.5) + Gemma 4 via Unsloth Studio · 8 subnations · one platform
+                  </footer>
+                </div>
+              </CopilotKit>
+            </ConvexProvider>
+          </SessionProvider>
         </SourcePaletteProvider>
       </body>
     </html>

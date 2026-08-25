@@ -10,8 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AgentsRouteImport } from './routes/agents'
+import { Route as ArchipelagoRouteImport } from './routes/archipelago'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as EquivalencyRouteImport } from './routes/equivalency'
+import { Route as FindResourcesRouteImport } from './routes/find-resources'
 import { Route as SafeguardingRouteImport } from './routes/safeguarding'
 import { Route as SubjectsRouteImport } from './routes/subjects'
 import { Route as ApiCopilotkitRouteImport } from './routes/api/copilotkit'
@@ -23,6 +26,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AgentsRoute = AgentsRouteImport.update({
+  id: '/agents',
+  path: '/agents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ArchipelagoRoute = ArchipelagoRouteImport.update({
+  id: '/archipelago',
+  path: '/archipelago',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CompareRoute = CompareRouteImport.update({
   id: '/compare',
   path: '/compare',
@@ -31,6 +44,11 @@ const CompareRoute = CompareRouteImport.update({
 const EquivalencyRoute = EquivalencyRouteImport.update({
   id: '/equivalency',
   path: '/equivalency',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FindResourcesRoute = FindResourcesRouteImport.update({
+  id: '/find-resources',
+  path: '/find-resources',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SafeguardingRoute = SafeguardingRouteImport.update({
@@ -61,8 +79,11 @@ const ApiThemesRoute = ApiThemesRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agents': typeof AgentsRoute
+  '/archipelago': typeof ArchipelagoRoute
   '/compare': typeof CompareRoute
   '/equivalency': typeof EquivalencyRoute
+  '/find-resources': typeof FindResourcesRoute
   '/safeguarding': typeof SafeguardingRoute
   '/subjects': typeof SubjectsRoute
   '/api/copilotkit': typeof ApiCopilotkitRoute
@@ -71,8 +92,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/agents': typeof AgentsRoute
+  '/archipelago': typeof ArchipelagoRoute
   '/compare': typeof CompareRoute
   '/equivalency': typeof EquivalencyRoute
+  '/find-resources': typeof FindResourcesRoute
   '/safeguarding': typeof SafeguardingRoute
   '/subjects': typeof SubjectsRoute
   '/api/copilotkit': typeof ApiCopilotkitRoute
@@ -82,8 +106,11 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/agents': typeof AgentsRoute
+  '/archipelago': typeof ArchipelagoRoute
   '/compare': typeof CompareRoute
   '/equivalency': typeof EquivalencyRoute
+  '/find-resources': typeof FindResourcesRoute
   '/safeguarding': typeof SafeguardingRoute
   '/subjects': typeof SubjectsRoute
   '/api/copilotkit': typeof ApiCopilotkitRoute
@@ -94,8 +121,11 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/agents'
+    | '/archipelago'
     | '/compare'
     | '/equivalency'
+    | '/find-resources'
     | '/safeguarding'
     | '/subjects'
     | '/api/copilotkit'
@@ -104,8 +134,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/agents'
+    | '/archipelago'
     | '/compare'
     | '/equivalency'
+    | '/find-resources'
     | '/safeguarding'
     | '/subjects'
     | '/api/copilotkit'
@@ -114,8 +147,11 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/agents'
+    | '/archipelago'
     | '/compare'
     | '/equivalency'
+    | '/find-resources'
     | '/safeguarding'
     | '/subjects'
     | '/api/copilotkit'
@@ -125,8 +161,11 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AgentsRoute: typeof AgentsRoute
+  ArchipelagoRoute: typeof ArchipelagoRoute
   CompareRoute: typeof CompareRoute
   EquivalencyRoute: typeof EquivalencyRoute
+  FindResourcesRoute: typeof FindResourcesRoute
   SafeguardingRoute: typeof SafeguardingRoute
   SubjectsRoute: typeof SubjectsRoute
   ApiCopilotkitRoute: typeof ApiCopilotkitRoute
@@ -143,6 +182,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/agents': {
+      id: '/agents'
+      path: '/agents'
+      fullPath: '/agents'
+      preLoaderRoute: typeof AgentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/archipelago': {
+      id: '/archipelago'
+      path: '/archipelago'
+      fullPath: '/archipelago'
+      preLoaderRoute: typeof ArchipelagoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/compare': {
       id: '/compare'
       path: '/compare'
@@ -155,6 +208,13 @@ declare module '@tanstack/react-router' {
       path: '/equivalency'
       fullPath: '/equivalency'
       preLoaderRoute: typeof EquivalencyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/find-resources': {
+      id: '/find-resources'
+      path: '/find-resources'
+      fullPath: '/find-resources'
+      preLoaderRoute: typeof FindResourcesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/safeguarding': {
@@ -197,8 +257,11 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AgentsRoute: AgentsRoute,
+  ArchipelagoRoute: ArchipelagoRoute,
   CompareRoute: CompareRoute,
   EquivalencyRoute: EquivalencyRoute,
+  FindResourcesRoute: FindResourcesRoute,
   SafeguardingRoute: SafeguardingRoute,
   SubjectsRoute: SubjectsRoute,
   ApiCopilotkitRoute: ApiCopilotkitRoute,

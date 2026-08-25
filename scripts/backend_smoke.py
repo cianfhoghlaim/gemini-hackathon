@@ -34,17 +34,20 @@ def main() -> int:
         text=True,
     )
     try:
-        # Wait for boot.
+        # Wait for boot. The Python backend pre-imports the package on startup,
+        # which can take a few seconds when litellm + the registry are loaded.
         base = f"http://127.0.0.1:{port}"
-        for _ in range(30):
+        booted = False
+        for _ in range(60):
             try:
                 with urllib.request.urlopen(f"{base}/api/health", timeout=1) as r:
                     if r.status == 200:
+                        booted = True
                         break
             except Exception:
                 time.sleep(0.5)
-        else:
-            print("[FAIL] backend did not start in 15s")
+        if not booted:
+            print("[FAIL] backend did not start in 30s")
             return 1
 
         # Hit /api/health.
