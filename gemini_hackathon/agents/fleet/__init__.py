@@ -87,6 +87,89 @@ from .fleet_observability import (
     hash_prompt,
 )
 
+# ─────────────────────────────────────────────────────────────────────
+# TIER 1 lift shim (per the 2026-08-25-lift-fleet-to-t1-v1 change).
+# When the parent cianfhoghlaim-fleet package is installed, this
+# shim REPLACES the wholesale-copied symbols with the lifted TIER 1
+# implementation. The wholesale imports above remain in effect when
+# the parent package is NOT installed (e.g. for offline testing).
+# Mirrors the model-registry shim pattern
+# (2026-08-25-lift-model-registry-to-t1-v1).
+# ─────────────────────────────────────────────────────────────────────
+try:
+    from cianfhoghlaim.fleet import (  # noqa: F401
+        AGUIEvent as _TIER1_AGUIEvent,
+        AGUIEventType as _TIER1_AGUIEventType,
+        FleetAGUIBridge as _TIER1_FleetAGUIBridge,
+        FleetGateway as _TIER1_FleetGateway,
+        FleetIdentity as _TIER1_FleetIdentity,
+        FleetMemory as _TIER1_FleetMemory,
+        ModelArmor as _TIER1_ModelArmor,
+        Observability as _TIER1_Observability,
+        MCPCurriculumServer as _TIER1_MCPCurriculumServer,
+    )
+    # Replace the wholesale-copied symbols with the lifted TIER 1
+    AGUIEvent = _TIER1_AGUIEvent
+    AGUIEventType = _TIER1_AGUIEventType
+    FleetAGUIBridge = _TIER1_FleetAGUIBridge
+    FleetGateway = _TIER1_FleetGateway
+    FleetIdentity = _TIER1_FleetIdentity
+    FleetMemory = _TIER1_FleetMemory
+    ModelArmor = _TIER1_ModelArmor
+    Observability = _TIER1_Observability
+    MCPCurriculumServer = _TIER1_MCPCurriculumServer
+    _FLEET_TIER_1_LIFT_ACTIVE = True
+except ImportError:
+    # Parent package not installed; the wholesale copies above
+    # remain in effect.
+    _FLEET_TIER_1_LIFT_ACTIVE = False
+
+# ─────────────────────────────────────────────────────────────────────
+# TIER 1 lift shim (per the 2026-08-26-lift-observability-to-t1-v1).
+# Mirrors the 4 prior TIER 1 lift shims.
+# ─────────────────────────────────────────────────────────────────────
+try:
+    from cianfhoghlaim.observability import (  # noqa: F401
+        Observability as _TIER1_OBS_Observability,
+        TraceContext as _TIER1_OBS_TraceContext,
+        InvocationRecord as _TIER1_OBS_InvocationRecord,
+        configure_structlog as _TIER1_OBS_configure_structlog,
+        hash_prompt as _TIER1_OBS_hash_prompt,
+    )
+    # The wholesale observability symbols are REPLACED with the lifted
+    # TIER 1 symbols. The wholesale observability.py at
+    # gemini_hackathon/gemini_hackathon/observability.py is the
+    # standalone fallback.
+    Observability = _TIER1_OBS_Observability
+    TraceContext = _TIER1_OBS_TraceContext
+    InvocationRecord = _TIER1_OBS_InvocationRecord
+    configure_structlog = _TIER1_OBS_configure_structlog
+    hash_prompt = _TIER1_OBS_hash_prompt
+    _OBSERVABILITY_TIER_1_LIFT_ACTIVE = True
+except ImportError:
+    _OBSERVABILITY_TIER_1_LIFT_ACTIVE = False
+
+# ─────────────────────────────────────────────────────────────────────
+# TIER 1 lift shim (per the 2026-08-25-lift-agui-bridge-to-t1-v1).
+# Overrides the wholesale FleetAGUIBridge with the lifted
+# cianfhoghlaim.agui_bridge.FleetAGUIBridge when the parent
+# agui-bridge package is installed.
+# Note: this is a SECOND try/except nested under the fleet try/except
+# so the lift is layered: fleet first, then agui-bridge.
+# ─────────────────────────────────────────────────────────────────────
+try:
+    from cianfhoghlaim.agui_bridge import (  # noqa: F401
+        AGUIEvent as _TIER1_AGUI_AGUIEvent,
+        AGUIEventType as _TIER1_AGUI_AGUIEventType,
+        FleetAGUIBridge as _TIER1_AGUI_FleetAGUIBridge,
+    )
+    AGUIEvent = _TIER1_AGUI_AGUIEvent
+    AGUIEventType = _TIER1_AGUI_AGUIEventType
+    FleetAGUIBridge = _TIER1_AGUI_FleetAGUIBridge
+    _AGUI_BRIDGE_TIER_1_LIFT_ACTIVE = True
+except ImportError:
+    _AGUI_BRIDGE_TIER_1_LIFT_ACTIVE = False
+
 __all__ = [
     # Gateway
     "AGENT_NAMES",
@@ -142,4 +225,8 @@ __all__ = [
     "EquivalentTopicHit",
     "MCPCurriculumServer",
     "TopicLookup",
+    # TIER 1 lift markers (exposed for downstream consumers + tests)
+    "_FLEET_TIER_1_LIFT_ACTIVE",
+    "_AGUI_BRIDGE_TIER_1_LIFT_ACTIVE",
+    "_OBSERVABILITY_TIER_1_LIFT_ACTIVE",
 ]
