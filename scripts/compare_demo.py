@@ -22,10 +22,14 @@ sys.path.insert(0, str(REPO_ROOT))
 
 
 def main() -> int:
-    # Write a stub PDF.
-    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
-        f.write(b"%PDF-1.4\n%fake\n%%EOF\n")
-        pdf = f.name
+    # Use the canonical sample PDF if it exists, else write a stub.
+    sample_pdf = REPO_ROOT / "data" / "syllabi" / "sample_lc_maths_2024.pdf"
+    if sample_pdf.exists():
+        pdf = str(sample_pdf)
+    else:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
+            f.write(b"%PDF-1.4\n%fake\n%%EOF\n")
+            pdf = f.name
 
     # Stub call_llm so no network is needed.
     from gemini_hackathon import call_llm as call_llm_mod
@@ -82,7 +86,12 @@ def main() -> int:
             print(f"\nDuckDB file: {duckdb_path}")
     finally:
         call_llm_mod.call_llm = original_call_llm
-        os.unlink(pdf)
+        # Only unlink the temp PDF, not the canonical sample.
+        if pdf.startswith('/var/folders/') or pdf.startswith('/tmp/'):
+            try:
+                os.unlink(pdf)
+            except OSError:
+                pass
 
     return 0
 

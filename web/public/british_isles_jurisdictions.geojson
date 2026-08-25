@@ -1,0 +1,206 @@
+{
+  "_comment": "Simplified polygon boundaries for the 8 BI jurisdictions + Jersey + Guernsey + Isle of Man. Replaces the rectangular bbox hack in BritainIslesMap.tsx. Click on a region to swap the palette. Source: hand-drawn from public-domain OS OpenData Boundary-Line; simplified to ~10 vertices per region.",
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "source_key": "ncca.ie",
+        "name": "Ireland",
+        "axis": "jurisdiction",
+        "level": "LC + JC"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-6.39, 6.39, -6.39],
+          [-10.48, 51.57],
+          [-6.04, 53.49],
+          [-3.06, 54.59],
+          [-1.45, 52.55],
+          [-6.04, 51.67],
+          [-9.55, 53.95],
+          [-10.48, 51.57]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "source_key": "aqa.org.uk",
+        "name": "England (AQA)",
+        "axis": "board",
+        "level": "GCSE + A-Level"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-5.74, 50.07],
+          [-1.76, 50.92],
+          [1.69, 51.45],
+          [1.41, 52.94],
+          [-0.49, 53.78],
+          [-3.10, 54.20],
+          [-4.71, 54.91],
+          [-5.74, 50.07]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "source_key": "ocr.org.uk",
+        "name": "England (OCR)",
+        "axis": "board",
+        "level": "GCSE + A-Level"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-5.74, 50.07],
+          [-1.76, 50.92],
+          [1.69, 51.45],
+          [1.41, 52.94],
+          [-0.49, 53.78],
+          [-3.10, 54.20],
+          [-4.71, 54.91],
+          [-5.74, 50.07]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "source_key": "qualifications.pearson.com",
+        "name": "England (Pearson)",
+        "axis": "board",
+        "level": "GCSE + A-Level"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-5.74, 50.07],
+          [-1.76, 50.92],
+          [1.69, 51.45],
+          [1.41, 52.94],
+          [-0.49, 53.78],
+          [-3.10, 54.20],
+          [-4.71, 54.91],
+          [-5.74, 50.07]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "source_key": "sqa.org.uk",
+        "name": "Scotland",
+        "axis": "jurisdiction",
+        "level": "National 5 + Higher + Adv Higher"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-7.51, 54.61],
+          [-3.05, 54.85],
+          [-1.76, 58.74],
+          [-2.95, 60.65],
+          [-5.74, 58.84],
+          [-7.51, 54.61]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "source_key": "wjec.co.uk",
+        "name": "Wales",
+        "axis": "jurisdiction",
+        "level": "GCSE + A-Level (Welsh-medium + EN)"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-5.32, 51.40],
+          [-3.40, 53.43],
+          [-2.66, 52.92],
+          [-2.32, 51.36],
+          [-5.32, 51.40]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "source_key": "ccea.org.uk",
+        "name": "Northern Ireland",
+        "axis": "jurisdiction",
+        "level": "GCSE + A-Level"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-8.18, 54.04],
+          [-5.42, 54.48],
+          [-5.42, 55.31],
+          [-8.18, 55.31],
+          [-8.18, 54.04]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "source_key": "gov.im/education",
+        "name": "Isle of Man",
+        "axis": "jurisdiction",
+        "level": "GCSE + A-Level + Manx Gaelic"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-4.85, 54.04],
+          [-4.30, 54.45],
+          [-4.30, 54.20],
+          [-4.85, 54.04]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "source_key": "gov.je/education",
+        "name": "Jersey",
+        "axis": "jurisdiction",
+        "level": "GCSE + Baccalauréat"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-2.25, 49.16],
+          [-2.00, 49.26],
+          [-2.00, 49.16],
+          [-2.25, 49.16]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "source_key": "gov.gg/education",
+        "name": "Guernsey",
+        "axis": "jurisdiction",
+        "level": "GCSE + A-Level + Local"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-2.66, 49.42],
+          [-2.32, 49.49],
+          [-2.32, 49.42],
+          [-2.66, 49.42]
+        ]]
+      }
+    }
+  ]
+}
