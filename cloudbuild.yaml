@@ -1,0 +1,66 @@
+# Cloud Build pipeline for the gemini_hackathon Python backend.
+#
+# Build + push to Artifact Registry + deploy to Cloud Run.
+# All secrets are pulled from Secret Manager at deploy time — never
+# baked into the image.
+#
+# Submit:
+#   gcloud builds submit --config=cloudbuild.yaml \
+#       --project=$GCP_PROJECT \
+#       --substitutions=_REGION=europe-west1,_REPO=$GCP_PROJECT/gemini-hackathon
+
+steps:
+  # 1. Build the Python backend image (multi-stage; uv for dependency
+  #    resolution, runtime image is distroless).
+  - name: "gcr.io/cloud-builders/docker:latest"
+    id: "build"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        set -euo pipefail
+        docker build \
+          --build-arg BUILDKIT_INLINE_CACHE=1 \
+          -t "$_IMAGE_URL" \
+          -f Dockerfile \
+          .
+
+  # 2. Push to Artifact Registry.
+  - name: "gcr.io/cloud-builders/docker:latest"
+    id: "push"
+    entrypoint: "bash"
+    args: ["-c", "docker push $_IMAGE_URL"]
+
+  # 3. Deploy to Cloud Run. Env vars + secret refs.
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk:latest"
+    id: "deploy-cloud-run"
+    entrypoint: "gcloud"
+    args:
+      - "run"
+      - "deploy"
+      - "$_IMAGE_URL"
+      - "--project=${PROJECT_ID}"
+      - "--region=$_REGION"
+      - "--platform=managed"
+      - "--service=gemini-hackathon"
+      - "--memory=2Gi"
+      - "--cpu=2"
+      - "--timeout=300"
+      - "--concurrency=80"
+      - "--min-instances=1"
+      - "--max-instances=10"
+      - "--allow-unauthenticated"
+      - "--set-env-vars=MODEL_PROFILE=hackathon,GEMINI_BACKEND=vertex,GOOGLE_CLOUD_LOCATION=$_REGION,PYTHONUNBUFFERED=1"
+      - "--set-secrets=UNSLOTH_API_KEY=projects/${PROJECT_ID}/secrets/UNSLOTH_API_KEY:latest,UNSLOTH_BASE_URL=projects/${PROJECT_ID}/secrets/UNSLOTH_BASE_URL:latest,GEMINI_API_KEY=projects/${PROJECT_ID}/secrets/GEMINI_API_KEY:latest"
+
+substitutions:
+  _REGION: europe-west1
+  _REPO: gemini-hackathon
+
+images:
+  - "$_IMAGE_URL"
+
+timeout: "1800s"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
