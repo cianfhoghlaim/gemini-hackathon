@@ -261,6 +261,8 @@ class _SessionToolHandler(BaseHTTPRequestHandler):
             self._handle_find_resources()
         elif self.path == "/api/agents/chat":
             self._handle_agents_chat()
+        elif self.path == "/api/assets/generate":
+            self._handle_assets_generate()
         else:
             self._write_json(404, {"error": "not_found", "path": self.path})
 
@@ -379,6 +381,50 @@ class _SessionToolHandler(BaseHTTPRequestHandler):
             "supported_event_types": list(AGUI_EVENT_TYPES),
         })
 
+    def _handle_assets_generate(self) -> None:
+        """Run the asset-generation pipeline against an AssetControlRecord.
+
+        In dev with no real model backends, returns the deterministic stub
+        so the UI can render. Always returns the full provenance chain so
+        the UI can show the user every backend the router tried.
+        """
+        body = self._read_body()
+        if body is None:
+            return
+
+        from .assets.control_record import AssetControlRecord
+        from .assets.image_gen import ImageGenRouter
+
+        try:
+            record = AssetControlRecord(
+                source_pdf_path=body.get("source_pdf_path", "unknown.pdf"),
+                source_page=int(body.get("source_page", 0)),
+                learning_outcome_id=body.get("learning_outcome_id"),
+                subject=body.get("subject", ""),
+                palette_primary=body.get("palette_primary", "#000000"),
+                palette_secondary=body.get("palette_secondary", "#000000"),
+                palette_accent=body.get("palette_accent", "#000000"),
+                palette_background=body.get("palette_background", "#FFFFFF"),
+                style=body.get("style", "illustration"),
+                aspect_ratio=body.get("aspect_ratio", "16:9"),
+                text_overlay=body.get("text_overlay"),
+                seed=body.get("seed"),
+            )
+        except (TypeError, ValueError) as e:
+            self._write_json(400, {"status": "invalid_record", "error": str(e)})
+            return
+
+        result = ImageGenRouter().generate(record, role=body.get("role"))
+        self._write_json(200, {
+            "status": "ok",
+            "image_b64": result.image_b64,
+            "backend": result.backend.value,
+            "model_key": result.model_key,
+            "seed": result.seed,
+            "duration_ms": result.duration_ms,
+            "provenance": result.provenance,
+        })
+
 
 # ---------------------------------------------------------------------------
 # Route registration — main + session tool handler
@@ -411,7 +457,7 @@ def main(argv=None):
     # the session tool handler (for /api/agents/*).
     class _RoutingHandler(_BackendHandler, _SessionToolHandler):
         def do_POST(self):  # noqa: N802
-            if self.path.startswith("/api/agents/"):
+            if self.path.startswith("/api/agents/") or self.path.startswith("/api/assets/"):
                 _SessionToolHandler.do_POST(self)
             else:
                 _BackendHandler.do_POST(self)

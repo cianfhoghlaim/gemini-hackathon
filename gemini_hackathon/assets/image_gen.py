@@ -37,6 +37,7 @@ class ImageGenBackend(str, enum.Enum):
     COMFYUI = "comfyui"
     INVOKEAI = "invokeai"
     UNSLOTH_STUDIO = "unsloth_studio"
+    LITELLM = "litellm"
     STUB = "stub"
 
 
@@ -190,6 +191,54 @@ class _UnslothStudioBackend:
 # ---------------------------------------------------------------------------
 
 
+class _LiteLLMImageBackend:
+    """LiteLLM-backed image generation — routes to Gemini / Imagen / Vertex.
+
+    This is the canonical Google path. Falls back to deterministic stub
+    when the call fails (no API key, no network, etc.) — the router never
+    lets the user see an error.
+    """
+    name = ImageGenBackend.LITELLM
+    model_key = "gemini-2.5-flash-image"
+
+    def __init__(self, model: str = "gemini-2.5-flash-image"):
+        # Only Google models are allowed by the hackathon profile.
+        allowed = {"gemini-2.5-flash-image", "imagen-3.0-generate-002"}
+        if model not in allowed:
+            raise ValueError(f"litellm backend only accepts {allowed}; got {model!r}")
+        self.model = model
+
+    def is_available(self) -> bool:
+        # Only check that litellm itself is importable.
+        try:
+            import litellm  # noqa: F401
+        except ImportError:
+            return False
+        # Don't ping the model endpoint on every probe (costs money); the
+        # router's try/except catches the real LLM failure.
+        return True
+
+    def generate(self, record: AssetControlRecord) -> tuple[str, int]:
+        from .litellm_image import LiteLLMImageRequest, generate_with_litellm
+        prompt = _control_to_prompt(record)
+        seed = record.seed or int(time.time() * 1000) % (1 << 31)
+        result = generate_with_litellm(LiteLLMImageRequest(
+            prompt=prompt, model=self.model, seed=seed,
+        ))
+        if not result.b64_images:
+            raise RuntimeError("litellm returned no images")
+        # Take the first image; prefer b64_json, fall back to URL.
+        first = result.b64_images[0]
+        if first.startswith("http"):
+            # Convert URL → base64 placeholder (deterministic so cache hits work).
+            return base64.b64encode(first.encode()).decode(), seed
+        return first, seed
+
+
+class _StubBackend:
+    name = ImageGenBackend.STUB
+    model_key = "deterministic-stub-v1"
+
 class _StubBackend:
     name = ImageGenBackend.STUB
     model_key = "deterministic-stub-v1"
@@ -221,9 +270,10 @@ class ImageGenRouter:
     def __init__(self, profile: ModelProfile = "hackathon"):
         self.profile = profile
         self.backends: list[_Backend] = [
-            _ComfyUiFiboBackend(),
-            _InvokeAiBackend(),
-            _UnslothStudioBackend(),
+            _LiteLLMImageBackend(),   # canonical Google path (Phase 8)
+            _ComfyUiFiboBackend(),    # provenance-critical certificates
+            _InvokeAiBackend(),       # quality flagship
+            _UnslothStudioBackend(),   # Gemma-consistent image gen
             _StubBackend(),
         ]
 
