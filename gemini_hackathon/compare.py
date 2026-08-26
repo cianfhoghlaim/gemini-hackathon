@@ -26,6 +26,7 @@ from typing import Any
 
 from .call_llm import call_llm, reset_router
 from .models import MODEL_REGISTRY, ModelFamily, ModelProfile, model_for
+from .model_registry import public_model_roster
 
 
 @dataclass(frozen=True)
@@ -209,12 +210,20 @@ def run_comparison(
 
     _write_to_duckdb(rows, duckdb_path)
 
+    # The public roster is always the hackathon profile, regardless of
+    # what was actually compared. This is what docs and UI render.
+    public = [
+        {"key": e.key, "family": e.family, "backend": e.backend,
+         "tier": e.tier, "display_name": e.display_name}
+        for e in public_model_roster()
+    ]
     return {
         "profile": active,
         "pdf_path": pdf_path,
         "pdf_sha256": pdf_sha,
         "rows": [r.to_duckdb_row() for r in rows],
         "summary": {
+            "public_roster": public,
             "models_compared": len(rows),
             "best_score": max((r.ragas_score for r in rows), default=0.0),
             "fastest_latency_ms": min((r.latency_ms for r in rows), default=0),
