@@ -54,6 +54,8 @@ dependencies = [
     "pillow>=10.0",
     # Reactive notebooks
     "marimo>=0.10",
+    # Auth (Phase 2 fleet_identity)
+    "pyjwt>=2.8",
 ]
 
 [project.scripts]

@@ -120,4 +120,72 @@ __all__ = [
     # TIER 1 lift markers (exposed for downstream consumers + tests)
     "_MODEL_REGISTRY_TIER_1_LIFT_ACTIVE",
     "_THEMING_TIER_1_LIFT_ACTIVE",
+    # Phase 3 sources (jurisdiction/board/subject registry)
+    "JurisdictionMeta",
+    "BoardMeta",
+    "Subject",
+    "JurisdictionCode",
+    "BoardCode",
+    "sources_JURISDICTIONS",
+    "sources_BOARDS",
+    "sources_SUBJECTS",
+    "sources_list_jurisdictions",
+    "sources_list_boards",
+    "sources_get_jurisdiction_meta",
+    "sources_get_board_meta",
+    "sources_subjects_for",
+    "sources_public_roster",
+]
+
+
+# ---------------------------------------------------------------------------
+# Phase 3 — jurisdiction/board/subject canonical registry (sources.py).
+# Aliased with `sources_` prefix so they don't clash with the parent
+# TIER 1 lift (which exports `JURISDICTIONS` / `BOARDS` for the theming
+# module). When the parent cianfhoghlaim package is installed, those
+# win; when it's not, the wholesale theming.py copy wins. The Phase 3
+# sources are always available via the `sources_*` aliases regardless.
+# ---------------------------------------------------------------------------
+
+from .sources import (
+    JurisdictionMeta as _Sources_JurisdictionMeta,
+    BoardMeta as _Sources_BoardMeta,
+    Subject as _Sources_Subject,
+    JurisdictionCode as _Sources_JurisdictionCode,
+    BoardCode as _Sources_BoardCode,
+    JURISDICTIONS as sources_JURISDICTIONS,
+    BOARDS as sources_BOARDS,
+    SUBJECTS as sources_SUBJECTS,
+    list_jurisdictions as sources_list_jurisdictions,
+    list_boards as sources_list_boards,
+    get_jurisdiction_meta as sources_get_jurisdiction_meta,
+    get_board_meta as sources_get_board_meta,
+    subjects_for as sources_subjects_for,
+    public_roster as sources_public_roster,
+)
+
+# Type aliases (re-export the Phase 3 types under their canonical names).
+JurisdictionMeta = _Sources_JurisdictionMeta
+BoardMeta = _Sources_BoardMeta
+Subject = _Sources_Subject
+JurisdictionCode = _Sources_JurisdictionCode
+BoardCode = _Sources_BoardCode
+
+
+__all__ += [
+    # Phase 3 sources (jurisdiction/board/subject registry)
+    "JurisdictionMeta",
+    "BoardMeta",
+    "Subject",
+    "JurisdictionCode",
+    "BoardCode",
+    "sources_JURISDICTIONS",
+    "sources_BOARDS",
+    "sources_SUBJECTS",
+    "sources_list_jurisdictions",
+    "sources_list_boards",
+    "sources_get_jurisdiction_meta",
+    "sources_get_board_meta",
+    "sources_subjects_for",
+    "sources_public_roster",
 ]
