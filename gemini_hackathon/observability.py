@@ -133,14 +133,14 @@ def log_asset_generated(result: Any) -> None:
     p = result.provenance
     logger.info(
         "asset.generated",
-        backend=p["backend"],
-        model_key=p["model_key"],
-        control_record_hash=p["control_record_hash"],
-        seed=p["seed"],
-        source_pdf_path=p["source_pdf_path"],
-        source_page=p["source_page"],
+        backend=p.get("backend", "unknown"),
+        model_key=p.get("model_key", "unknown"),
+        control_record_hash=p.get("control_record_hash", ""),
+        seed=p.get("seed", 0),
+        source_pdf_path=p.get("source_pdf_path", ""),
+        source_page=p.get("source_page", 0),
         outcome_id=p.get("learning_outcome_id"),
-        duration_ms=result.duration_ms,
+        duration_ms=getattr(result, "duration_ms", 0),
     )
 
 
