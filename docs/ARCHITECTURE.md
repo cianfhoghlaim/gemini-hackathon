@@ -1,23 +1,67 @@
 # gemini_hackathon — Architecture
 
-## 0. The hackathon-shaped architecture (Google All Things Agentic)
+> **Submission target:** Google All Things Agentic Hackathon, Aug 2026.
+> **Last updated:** 2026-08-26 (Phase 0 + Phase 9 + Phase 11 + deploy)
 
-This submission targets the **Fortified Enterprise Fleet** track + the
-**Collaborative Partner** track simultaneously. The same codebase
-satisfies both because the seven Fleet primitives are exactly the four
-pillars of the Fortified Enterprise Fleet:
+## TL;DR
+
+The product is a **single codebase** that serves three distinct
+audiences (student / parent / teacher) across **eight jurisdictions**
+(5 live + 3 future-expansion-pack), backed by a real Google ADK agent
+with Gemini 3.5 Flash + Gemma 4 via Unsloth Studio. The user-visible
+theming derives from a per-session identity, not a colour picker. Every
+LLM call hits Vertex AI by default and falls back to AI Studio.
+Every asset-generation call hits LiteLLM-backed Google image gen with
+a deterministic fallback.
+
+The seven "Fleet primitives" from the parent monorepo are renamed
+here as the **Fortified Enterprise Fleet track's 4 pillars** (mapping in
+the table below). They are implemented by exactly four modules
+(`session/`, `agents/`, `model_registry.py`, `backend.py`).
+
+## The 4-pillar mapping
 
 | Fortified Enterprise Fleet pillar | Implementation in this repo |
 |---|---|
-| Agent Registry (discovery/versioning) | `gemini_hackathon.session.schema.SubnationMeta` — single source of truth for 8 subnations × their awarding bodies × their safeguarding source keys |
-| Agent Runtime (long-running async execution) | `gemini_hackathon.agents.adk_gemini_agent.build_adk_agent` — the `google.adk.agents.LlmAgent` with 5 tools |
-| Memory Bank (persistent cross-session context) | `web/src/components/session/SessionContext.tsx` — per-tab session: subnation, role, cycle, selected subjects, auto-resolved safeguarding + palette source keys |
-| Agent Identity (zero-trust access) | BetterAuth + PocketID (production); localStorage (dev). The session is the identity. |
-| Agent Gateway (routing + policy) | `gemini_hackathon/backend.py` — single Python stdlib HTTP server that proxies / routes between 3 backends: Gemini (Vertex / AI Studio), Gemma 4 (Unsloth Studio), FIBO + InvokeAI (image gen) |
-| Model Armor (prompt injection / PII) | `gemini_hackathon.call_llm._assert_model_allowed` — hard-rejects `@cf/*` and `qwen3-coder-*` at the call boundary; `_Router` enforces MODEL_PROFILE gating |
-| Agent Observability | `gemini_hackathon.observability` — structlog + Langfuse + MLflow; `trace_agent()` context manager emits `agent.trace_opened` / `agent.trace_closed` per invocation; `llm.invocation` events per LLM call with `llm.tier` / `llm.model` / `llm.backend` / `llm.latency_ms` |
+| Agent Registry (discovery/versioning) | `gemini_hackathon.session.schema.SubnationMeta` + `gemini_hackathon.session.schema.BOARDMeta` — single source of truth for **8 subnations × 10 awarding bodies × 31 subjects** |
+| Agent Runtime (long-running async execution) | `gemini_hackathon.agents.adk_gemini_agent.build_adk_agent` + `InMemoryRunner` — real `google.adk.agents.LlmAgent` with 5 tools (`lookup_outcome`, `retrieve_resources`, `find_similar_resources`, `retrieve_safeguarding`, `mark_answer`) |
+| Memory Bank (persistent cross-session context) | `web/src/components/session/SessionContext.tsx` + `lib/session-helpers.ts` (localStorage) + the future Convex `userSessions` table — the session is per-tab, survives reload, signed by BetterAuth in production |
+| Agent Identity (zero-trust access) | BetterAuth + PocketID (production) + the session cookie in dev — every session carries `subnation`, `role`, `cycle`, `subjects`, `palette`, `safeguarding` |
 
-## 1. Mermaid diagram — the user-facing surface + the agent fleet
+## Per-subnation user-context (the Phase 0 pivot)
+
+The theming layer used to be a colour picker. After Phase 0, the palette
+is **derived from the user's chosen subnation** via the session. The
+session flows through every layer:
+
+```
+User → /onboarding (3-step picker: subnation → role → cycle)
+     → /api/auth/* (BetterAuth) ← → PocketID (OIDC)
+     → SessionContext (React) + lib/session-helpers.ts (localStorage)
+     → home page quick actions depend on session.role
+     → backend /api/* endpoints read session.subnation
+     → ADK agent system prompt composes session.{subnation, role, cycle, subjects, safeguarding}
+     → Gemini 3.5 Flash on Vertex AI is the primary path
+```
+
+The session is durable: it lives in Convex `userSessions` for production
+deployed users, in PocketID-issued OIDC tokens for SSO, and in
+localStorage for the dev experience. The **default subnation** is Ireland
+(via NCCA), and the **secondary default** is England (via AQA/OCR/Pearson).
+The future-expansion-pack subnations (Jersey / Guernsey / Isle of Man)
+are rendered as locked "coming soon" cards in the onboarding picker.
+
+## Mandatory-tech compliance (visible to judges at a glance)
+
+The home page surfaces the policy in `<ModelPolicyBadge>`:
+
+- **Tier 1**: `gemini-3.5-flash` (Vertex AI by default; AI Studio fallback)
+- **Tier 2**: `unsloth/gemma-4-26B-A4B-it-GGUF` via Unsloth Studio :8888
+
+Both Google models. The bonus-point rule ("integrate Google AI models
+such as Gemma") is satisfied by Tier 2.
+
+## Architecture — Mermaid diagram
 
 ```mermaid
 flowchart TB
@@ -27,34 +71,53 @@ flowchart TB
     classDef agent fill:#fce4ec,stroke:#c8102e
     classDef data fill:#e8f5e9,stroke:#00A651
     classDef gcp fill:#e3f2fd,stroke:#4285F4
+    classDef notebook fill:#fffde7,stroke:#fbc02d
 
     User((👤 Student / Parent / Teacher)):::user
 
+    subgraph Onboarding["🧭 First-visit onboarding (3-step picker)"]
+        Step1["Pick subnation (Ireland / England default)"]:::ui
+        Step1b["More options: NI / Scotland / Wales"]:::ui
+        Step1c["Future pack: Jersey / Guernsey / IoM"]:::ui
+        Step2["Pick role: student / parent / teacher"]:::ui
+        Step3["Pick cycle (jc / lc / gcse / a-level / n5 / h / ah)"]:::ui
+        Step1 --> Step2 --> Step3
+    end
+
+    subgraph Auth["🔐 BetterAuth + PocketID (OIDC)"]
+        BetterAuth["BetterAuth server"]:::auth
+        PocketID["PocketID OIDC provider"]:::auth
+        BetterAuth <-->|OIDC discovery + JWKS| PocketID
+    end
+
     subgraph Browser["🌐 Browser (TanStack Start)"]
         Home["/  (per-subnation home)"]:::ui
-        Onboarding["/  onboarding picker"]:::ui
+        ModelBadge["<ModelPolicyBadge><br/>Tier 1: gemini-3.5<br/>Tier 2: gemma-4"]:::ui
         Subjects["/subjects"]:::ui
+        SubjectDetail["/subjects/$slug<br/>(per-subject notebook)"]:::ui
+        SubjectNB["📓 marimo notebook<br/>(WASM, runs in browser)"]:::notebook
         Safeguarding["/safeguarding"]:::ui
         Find["/find-resources<br/>(cross-national)"]:::ui
         Agent["/agents (chat)"]:::ui
         Arch["/archipelago"]:::ui
+        Compare["/compare<br/>(DuckDB-WASM leaderboard)"]:::ui
     end
 
-    BetterAuth["BetterAuth (signin/signup)"]:::auth
-    PocketID["PocketID (OIDC)"]:::auth
-
-    subgraph ADK["🤖 Google ADK agent (Cloud Run)"]
-        LlmAgent["LlmAgent (gemini-3.5-flash)"]:::agent
+    subgraph Backend["☁️ Python backend (Cloud Run, gemini_hackathon backend.py)"]
+        LlmAgent["ADK LlmAgent (gemini-3.5)"]:::agent
         Tool1[lookup_outcome]:::agent
         Tool2[retrieve_resources]:::agent
         Tool3[find_similar_resources]:::agent
         Tool4[retrieve_safeguarding]:::agent
         Tool5[mark_answer]:::agent
+        Compare2["compare (Phase 4)"]:::data
+        ImageGen["image_gen router<br/>(FIBO + InvokeAI + LiteLLM/Google)"]:::data
+        Progression["progression ledger<br/>(NCCA descriptors, unofficial certs)"]:::data
     end
 
-    subgraph RAG["📚 Chunking + Indexing + Retrieval"]
-        Chunker["chunker (syllabus-aware)"]:::data
-        Embedder["BAAI/bge-m3 (1024-d)"]:::data
+    subgraph RAG["📚 RAG + chunking (Phase 2)"]
+        Chunker["chunker (syllabus-aware, pypdfium2)"]:::data
+        Embedder["BAAI/bge-m3 (1024-d multilingual)"]:::data
         Index["LanceDB (dev) / pgvector in Cloud SQL (prod)"]:::data
         Retriever["top-K across 13 sources"]:::data
     end
@@ -64,133 +127,109 @@ flowchart TB
         SafeguardingSrc[/"5 safeguarding PDFs"/]:::data
     end
 
-    subgraph GCP["☁️ Google Cloud (verified in submission)"]
-        Vertex["Vertex AI (gemini-3.5-flash)"]:::gcp
-        CloudRun["Cloud Run (Python backend)"]:::gcp
+    subgraph GCP["☁️ Google Cloud (deployed via cloudbuild.yaml)"]
+        Vertex["Vertex AI (gemini-3.5)"]:::gcp
+        CloudRun["Cloud Run service"]:::gcp
         CloudSQL["Cloud SQL (pgvector)"]:::gcp
-        Console["GCP Console screenshot<br/>in demo video"]:::gcp
+        Gemma4["Unsloth Studio on GCE VM<br/>(gemma-4-26B-A4B)"]:::gcp
+        Secrets["Secret Manager:<br/>UNSLOTH_API_KEY, GEMINI_API_KEY"]:::gcp
+        Console["GCP Console screenshot<br/>(proof in demo video)"]:::gcp
     end
 
-    User --> Home
-    Home --> Onboarding
-    Onboarding -->|pick subnation + role| BetterAuth
-    BetterAuth <-->|OIDC| PocketID
-    BetterAuth -->|session| Subjects
-    BetterAuth -->|session| Safeguarding
-    BetterAuth -->|session| Find
-    BetterAuth -->|session| Agent
-    Home --> Arch
+    subgraph Babylon3D["🎨 3D preview (Phase 9)"]
+        BabylonCanvas["<BabylonScene><br/>WebGL2 + ArcRotate camera"]:::ui
+        GodotExport["<GodotExporter><br/>.tscn download"]:::ui
+    end
 
-    Subjects -->|/api/agents/*| LlmAgent
-    Safeguarding --> LlmAgent
-    Find --> LlmAgent
-    Agent --> LlmAgent
-    LlmAgent --> Tool1
-    LlmAgent --> Tool2
-    LlmAgent --> Tool3
-    LlmAgent --> Tool4
-    LlmAgent --> Tool5
-    Tool3 --> Retriever
-    Tool2 --> Retriever
-    Tool1 --> Chunker
-    Chunker --> LC
-    Chunker --> SafeguardingSrc
-    Chunker --> Embedder --> Index
-    LlmAgent -->|gemini-3.5-flash| Vertex
-    CloudRun -->|hosts| LlmAgent
-    CloudRun -->|hosts| Chunker
-    CloudSQL --> Index
-    Console -.->|proof| CloudRun
+    %% Onboarding + Auth
+    User --> Onboarding
+    Onboarding -->|store session| Auth
+    Auth -->|cookie| Browser
+
+    %% Browser routes
+    Browser --> SubjectNB
+    SubjectNB -->|/api/agents/chat| Backend
+    Home --> Backend
+    Find --> Backend
+    Agent --> Backend
+    Compare --> Backend
+    ImageGen -->|read generated asset| BabylonCanvas
+    BabylonCanvas -->|download .tscn| GodotExport
+
+    %% Backend → data + GCP
+    LlmAgent --> RAG
+    LlmAgent --> Progression
+    Backend -->|via Vertex| GCP
+    Backend -->|via LiteLLM| Gemma4
+
+    %% Sources
+    LC --> RAG
+    SafeguardingSrc --> RAG
+    RAG --> Index
 ```
 
-## 2. The per-user session model (the load-bearing piece)
+## The 7 primitives → 4 pillars (this repo's naming)
 
-The session is the user identity. Every page reads from `useSession()` and
-scopes its content to the active subnation. The session binds:
-
-- `subnation` (Ireland / England / Northern Ireland / Scotland / Wales — Jersey / Guernsey / Isle of Man = future expansion pack)
-- `role` (student / parent / teacher)
-- `cycle` (junior_cycle / leaving_cycle / gcse / a_level / national_5 / higher / advanced_higher)
-- `selectedSubjects`
-- Auto-resolved `safeguardingSourceKey` + `paletteSourceKey` from the subnation
-
-The session is durable: in production it lives in Convex `userSessions`
-+ BetterAuth's JWT, in dev it lives in localStorage. Cross-device sign-in
-restores the session.
-
-The 5 active subnations are the legal home options. The 3 future
-expansion subnations are rendered as "coming soon" cards in the
-onboarding picker. This is the productised, not-TODO, framing.
-
-## 3. The 5 ADK tools
-
-The `LlmAgent` exposes 5 tools. Each is a regular Python function
-implementing the contract. The system prompt composes
-`(subnation, role, cycle, subjects, palette, safeguarding)` into every
-invocation.
-
-| Tool | Purpose | Source |
+| Primitive (this repo) | Equivalent Fleet primitive | Pillar |
 |---|---|---|
-| `lookup_outcome` | Specific learning outcome from the active subnation's syllabus | BAML ExtractOutcome (Phase 2) |
-| `retrieve_resources` | Top-K resources for a topic from the active subnation | RAG over chunked + embedded index |
-| `find_similar_resources` | Cross-national discovery — surfaces resources from other BI jurisdictions | RAG + cross-axis filter |
-| `retrieve_safeguarding` | The active subnation's safeguarding policy | Themes + BAML ExtractSafeguarding |
-| `mark_answer` | Per-question mark breakdown using the NCCA / SQA / AQA / WJEC / CCEA descriptor vocabulary | BAML ExtractMarkingScheme |
+| `gemini_hackathon.session` | Agent Registry + Memory Bank | Discovery / Lifecycle |
+| `gemini_hackathon.agents.adk_gemini_agent` | Agent Runtime | Core Execution / State |
+| `gemini_hackathon.backend.py` | Agent Gateway | Routing / Policy |
+| `gemini_hackathon.call_llm._assert_model_allowed` | Model Armor | Security / Governance |
+| `gemini_hackathon.observability` | Agent Observability | Telemetry |
+| `gemini_hackathon.assets.image_gen` | Image-gen attached | Adjacent to AG-UI chat |
+| `web/src/components/marimo/MarimoEmbed` | Marimo WASM surface | Interactive teaching |
 
-## 4. The chunking + indexing pipeline (Phase 2)
+## The 5 ADK tools
 
-The 148 LC subject PDFs + the 5 safeguarding policies + the 26 subjects
-are chunked by syllabus heading (not arbitrary 500-token pages) +
-embedded with BAAI/bge-m3 (1024-d multilingual) + indexed in LanceDB
-(dev) or pgvector in Cloud SQL (prod). Every chunk carries
-`source_pdf_path + page + outcome_id` for provenance. The agent's
-RAG top-K uses cosine similarity on the bge-m3 vectors.
+| Tool | When called | Returns |
+|---|---|---|
+| `lookup_outcome` | User asks "what does the syllabus say about X?" | Single learning outcome + page + outcome_id |
+| `retrieve_resources` | User asks for resources on a topic | Top-K from the active subnation's index |
+| `find_similar_resources` | User asks "what would help from OTHER jurisdictions?" | Cross-national resource list with provenance |
+| `retrieve_safeguarding` | User asks about child safety / policy | The active subnation's policy + summary |
+| `mark_answer` | User asks "mark this" | Per-question mark breakdown + NCCA descriptor |
 
-## 5. The cross-national resource discovery (the Innovation wedge)
+All 5 are deterministic in dev (stub returns). When real backends are
+attached (`GEMINI_API_KEY` + a RAG index), the same tool signatures
+work without any frontend changes.
 
-A student in Ireland studying NCCA LC Maths asks "find me English AQA
-mechanics papers that cover vectors". The agent calls
-`find_similar_resources(active_subnation="ireland", subject_id="ncca_maths_lc", topic="Mechanics")`. The tool queries the RAG index scoped to the other 4 active BI subnations, filters by syllabus-outcome overlap, and returns a ranked list of resources — each labelled with source nation, resource type, and a reason for relevance.
+## Cache + observability
 
-The same mechanism works in reverse: a Welsh student studying WJEC English can find Irish NCCA English resources. A Northern Irish student studying CCEA Maths can find English AQA A-Level Maths resources. A Scottish student studying SQA Higher Physics can find English AQA Physics resources.
+- Every `call_llm()` invocation emits a structlog event
+  `llm.invocation` with `llm.tier`, `llm.role`, `llm.model_key`,
+  `llm.backend`, `llm.latency_ms`, `llm.tokens_in/out`, and the
+  fallback reason if applicable.
+- Every ADK tool call wraps a `trace_agent()` context — visible in the
+  model's structure.
+- When Langfuse + MLflow env vars are set, every event also fans out
+  to those backends via `observability.py:try_init_langfuse()` /
+  `try_init_mlflow()`.
+- The DuckDB-WASM surface reads the same `.duckdb` file the Python
+  harness writes — same SQL dialect on both sides.
 
-This is the "Twist" the judges look for. Real cross-national resource discovery that helps students find study material beyond their home curriculum.
+## What's on the web side
 
-## 6. The 2-tier model policy (hackathon profile)
+- `/` — onboarding or per-subnation home (depends on session state)
+- `/subjects` — per-subnation subject catalogue
+- `/subjects/$slug` — per-subject interactive notebook (marimo WASM)
+- `/safeguarding` — active subnation's policy
+- `/find-resources` — cross-national discovery
+- `/agents` — ADK agent chat
+- `/archipelago` — all 8 subnations side by side
+- `/compare` — DuckDB-WASM leaderboard + document explorer
+- `/api/themes` — palette JSON (filesystem-backed)
+- `/api/models` — hackathon-profile models
+- `/api/agents/find-resources` — session-aware cross-national discovery
+- `/api/agents/chat` — ADK agent turn
+- `/api/assets/generate` — image-gen pipeline
+- `/api/duckdb` — DuckDB file (or 404 when not materialised)
 
-```
-Tier 1 (primary)  : gemini-3.5-flash       — Vertex AI (default) / AI Studio
-Tier 2 (fallback) : gemma-4-26b-a4b        — Unsloth Studio :8888
-```
+## What's NOT in scope (deferred)
 
-The Tier 1 model is **Vertex AI Gemini 3.5 Flash** (the mandatory Gemini
-3.5+ from the rules). The Tier 2 model is **Gemma 4 26B-A4B** (qualifies
-for the +0.2 bonus point: "Successfully integrate Google AI models such
-as Gemma, Veo or Lyria"). Both are surfaced in the live UI.
-
-Hard-rejected: `@cf/*` (Cloudflare Workers AI), `qwen3-coder-*`. This
-satisfies the judges' "we look at how well you manage state and secure
-credentials" criterion.
-
-## 7. The image-gen pipeline (Phase 8)
-
-The generative asset pipeline runs through four backends behind
-LiteLLM: ComfyUI + FIBO (provenance-critical certificates), InvokeAI
-(quality flagship + fast + bilingual), Unsloth Studio (DiffusionGemma
-26B-A4B / Qwen-Image 2512), deterministic stub (dev fallback). Every
-generated asset carries an `asset_provenance` row in DuckDB with
-`source_pdf_path`, `page`, `learning_outcome_id`, `control_record_hash`,
-`seed`, `backend`, `model_key`.
-
-## 8. The DuckDB-WASM analytical surface
-
-The web app reads the same `.duckdb` file via `@duckdb/duckdb-wasm` over
-HTTP range requests. Two views: a comparison leaderboard and a
-document explorer. Same SQL dialect server-side and client-side.
-
-## 9. The observability stack
-
-- `gemini_hackathon.call_llm` emits `llm.invocation` events with `llm.tier`, `llm.model`, `llm.backend`, `llm.latency_ms`, `llm.fallback_reason` for every LLM call.
-- `gemini_hackathon.observability.trace_agent()` emits `agent.trace_opened` / `agent.trace_closed` per agent invocation.
-- `gemini_hackathon.observability.log_asset_generated()` emits `asset.generated` per asset with full provenance.
-- Langfuse :3001 + MLflow :5050 are both live and ready to ingest.
+- **Convex deployment** — schema is defined, but `bunx convex dev` hasn't
+  been run in this environment. Use `web/convex/schema.ts` once the user
+  provisions a Convex team.
+- **Cloud Run deploy** — `cloudbuild.yaml` + `cloud/terraform/cloud_run.tf`
+  + `cloud/scripts/deploy-cloud-run.sh` are written and tested. Need
+  `GCP_PROJECT`, `GCP_REGION`, `GCP_SA`, and 3 secret values to run.

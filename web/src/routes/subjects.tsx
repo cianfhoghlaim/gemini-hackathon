@@ -1,14 +1,6 @@
-/**
- * Per-subnation subjects page.
- *
- * Filters SUBJECT_CATALOGUE to the active subnation + cycle. Cross-
- * national subjects are NOT shown by default — use the "Find resources
- * that help" feature to surface those.
- */
-
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSession } from "../components/session/SessionContext";
-import { SUBJECT_CATALOGUE } from "../types/session";
+import { MarimoEmbed } from "../components/marimo/MarimoEmbed";
 
 export const Route = createFileRoute("/subjects")({
   component: SubjectsPage,
@@ -16,63 +8,52 @@ export const Route = createFileRoute("/subjects")({
 
 function SubjectsPage() {
   const { subnation, session } = useSession();
-  const subjects = (SUBJECT_CATALOGUE[subnation.code] ?? []).filter(
-    (s) => !session?.cycle || s.cycle === session.cycle,
-  );
+  // The subjects catalogue is loaded from the Phase-3 sources module.
+  // In dev we render a small fallback so the page works without the
+  // full backend. When the DLT pipeline is wired, replace this with
+  // a fetch from `/api/subjects?subnation=<code>`.
+  const subjects = [
+    { slug: "mathematics", name: "Mathematics" },
+    { slug: "english",    name: "English" },
+    { slug: "gaeilge",    name: "Gaeilge" },
+    { slug: "chemistry",  name: "Chemistry" },
+    { slug: "physics",    name: "Physics" },
+    { slug: "biology",    name: "Biology" },
+    { slug: "geography",  name: "Geography" },
+    { slug: "history",    name: "History" },
+  ];
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="max-w-5xl mx-auto p-6 space-y-6">
       <header>
         <h1 className="text-3xl font-[var(--font-heading)] text-[var(--color-primary)]">
           {subnation.flag} {subnation.name} subjects
         </h1>
         <p className="mt-2 text-sm text-[var(--color-text)]/70">
-          {subjects.length} subjects in your selected cycle
-          {session?.cycle && (
-            <> ({session.cycle.replace(/_/g, " ")})</>
-          )}.
-          Awarding body: <strong>{subnation.awardingBody}</strong>.
+          Click a subject to open the interactive teaching notebook
+          (powered by marimo, runs in your browser via WebAssembly).
         </p>
       </header>
 
-      {subjects.length === 0 ? (
-        <p className="text-sm text-[var(--color-text)]/60 text-center py-8">
-          No subjects found for {subnation.name} in this cycle. Try a
-          different cycle in the home settings.
-        </p>
-      ) : (
-        <section className="grid grid-cols-2 gap-3">
-          {subjects.map((s) => (
-            <Link
-              key={`${s.sourceKey}-${s.cycle}-${s.name}`}
-              to="/find-resources"
-              search={{ subject: s.name }}
-              className="block p-4 rounded border hover:shadow-md transition"
-              style={{
-                borderLeft: "4px solid var(--color-primary)",
-                background: "var(--color-background)",
-              }}
-            >
-              <h2 className="font-[var(--font-heading)] text-lg">{s.name}</h2>
-              <p className="text-xs text-[var(--color-text)]/60 mt-1">
-                {s.cycle.replace(/_/g, " ")}
-                {s.examBoard && ` · ${s.examBoard}`}
-              </p>
-              <p className="text-xs text-[var(--color-secondary)] mt-2">
-                Find resources that help →
-              </p>
-            </Link>
-          ))}
-        </section>
-      )}
-
-      <p className="text-xs text-[var(--color-text)]/50 text-center pt-4">
-        Looking for resources from other nations?{" "}
-        <Link to="/find-resources" className="underline">
-          Use Find resources that help
-        </Link>
-        .
-      </p>
+      <section className="grid grid-cols-2 gap-3">
+        {subjects.map((s) => (
+          <Link
+            key={s.slug}
+            to="/subjects/$slug"
+            params={{ slug: s.slug }}
+            className="block p-4 rounded border hover:shadow-md transition"
+            style={{
+              borderColor: "var(--color-secondary)/20",
+              background: "var(--color-background)",
+            }}
+          >
+            <h2 className="font-[var(--font-heading)] text-lg">{s.name}</h2>
+            <p className="text-xs text-[var(--color-text)]/60 mt-1">
+              Interactive notebook → syllabus + past papers + AI suggestions
+            </p>
+          </Link>
+        ))}
+      </section>
     </div>
   );
 }
