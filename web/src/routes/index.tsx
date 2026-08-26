@@ -13,8 +13,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSession } from "../components/session/SessionContext";
 import { OnboardingPicker } from "../components/onboarding/OnboardingPicker";
 import { ArchipelagicRibbon } from "../components/session/ArchipelagicRibbon";
+import { ModelPolicyBadge } from "../components/ModelPolicyBadge";
 import { useEffect, useState } from "react";
-import { getSession, saveSession, defaultSession, type SessionState } from "./_session";
+import { getSession, saveSession, defaultSession, type SessionState } from "../lib/session-helpers";
 import type { ActiveSubnation, Role, Cycle } from "../types/session";
 import { SUBNATIONS, DEFAULT_SUBNATIONS, EXPANSION_SUBNATIONS, AVAILABLE_SUBNATIONS, SUBJECT_CATALOGUE } from "../types/session";
 
@@ -60,6 +61,9 @@ function SubnationHome({ session }: { session: SessionState }) {
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       {/* The archipelagic unity ribbon — one row, one palette, all 8 nations */}
       <ArchipelagicRibbon activeSubnation={sub.code} />
+
+      {/* Mandatory-tech + jurisdiction split at first glance */}
+      <ModelPolicyBadge />
 
       {/* The user's home subnation header */}
       <header className="flex items-baseline gap-4">
