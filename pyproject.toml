@@ -197,6 +197,10 @@ filterwarnings = [
     "error",
     "ignore::DeprecationWarning:baml_client.*",
     "ignore::DeprecationWarning:litellm.*",
+    "ignore::DeprecationWarning:google.adk.*",
+    "ignore::DeprecationWarning:google.adk.agents.base_agent_config.*",
+    "ignore::DeprecationWarning:typing_extensions.*",
+    "ignore::DeprecationWarning:baml_client.*",
 ]
 
 # ---------------------------------------------------------------------------

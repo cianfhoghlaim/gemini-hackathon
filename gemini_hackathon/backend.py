@@ -259,6 +259,8 @@ class _SessionToolHandler(BaseHTTPRequestHandler):
     def do_POST(self):  # noqa: N802
         if self.path == "/api/agents/find-resources":
             self._handle_find_resources()
+        elif self.path == "/api/agents/chat":
+            self._handle_agents_chat()
         else:
             self._write_json(404, {"error": "not_found", "path": self.path})
 
@@ -289,6 +291,92 @@ class _SessionToolHandler(BaseHTTPRequestHandler):
             "active_subnation": active_subnation,
             "topic": topic,
             "count": len(results),
+        })
+
+    def _handle_agents_chat(self) -> None:
+        """Run one ADK agent turn and return AG-UI events as JSON.
+
+        Dev stub: when google-adk is missing or no real LLM keys are set,
+        returns a stub AG-UI event stream so the chat panel renders.
+        """
+        body = self._read_body()
+        if body is None:
+            return
+
+        message = body.get("message", "")
+        user_id = body.get("user_id", "anon")
+        session_id = body.get("session_id", user_id)
+
+        from .agents.adk_gemini_agent import (
+            AGUI_EVENT_TYPES,
+            build_adk_agent,
+            is_adk_available,
+            render_agui_events,
+        )
+
+        if not is_adk_available() or not message:
+            self._write_json(200, {
+                "status": "stub",
+                "reason": "google-adk missing or empty message",
+                "events": [
+                    {"type": "TEXT_MESSAGE_CONTENT", "data": {"text": "(stub) no google-adk or empty message"}},
+                    {"type": "RUN_FINISHED", "data": {"status": "stub"}},
+                ],
+                "protocol": "agui-1.0-subset",
+                "supported_event_types": list(AGUI_EVENT_TYPES),
+            })
+            return
+
+        agent, runner = build_adk_agent(
+            subnation=body.get("subnation", "ireland"),
+            subnation_flag=body.get("subnation_flag", "🇮🇪"),
+            awarding_body=body.get("awarding_body", "NCCA"),
+            role=body.get("role", "student"),
+            cycle=body.get("cycle", "leaving_cycle"),
+            subjects=body.get("subjects", []),
+            safeguarding_policy=body.get("safeguarding_policy", "DEIS + Well-Being"),
+            palette_primary=body.get("palette_primary", "#00733B"),
+            palette_heading=body.get("palette_heading", "Merriweather"),
+        )
+
+        if agent is None:
+            self._write_json(503, {"status": "agent_unavailable"})
+            return
+
+        try:
+            from google.genai import types as genai_types  # type: ignore
+        except ImportError:
+            self._write_json(503, {"status": "google_genai_missing"})
+            return
+
+        content = genai_types.Content(
+            role="user",
+            parts=[genai_types.Part(text=message)],
+        )
+
+        events = []
+        try:
+            for ev in runner.run(
+                user_id=user_id,
+                session_id=session_id,
+                new_message=content,
+            ):
+                events.extend(render_agui_events([ev]))
+        except Exception as e:  # noqa: BLE001
+            # Real LLM call failed (no creds etc.) — return the error
+            # to the client so the panel can show it.
+            self._write_json(200, {
+                "status": "agent_error",
+                "error": str(e),
+                "events": [],
+            })
+            return
+
+        self._write_json(200, {
+            "status": "ok",
+            "events": [{"type": ev.type, "data": ev.data} for ev in events],
+            "protocol": "agui-1.0-subset",
+            "supported_event_types": list(AGUI_EVENT_TYPES),
         })
 
 
