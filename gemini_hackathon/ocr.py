@@ -25,6 +25,7 @@ import logging
 import os
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -206,4 +207,122 @@ __all__ = [
     "auto_capability",
     "is_backend_available",
     "ocr",
+    "extract_pdf_text",
+    "_render_pdf_pages_to_pngs",
 ]
+
+
+# ---------------------------------------------------------------------------
+# PDF text extraction (renders each page, then OCRs each via the router).
+# ---------------------------------------------------------------------------
+
+
+def _render_pdf_pages_to_pngs(
+    pdf_path: str, output_dir: str | None = None, dpi: int = 150,
+    max_pages: int = 200,
+) -> list[str]:
+    """Render each page of a PDF to a PNG. Returns the list of PNG paths.
+
+    Uses pypdfium2 (preferred, MIT licensed) and falls back to pymupdf.
+    Files are written to <output_dir> or a tempdir.
+    """
+    Path(pdf_path).resolve()  # sanity check
+    import tempfile
+    out_dir = Path(output_dir) if output_dir else Path(tempfile.mkdtemp(prefix="ocr-pages-"))
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Cap at max_pages.
+    if max_pages and max_pages > 0:
+        # We don't know the page count until we open the PDF; cap below.
+        pass
+
+    # Try pypdfium2 first.
+    try:
+        import pypdfium2 as pdfium  # type: ignore[import-not-found]
+        pdf = pdfium.PdfDocument(pdf_path)
+        scale = dpi / 72.0
+        png_paths: list[str] = []
+        png_paths = []
+        total = len(pdf)
+        cap = min(total, max_pages) if max_pages and max_pages > 0 else total
+        for i in range(cap):
+            page = pdf[i]
+            img = page.render(scale=scale).to_pil()
+            p = out_dir / f"page-{i+1:04d}.png"
+            img.save(p, format="PNG")
+            png_paths.append(str(p))
+        return png_paths
+    except ImportError:
+        pass
+
+    # Fallback: pymupdf.
+    try:
+        import fitz  # type: ignore[import-not-found]
+        doc = fitz.open(pdf_path)
+        png_paths = []
+        png_paths = []
+        total = doc.page_count
+        cap = min(total, max_pages) if max_pages and max_pages > 0 else total
+        for i in range(cap):
+            page = doc[i]
+            pix = page.get_pixmap(dpi=dpi)
+            p = out_dir / f"page-{i+1:04d}.png"
+            pix.save(str(p))
+            png_paths.append(str(p))
+        return png_paths
+    except ImportError:
+        raise RuntimeError(
+            "Need pypdfium2 or pymupdf installed to render PDFs to PNGs. "
+            "Add one to requirements.txt."
+        )
+
+
+def extract_pdf_text(
+    pdf_path: str,
+    *,
+    capability: Capability | None = None,
+    base_url: str | None = None,
+    timeout_seconds: float = 60.0,
+    max_pages: int = 200,
+) -> dict[str, Any]:
+    """Extract text from a PDF by rendering + OCRing each page.
+
+    Returns a dict with keys: text (concatenated), page_count,
+    duration_ms, backend, model, capability. Raises
+    CapabilityUnavailableError if the backend is unreachable.
+
+    Args:
+        pdf_path: Source PDF.
+        capability: Override the auto-detected capability.
+        base_url: Override the backend base URL.
+        timeout_seconds: Per-page OCR timeout.
+        max_pages: Hard cap on pages processed.
+    """
+    cap = capability or auto_capability(pdf_path)
+    png_paths = _render_pdf_pages_to_pngs(pdf_path)
+    if len(png_paths) > max_pages:
+        png_paths = png_paths[:max_pages]
+
+    start = time.monotonic()
+    page_texts: list[str] = []
+    backend_used = ""
+    model_used = ""
+    for i, png in enumerate(png_paths):
+        result = ocr(OcrRequest(
+            capability=cap,
+            image_path=png,
+            base_url=base_url,
+            timeout_seconds=timeout_seconds,
+        ))
+        page_texts.append(f"\n\n[Page {i+1}]\n{result.text}")
+        backend_used = result.backend.value
+        model_used = result.model
+
+    return {
+        "text": "".join(page_texts),
+        "page_count": len(png_paths),
+        "duration_ms": int((time.monotonic() - start) * 1000),
+        "backend": backend_used,
+        "model": model_used,
+        "capability": cap.value,
+    }

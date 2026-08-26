@@ -22,6 +22,8 @@ letta>=0.50
 # Web scraping + PDF
 firecrawl-py>=1.0
 pypdf>=4.0
+pypdfium2>=4.0
+pillow>=10.0
 
 # Reactive notebooks
 marimo>=0.10
