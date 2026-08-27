@@ -320,7 +320,7 @@ def _embedder_entries() -> dict[str, ModelRegistryEntry]:
             available=True,
             litellm_alias="openai/bge-m3",
             profile="both",
-            notes="Canonical KCG embedder for all 14 CocoIndex flows.",
+            notes="Canonical Cianfhoghlaim embedder for all 14 CocoIndex flows.",
             languages=("en", "ga", "cy", "gd"),
         ),
     }
