@@ -1,10 +1,29 @@
 # Mirror of pyproject.toml dependencies for pip users.
 # Canonical dependency source is pyproject.toml — edit that file first.
 # Run `uv sync` (preferred) or `pip install -r requirements.txt` (fallback).
+#
+# Versions pinned to the repos verified against:
+# - google-adk 2.7.x (support-memory-lab)
+# - gradio 5.28+ (gr.Workflow + gr.mcp + ZeroGPU)
+# - huggingface_hub 0.30+ (gradio_client, hf CLI, hf skills add)
 
-# Data ingestion (DLT + MotherDuck + DuckDB + Ibis)
+# ADK 2 agent runtime — the canonical agent framework
+google-adk>=2.7.1,<3.0
+
+# Gradio 5.28+ for gr.Workflow (editorial canvas), gr.mcp (Spaces-as-MCP),
+# ZeroGPU (@spaces.GPU), server-side rendering
+gradio>=5.28.0,<6.0
+
+# HuggingFace Hub — for gradio_client + the `hf` CLI + hf skills add
+huggingface_hub>=0.30
+
+# FastMCP for the per-subject MCP servers
+fastmcp>=0.4
+
+# Data ingestion (DLT + MotherDuck + DuckDB + DuckLake)
 dlt>=1.0,<2.0
 duckdb>=1.0
+ducklake>=0.10
 motherduck>=0.10
 ibis-framework[duckdb]>=9.0
 
@@ -12,9 +31,19 @@ ibis-framework[duckdb]>=9.0
 baml-py>=0.223.0
 litellm>=1.50
 
-# Observability (Langfuse + structlog)
+# Vector + graph storage (LanceDB + FalkorDB + NetworkX for skill graph)
+lancedb>=0.10
+falkordb>=1.0
+networkx>=3.0
+
+# Knowledge graph + temporal memory (Graphiti + Cognee)
+graphiti-core>=0.20
+cognee>=0.2
+
+# Observability (Langfuse + structlog + MLflow)
 langfuse>=3.0
 structlog>=24.0
+mlflow>=2.20
 
 # Agent memory (Letta)
 letta>=0.50
@@ -24,11 +53,17 @@ firecrawl-py>=1.0
 pypdf>=4.0
 pyjwt>=2.8
 pypdfium2>=4.0
-pypdfium2>=4.0
 pillow>=10.0
 
 # Reactive notebooks
 marimo>=0.10
+
+# Schemas + settings + HTTP
+pydantic>=2.0
+pydantic-settings>=2.0
+python-dotenv>=1.0
+httpx>=0.27
+requests>=2.31
 
 # --- dev (not auto-installed by `pip install -r requirements.txt`) ---
 # Install with: pip install -r requirements.txt -r requirements-dev.txt
