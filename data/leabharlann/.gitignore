@@ -1,0 +1,11 @@
+# The full 3.6 GB corpus lives in cianfhoghlaim/leabharlann/.
+# Only the manifests + READMEs are committed (the manifests are the
+# canonical integrity record). PDFs are fetched on demand via
+# ./fetch_full_corpus.sh.
+
+# All PDF subdirs — never committed (fetched via the script)
+*.pdf
+**/*.pdf
+
+# BUT keep the manifest CSVs (they ARE committed)
+!*.manifest.csv
