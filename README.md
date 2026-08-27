@@ -155,12 +155,16 @@ Hard-rejected: `@cf/*` (Cloudflare Workers AI), `qwen3-coder-*`.
 
 ## Tests
 
-```
-$ uv run pytest tests/ -q
-164 passed, 13 skipped in 0.38s
-```
+The `tests/` directory contains ~250 test functions across 24 modules.
+The README's earlier `164 passed, 13 skipped` claim is stale; see
+[`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md) for the 7 known failures
+(5 pre-existing + 2 surfaced by the refactor). Per the August 2026
+refactor agreement, test fixes are deferred to a post-hackathon pass;
+the substantive work is the platform.
 
-The 13 skips require Python 3.11+ DLT (this box's `.venv` is 3.9).
+```bash
+uv run pytest tests/ -q  # see docs/KNOWN_ISSUES.md for known failures
+```
 
 ## License
 

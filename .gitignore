@@ -142,6 +142,10 @@ docker-compose.override.yml
 *.orig
 *.rej
 .cache/
+
+# --- Agent harness (opencode/cline/etc.) ----------------------------------
+# Kept local-only for now; promote to a tracked subset as the agent surface matures.
+.agents/
 .local/
 .serverless/
 .terraform/

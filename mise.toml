@@ -21,23 +21,27 @@ UV_PROJECT_ENVIRONMENT = "{{ config_root }}/.venv"
 MISE_AUTO_INSTALL = "false"
 
 # --- Pinned tool versions ---------------------------------------------------
+# Pinned to the versions verified against the reference repos:
+# - google-adk 2.7.1, gr.Workflow (gradio 5.28+), huggingface_hub 0.30+, fastmcp 0.4+
 [tools]
 python        = "3.12"
-uv            = "0.5.x"
+uv            = "latest"
 ruff          = "0.6.x"
 mypy          = "1.10.x"
 baml-cli      = "0.223.x"
-# node is optional — only needed if you build the web/ TanStack Start frontend
+# node is required for the web/ TanStack Start frontend
 node          = "20"
 docker        = "latest"
 
 # --- Task aliases (back-compat with the legacy `mise run` colon-form) -------
-[aliases]
-# canonical alias: setup -> sync
-"sync:all"    = "sync"
-"deps:install" = "sync"
-"test:fast"   = "test -- -x --ff"
-"format:check" = "lint:format-check"
+[tasks."sync:all"]
+depends = ["sync"]
+
+[tasks."deps:install"]
+depends = ["sync"]
+
+[tasks."format:check"]
+depends = ["lint:format-check"]
 
 [settings]
 # Always load these env vars (from .env or shell)
