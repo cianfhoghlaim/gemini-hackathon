@@ -1,0 +1,67 @@
+---
+policy_corpus: ireland_ncca
+version: 1
+created_at: 2026-08-27
+source: cianfhoghlaim/leaving_certificate
+description: |
+  The 5 NCCA policy documents that constitute the constitutional source of
+  truth for the gemini_hackathon LC/JC certificate pipeline. Every claim
+  on every generated certificate cites a page in one of these PDFs.
+
+documents:
+  - file: SC-L1-L2-Programme-Statement.pdf
+    bytes: 1016216
+    role: senior_cycle_framework
+    description: |
+      The NCCA Senior Cycle (Leaving Certificate) programme statement.
+      Defines the 5 Key Competencies (Communicating, Being Creative,
+      Working with Others, Managing Information & Thinking, Managing
+      Myself) and the Senior Cycle framework (established LC + new
+      Senior Cycle subjects + L1LP/L2LP/Special Ed paths).
+    certificate_relevance: senior_cycle (LC)
+
+  - file: key-competencies-in-senior-cycle_en.pdf
+    bytes: 1217784
+    role: key_competencies_vocabulary
+    description: |
+      Authoritative vocabulary + assessment language for the 5 NCCA Key
+      Competencies. Used by BAML `ExtractKeyCompetencies` to ground the
+      certificate's competency strip in official descriptors.
+    certificate_relevance: senior_cycle (LC) + junior_cycle (JC)
+
+  - file: the-potential-of-online-learning-environments_en.pdf
+    bytes: 1493888
+    role: online_learning_guidance
+    description: |
+      NCCA advisory on online learning environments. Authorises the
+      "technology-supported assessment" framing the certificate uses.
+    certificate_relevance: cert_delivery
+
+  - file: the-potential-of-technology-to-support-online-certification-and-reporting.pdf
+    bytes: 1583234
+    role: certification_reporting_guidance
+    description: |
+      NCCA advisory on tech-enabled certification and reporting. Defines
+      the official frame for digital credentials — every page cited by
+      the certificate pipeline.
+    certificate_relevance: cert_delivery + PDF/PNG generation
+
+  - file: scr-advisory-report_en.pdf
+    bytes: 1558251
+    role: senior_cycle_review_advisory
+    description: |
+      Senior Cycle Review advisory report (SCR). The reform framework that
+      introduced L1LP/L2LP/Special Ed + revised Key Competencies.
+    certificate_relevance: senior_cycle (LC) reform context
+
+provenance:
+  source_repo: cianfhoghlaim
+  source_path: leaving_certificate/
+  lift_date: 2026-08-27
+  lift_method: verbatim
+  checksum_sha256:
+    SC-L1-L2-Programme-Statement.pdf: 03de8b98b3d008fc61b076a2d18f90266c0e58767f5947da59ec721ac98da348
+    key-competencies-in-senior-cycle_en.pdf: 25277a3ac5c2ed96e491dab8c26b09307f6b335c42f88df2fc04f0ff02980644
+    the-potential-of-online-learning-environments_en.pdf: edfbb6738926adf2bd16d8ee9bf8bde8f6cf27687fbaaa62f0fbb3f1ce090b3c
+    the-potential-of-technology-to-support-online-certification-and-reporting.pdf: 6625f8ec45c2b196d3b4d48907f160276d0c2f5ca4956d9925f52053e26e81a3
+    scr-advisory-report_en.pdf: c733e0f7f2ca86c45daad4a9c0050bb69ae17f47078fa519ea4ff551d6bfbeb0
