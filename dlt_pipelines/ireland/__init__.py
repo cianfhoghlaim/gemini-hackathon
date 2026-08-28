@@ -1,37 +1,74 @@
-"""gemini_hackathon.dlt_pipelines.ireland — Ireland K-12 + LC DLT sources.
+"""Ireland DLT pipeline namespace — the 8 core NCCA LC subjects.
 
-Lifted + rewritten from `cianfhoghlaim/dlt_sources/education/ireland/british_isles/`.
-The 5 educational stages are covered:
+Lifted from `cianfhoghlaim/dlt_sources/education/ireland/british_isles/`.
 
-  - Aistear (Early Years 0-6)        — placeholder (W5 scope: Primary + Secondary)
-  - Primary (4-12)                   — primary.py
-  - Junior Cycle (12-15)              — junior_cycle.py
-  - Senior Cycle / Leaving Cert (15-19) — leaving_cert.py + ncca_<subject>.py × 6
-  - Tertiary                          — deferred (Phase 2)
+Re-exports the canonical subjects factory from `_subject_base.py`
++ the `IrelandJurisdictionPipeline` from `_base/jurisdiction_pipeline_base.py`.
 
-Modules:
-  - _shared               — `named_destinations()` factory
-  - primary               — NCCA Primary curriculum DLT source
-  - junior_cycle          — NCCA Junior Cycle DLT source
-  - leaving_cert          — NCCA Leaving Cert DLT source (the umbrella)
-  - ncca_chemistry        — per-subject NCCA chemistry DLT source
-  - ncca_computer_science — per-subject NCCA computer_science DLT source
-  - ncca_english          — per-subject NCCA english DLT source
-  - ncca_gaeilge          — per-subject NCCA gaeilge DLT source (bilingual)
-  - ncca_geography        — per-subject NCCA geography DLT source
-  - ncca_mathematics      — per-subject NCCA mathematics DLT source
+Usage:
 
-The 6 NCCA-adjacent subjects (accounting, biology, business, french,
-irish_t2, physics) are scaffolded but not lifted in W5 — they ship in
-W11 with the England AQA/OCR/Pearson equivalents.
+    from dlt_pipelines.ireland import create_mathematics_source, IrelandJurisdictionPipeline
+
+    pages, pdfs = create_mathematics_source(cycle="scoil_sinsearach", language="en")
+    for page in pages():
+        print(page)
+
+    pipeline = IrelandJurisdictionPipeline()
+    for cohort in pipeline.cohorts():
+        print(cohort.pipeline_key, cohort.source_url)
 """
 
-from dlt_pipelines.ireland._shared import (
-    named_destinations,
-    get_default_destination,
+from .._subject_base import (
+    CrawledPage,
+    PDFResource,
+    crawl_subject,
+    extract_pdfs_from_subject,
+)
+from .._base.jurisdiction_pipeline_base import (
+    IrelandJurisdictionPipeline,
+    JurisdictionPipelineBase,
+    PipelineCohort,
+)
+from ._manifest import (
+    all_active_subjects,
+    all_lc_subjects,
+    all_stages,
+    lookup,
+)
+from .subjects import (
+    ALL_LC_SUBJECTS,
+    create_all_lc_subjects_sources,
+    create_biology_source,
+    create_chemistry_source,
+    create_computer_science_source,
+    create_english_source,
+    create_geography_source,
+    create_gaeilge_source,
+    create_mathematics_source,
+    create_physics_source,
 )
 
+
 __all__ = [
-    "named_destinations",
-    "get_default_destination",
+    "ALL_LC_SUBJECTS",
+    "CrawledPage",
+    "IrelandJurisdictionPipeline",
+    "JurisdictionPipelineBase",
+    "PDFResource",
+    "PipelineCohort",
+    "all_active_subjects",
+    "all_lc_subjects",
+    "all_stages",
+    "create_all_lc_subjects_sources",
+    "create_biology_source",
+    "create_chemistry_source",
+    "create_computer_science_source",
+    "create_english_source",
+    "create_geography_source",
+    "create_gaeilge_source",
+    "create_mathematics_source",
+    "create_physics_source",
+    "crawl_subject",
+    "extract_pdfs_from_subject",
+    "lookup",
 ]

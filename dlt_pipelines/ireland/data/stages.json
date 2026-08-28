@@ -1,0 +1,52 @@
+{
+  "$schema": "https://gemini-hackathon.ie/schemas/stages.schema.json",
+  "version": "1.0.0",
+  "description": "The 5 British Isles education stages for the gemini-hackathon. Lifted from cianfhoghlaim/dlt_sources/education/ireland/british_isles/subjects/stages.json.",
+  "stages": [
+    {
+      "slug": "aistear",
+      "name_en": "Early Years (Aistear)",
+      "name_ga": "Naíonraí (Aistear)",
+      "age_range": "0-6",
+      "ncca_cycle": "EY",
+      "subjects": ["language", "numeracy", "wellbeing"],
+      "primary_components": ["aistear_theme_1_wellbeing", "aistear_theme_2_identity_belonging", "aistear_theme_3_communicating", "aistear_theme_4_exploring_thinking"]
+    },
+    {
+      "slug": "primary",
+      "name_en": "Primary (Bunscoil)",
+      "name_ga": "Bunscoil",
+      "age_range": "4-12",
+      "ncca_cycle": "PRIMARY",
+      "subjects": ["english", "gaeilge", "mathematics", "sese", "pe", "music", "art", "drama"],
+      "primary_components": ["language", "mathematics", "stem", "wellbeing"]
+    },
+    {
+      "slug": "junior_cycle",
+      "name_en": "Junior Cycle (MeanScoil)",
+      "name_ga": "Meánscoil",
+      "age_range": "12-15",
+      "ncca_cycle": "JC",
+      "subjects": ["english", "gaeilge", "mathematics", "science", "history", "geography", "pe", "cba_short_courses"],
+      "primary_components": ["jc_18_subjects", "jc_36_cbas", "jc_short_courses"]
+    },
+    {
+      "slug": "scoil_sinsearach",
+      "name_en": "Senior Cycle / Leaving Certificate",
+      "name_ga": "Scoil Sinsearach / Ardteist",
+      "age_range": "15-19",
+      "ncca_cycle": "SC",
+      "subjects": ["mathematics", "english", "gaeilge", "french", "history", "geography", "physics", "chemistry", "biology", "business", "accounting", "art", "music", "applied_mathematics", "computer_science"],
+      "primary_components": ["lc_subjects", "lc_exam_papers", "lc_marking_schemes", "lc_certificates"]
+    },
+    {
+      "slug": "ollscoil",
+      "name_en": "Tertiary (Ollscoil)",
+      "name_ga": "Ollscoil",
+      "age_range": "18+",
+      "ncca_cycle": "TERTIARY",
+      "subjects": ["cao_courses", "qqi_fet_awards"],
+      "primary_components": ["cao_applications", "qqi_awards", "university_courses"]
+    }
+  ]
+}
