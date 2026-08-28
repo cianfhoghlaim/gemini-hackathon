@@ -312,6 +312,50 @@ def get_duckdb_destination(database_path: Path | None = None) -> duckdb:
     return duckdb(credentials=str(database_path))
 
 
+# ---------------------------------------------------------------------------
+# Named destinations factory (lifted from cianfhoghlaim/dlt_sources/common/named_destinations.py)
+# ---------------------------------------------------------------------------
+
+#: The 3 canonical destinations for the gemini-hackathon.
+NAMED_DESTINATIONS: dict[str, str] = {
+    # Local DuckDB (the dev default — used by every DLT resource in this repo)
+    "duckdb_local": "duckdb:///./data/gemini_hackathon.duckdb",
+    # DuckLake (the canonical catalog; requires MOTHERDUCK_TOKEN + DuckLake setup)
+    "ducklake_gemini_hackathon": "ducklake:///./data/gemini_hackathon.ducklake",
+    # MotherDuck (the cloud-managed DuckDB + catalog; optional)
+    "motherduck_gemini_hackathon": "md:gemini_hackathon",
+}
+
+
+def get_named_destination(name: str) -> str:
+    """Resolve a named destination to its DLT credentials string.
+
+    The canonical destinations for the gemini-hackathon:
+
+      duckdb_local              → duckdb:///./data/gemini_hackathon.duckdb (default)
+      ducklake_gemini_hackathon  → ducklake:///./data/gemini_hackathon.ducklake
+      motherduck_gemini_hackathon → md:gemini_hackathon (requires MOTHERDUCK_TOKEN)
+
+    Override any named destination via the env var
+    `GEMINI_HACKATHON_DESTINATION_<NAME_UPPER>` (e.g.
+    `GEMINI_HACKATHON_DESTINATION_DUCKLAKE_GEMINI_HACKATHON`).
+
+    Raises:
+        KeyError: when `name` is not a known destination.
+    """
+    if name not in NAMED_DESTINATIONS:
+        raise KeyError(
+            f"Unknown destination {name!r}. Known: {sorted(NAMED_DESTINATIONS.keys())}"
+        )
+    env_key = f"GEMINI_HACKATHON_DESTINATION_{name.upper()}"
+    return os.environ.get(env_key, NAMED_DESTINATIONS[name])
+
+
+def list_named_destinations() -> list[str]:
+    """List all known destination names."""
+    return list(NAMED_DESTINATIONS.keys())
+
+
 __all__ = [
     "DEFAULT_RETRY_ATTEMPTS",
     "DEFAULT_RETRY_BACKOFF_SECONDS",
@@ -321,6 +365,10 @@ __all__ = [
     "LC_LANGUAGE_DIRS",
     "LC_SUBJECTS_PATH",
     "LC_SUBJECT_DIRS",
+    # Named destinations factory
+    "NAMED_DESTINATIONS",
+    "get_named_destination",
+    "list_named_destinations",
     # Column contracts
     "OFFICIAL_DOC_COLUMNS",
     "PDF_METADATA_COLUMNS",
