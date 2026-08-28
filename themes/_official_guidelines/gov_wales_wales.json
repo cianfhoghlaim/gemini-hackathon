@@ -1,0 +1,23 @@
+{
+  "jurisdiction": "wales",
+  "awarding_body": "gov.wales (Welsh Government)",
+  "source_url": "https://www.gov.wales",
+  "source_page": "Logo Guidelines 2022 + Welsh Statutory Instruments typography decision (22 Dec 2025)",
+  "license": "Open Government Licence v3.0",
+  "extracted_at": "2026-08-27",
+  "palette": {
+    "wg_red": "#A0252A"
+  },
+  "typography": {
+    "english_statutory": "Helvetica (legacy)",
+    "welsh_statutory": "Arimo (chosen by Counsel General, Dec 2025 — Helvetica REJECTED because it does not fully support Welsh diacritics)",
+    "web": "GOV.WALES GEL design system",
+    "diacritics_full": "ŵ ŷ ẁ ẃ ẅ ỳ"
+  },
+  "accessibility": {
+    "wcag_level": "2.2 AA",
+    "declaration_url": "https://www.gov.wales/accessibility-standards-govwales",
+    "declaration_status": "GOV.WALES meets WCAG 2.2 AA",
+    "legislation": "Equality Act 2010 + Welsh Language (Wales) Measure 2011"
+  }
+}

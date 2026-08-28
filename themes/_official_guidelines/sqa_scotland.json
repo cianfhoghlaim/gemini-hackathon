@@ -1,0 +1,23 @@
+{
+  "jurisdiction": "scotland",
+  "awarding_body": "SQA / Qualifications Scotland",
+  "source_url": "https://www.sqa.org.uk/sqa/48428.html",
+  "source_page": "SQA Course Specification PDFs + SCQF brand guidelines",
+  "license": "Crown copyright",
+  "extracted_at": "2026-08-27",
+  "palette": {
+    "navy": "#003087",
+    "accent_red": "#7C2855"
+  },
+  "typography": {
+    "specifications": "Arial (regular/semibold/bold)",
+    "web": "Roboto (Qualifications Scotland since 2026)",
+    "fallback": "sans-serif"
+  },
+  "accessibility": {
+    "wcag_level": "2.2 AA",
+    "declaration_status": "Scotland uses SG Design System",
+    "legislation": "Equality Act 2010 (UK-wide)"
+  },
+  "note": "SQA was replaced by Qualifications Scotland on 1 February 2026. Legacy SQA documents remain valid until next review."
+}

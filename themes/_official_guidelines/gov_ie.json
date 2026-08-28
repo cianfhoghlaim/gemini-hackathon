@@ -1,0 +1,34 @@
+{
+  "jurisdiction": "ireland",
+  "awarding_body": "gov.ie",
+  "source_url": "https://github.com/ogcio/govie-ds",
+  "source_page": "packages/design/tokens/tokens/light/primitive/color.json",
+  "license": "MIT (OGCIO open-source)",
+  "extracted_at": "2026-08-27",
+  "palette": {
+    "emerald_500": "#00b089",
+    "emerald_600": "#008971",
+    "emerald_700": "#006658",
+    "emerald_800": "#004d44",
+    "emerald_900": "#003630",
+    "gold_500": "#a39161",
+    "gold_600": "#8a7742",
+    "gray_950": "#0b0c0c",
+    "gray_500": "#828893",
+    "red_500": "#d4351c",
+    "blue_500": "#457cd8",
+    "green_500": "#0ca044",
+    "yellow_500": "#e3b30c",
+    "purple_500": "#7f56e1"
+  },
+  "typography": {
+    "primary": "Lato, Arial, sans-serif",
+    "secondary": "Lato, Arial, sans-serif",
+    "mono": "ui-monospace, Cascadia Mono, Segoe UI Mono, consolas, Liberation Mono, monospace"
+  },
+  "accessibility": {
+    "wcag_level": "2.2 AA",
+    "declaration_status": "govie-ds is built to WCAG 2.2 AA",
+    "legislation": "Disability Act 2005, EU S.I. 358/2020"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "jurisdiction": "northern_ireland",
+  "awarding_body": "NIDirect",
+  "source_url": "https://www.nidirect.gov.uk",
+  "source_page": "uxg.nidirect.gov.uk masthead + accessibility statement",
+  "license": "Open Government Licence v3.0",
+  "extracted_at": "2026-08-27",
+  "palette": {
+    "navy": "#003366",
+    "link": "#1d70b8"
+  },
+  "typography": {
+    "body": "GDS Transport / GOV.UK Frontend sans-serif"
+  },
+  "accessibility": {
+    "wcag_level": "2.2 AA",
+    "declaration_url": "https://www.nidirect.gov.uk/articles/accessibility-features",
+    "declaration_status": "nidirect aims to meet WCAG 2.2 Level AA",
+    "legislation": "Disability Discrimination Act 1995 + Section 75 NI Act 1998"
+  }
+}

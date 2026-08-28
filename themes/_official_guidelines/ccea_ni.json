@@ -1,0 +1,20 @@
+{
+  "jurisdiction": "northern_ireland",
+  "awarding_body": "CCEA (Council for the Curriculum, Examinations & Assessment)",
+  "source_url": "https://ccea.org.uk",
+  "source_page": "Logo + spec PDF covers",
+  "license": "CCEA brand",
+  "extracted_at": "2026-08-27",
+  "palette": {
+    "navy": "#1E3765",
+    "regulation_seal_green": "#00853F"
+  },
+  "typography": {
+    "specifications": "Arial / Arial Bold"
+  },
+  "accessibility": {
+    "wcag_level": "2.2 AA",
+    "declaration_status": "CCEA uses NIDirect frontend",
+    "legislation": "Disability Discrimination Act 1995 + Section 75 NI Act 1998 + PSBAR 2018"
+  }
+}

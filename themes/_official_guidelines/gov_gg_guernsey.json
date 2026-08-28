@@ -1,0 +1,21 @@
+{
+  "jurisdiction": "guernsey",
+  "awarding_body": "gov.gg (States of Guernsey)",
+  "source_url": "https://www.gov.gg/article/152527/Changes-to-the-States-of-Guernsey-structure",
+  "source_page": "States of Guernsey structure + gov.gg masthead",
+  "license": "States of Guernsey open data",
+  "extracted_at": "2026-08-27",
+  "palette": {
+    "coral_red": "#C8102E"
+  },
+  "typography": {
+    "body": "sans-serif system stack",
+    "fallback": "Arial"
+  },
+  "accessibility": {
+    "wcag_level": "2.2 AA (target)",
+    "declaration_status": "gov.gg targets WCAG 2.2 AA",
+    "legislation": "Disability Discrimination (Guernsey) Ordinance 2004"
+  },
+  "note": "No public brand PDF like Jersey or Scotland. Only the Principal Committees PDF + the masthead hex."
+}

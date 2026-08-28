@@ -1,0 +1,56 @@
+{
+  "scope": "cross-jurisdiction",
+  "purpose": "WCAG 2.2 AA + BDA Dyslexia Style Guide 2023 + RNIB Clear Print + JCQ Access Arrangements 2025-26",
+  "wcag_level": "2.2 AA",
+  "wcag_sources": {
+    "contrast_minimum": "https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html",
+    "non_text_contrast": "https://www.w3.org/TR/WCAG22/#non-text-contrast",
+    "focus_visible": "https://www.w3.org/TR/WCAG22/#focus-visible",
+    "text_spacing": "https://www.w3.org/TR/WCAG22/#text-spacing"
+  },
+  "contrast_floor": {
+    "body_text": "4.5:1",
+    "large_text": "3:1 (>= 18 pt or 14 pt bold)"
+  },
+  "functional_colors": {
+    "text": "#1a1a1a on #ffffff (17.8:1 AAA)",
+    "link": "#0065bd (4.65:1 AA at 18pt+) or #1d70b8 (4.71:1 AA at 18pt+)",
+    "success": "#1a7032 (5.92:1 AA)",
+    "error": "#d32205 (4.83:1 AA)",
+    "focus_background": "#fdd522 (passes WCAG 2.2 SC 2.4.7)"
+  },
+  "bda_dyslexia_style_guide_2023": {
+    "readable_fonts": ["Arial", "Comic Sans", "Verdana", "Tahoma", "Century Gothic", "Trebuchet", "Calibri", "Open Sans"],
+    "font_size": "12-14 pt min (1-1.2 em / 16-19 px)",
+    "letter_spacing": "~35% of avg letter width",
+    "word_spacing": ">= 3.5x letter-spacing",
+    "line_spacing": "1.5x",
+    "no_italics": true,
+    "no_underlining": true,
+    "no_all_caps": true,
+    "headings": ">= 20% larger than body",
+    "color_blindness": "Avoid green/red/pink combinations",
+    "background": "Cream / soft-pastel rather than pure white",
+    "left_aligned": true,
+    "sentence_length": "60-70 chars max"
+  },
+  "rnib_clear_print": {
+    "min_font_size": "12 pt Arial, ideally 14 pt",
+    "line_spacing": "1.5x",
+    "weight": "Medium or bold"
+  },
+  "jcq_access_arrangements_2025_26": {
+    "modified_paper_font_18": "Arial Bold 18pt on A4",
+    "modified_paper_font_24_a4": "Arial Bold 24pt on A4",
+    "modified_paper_font_24_a3": "Arial Bold 24pt on A3",
+    "modified_paper_font_36_a3": "Arial Bold 36pt on A3",
+    "word_processor_min": "18-pt font",
+    "line_spacing": "1.5x"
+  },
+  "auto_checks": {
+    "per_render": "Verify contrast 4.5:1 / 3:1 on every render",
+    "per_page": "Verify text-spacing reflow at 1.5x line-height + 2x paragraph + 0.12em letter + 0.16em word",
+    "per_pdf": "Generate PDF/A with tagged headings",
+    "per_certificate": "Verify UNOFFICIAL banner present + 5 NCCA PDF page citations in provenance footer"
+  }
+}

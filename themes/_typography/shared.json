@@ -1,0 +1,26 @@
+{
+  "scope": "cross-jurisdiction",
+  "purpose": "The single typography stack + accessibility baseline that satisfies ALL 8 subnations + WCAG 2.2 AA + BDA Dyslexia Style Guide + JCQ Access Arrangements",
+  "typography_stack": {
+    "primary": "Arial, Helvetica Neue, Helvetica, Open Sans, Roboto, sans-serif",
+    "rationale": "Arial is the only font confirmed to render Welsh ŵ/ŷ in every exam-board PDF (WJEC, CCEA, SQA). It is also on the BDA Dyslexia-friendly Style Guide 2023 list, the RNIB Clear Print fallback (12 pt min, ideally 14 pt), the Jersey + NIDirect-approved fallback, and renders all Welsh / Manx (no diacritics) / Irish séimhiú (ṡ ḟ ḃ ḋ ġ ṗ ṫ ċ ṁ) / Jèrriais / French accented characters."
+  },
+  "scale": {
+    "body": "16 px / 1 rem (400 weight, line-height 1.5)",
+    "body_bold": "16 px / 600 weight",
+    "caption": "14 px / 400 weight",
+    "h4": "18 px / 600 weight (matches JCQ 18 pt modified-paper floor)",
+    "h3": "24 px / 600 weight",
+    "h2": "32 px / 700 weight",
+    "h1": "40 px / 700 weight",
+    "display": "56 px / 700 weight",
+    "letter_spacing": "0.01 em (BDA ~35% of avg letter width)",
+    "word_spacing": "0.05 em (BDA >=3.5x letter-spacing)",
+    "paragraph_spacing": "1 em (WCAG 2.2 SC 1.4.12)",
+    "line_height": "1.5 (BDA + JCQ AARA §5.11 + govie primitive)"
+  },
+  "alternates": {
+    "welsh_heavy_surfaces": "Arimo (gov.wales Counsel General, Dec 2025)",
+    "jersey_surfaces": "Proxima Nova (gov.je ServiceManual)"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "jurisdiction": "jersey",
+  "awarding_body": "gov.je (States of Jersey)",
+  "source_url": "https://www.gov.je/ServiceManual/BrandDesign/Pages/Colours.aspx",
+  "source_page": "Primary colours + Secondary + Typeface",
+  "license": "States of Jersey open data",
+  "extracted_at": "2026-08-27",
+  "palette": {
+    "jersey_red": "#B60011",
+    "charcoal": "#1D1D1B",
+    "dark_grey": "#585958",
+    "mid_grey": "#7D7D7D",
+    "pale_grey": "#E0E0E0",
+    "light_grey": "#EEF0F0",
+    "white": "#FFFFFF",
+    "focus_blue_dark": "#095AA2",
+    "focus_blue_light": "#67B0EA",
+    "primary_button": "#006600",
+    "secondary_button": "#0047AF"
+  },
+  "typography": {
+    "primary": "Proxima Nova (regular/semibold/bold)",
+    "fallback": "Arial",
+    "no_italic_online": "Accessibility rule — italic Proxima Nova NOT used online (only in print)"
+  },
+  "accessibility": {
+    "wcag_level": "2.2 AA (target)",
+    "declaration_status": "gov.je targets WCAG 2.2 AA",
+    "legislation": "Disability Discrimination (Jersey) Law 2003 + Discrimination (Jersey) Law 2013"
+  }
+}

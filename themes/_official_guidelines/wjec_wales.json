@@ -1,0 +1,22 @@
+{
+  "jurisdiction": "wales",
+  "awarding_body": "WJEC / CBAC",
+  "source_url": "https://www.wjec.co.uk",
+  "source_page": "WJEC masthead + specimen PDF footers",
+  "license": "WJEC brand",
+  "extracted_at": "2026-08-27",
+  "palette": {
+    "wjec_red": "#C8102E"
+  },
+  "typography": {
+    "specifications": "Arial / Arial Bold (Welsh diacritics ŵ ŷ supported)",
+    "welsh_language": "Welsh-medium PDFs use Arial (verified for ŵ ŷ)",
+    "bilingual_rule": "Welsh not less favourably than English (Welsh Language (Wales) Measure 2011 Part 4)"
+  },
+  "accessibility": {
+    "wcag_level": "2.2 AA",
+    "declaration_status": "WJEC defaults to GOV.WALES GEL design system",
+    "legislation": "Equality Act 2010 + Welsh Language (Wales) Measure 2011"
+  },
+  "note": "WJEC and CBAC are the same legal entity; the Welsh-language name is CBAC."
+}

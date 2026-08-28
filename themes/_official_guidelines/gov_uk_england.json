@@ -1,0 +1,47 @@
+{
+  "jurisdiction": "england",
+  "awarding_body": "DfE / GOV.UK (GDS Design System)",
+  "source_url": "https://design-system.service.gov.uk/styles/colour/",
+  "source_page": "Functional colours + GOV.UK web palette",
+  "license": "Open Government Licence v3.0",
+  "extracted_at": "2026-08-27",
+  "palette": {
+    "text": "#0b0c0c",
+    "secondary_text": "#484949",
+    "inverse_text": "#ffffff",
+    "link": "#1a65a6",
+    "link_hover": "#0f385c",
+    "link_visited": "#54319f",
+    "link_active": "#0b0c0c",
+    "border": "#cecece",
+    "input_border": "#0b0c0c",
+    "template_background": "#f4f8fb",
+    "body_background": "#ffffff",
+    "focus": "#ffdd00",
+    "focus_text": "#0b0c0c",
+    "error": "#ca3535",
+    "success": "#0f7a52",
+    "hover": "#cecece",
+    "brand": "#1d70b8",
+    "surface_background": "#f4f8fb",
+    "surface_text": "#0b0c0c",
+    "surface_border": "#8eb8dc"
+  },
+  "typography": {
+    "display": "GDS Transport (or Helvetica/Arial fallback off service.gov.uk)",
+    "body": "GDS Transport (or Helvetica/Arial fallback)",
+    "scale_large_h1": "48px / 50px line-height",
+    "scale_large_h2": "36px / 40px",
+    "scale_large_h3": "24px / 30px",
+    "scale_large_h4": "19px / 25px",
+    "scale_large_body": "19px",
+    "scale_small_body": "16px",
+    "line_height_rule": "Multiple of 5 px"
+  },
+  "accessibility": {
+    "wcag_level": "2.2 AA",
+    "declaration_url": "https://design-system.service.gov.uk/accessibility/",
+    "declaration_status": "GOV.UK Frontend meets WCAG 2.2 AA",
+    "legislation": "Equality Act 2010 (Public Sector Equality Duty), PSBAR 2018"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "jurisdiction": "ireland",
+  "awarding_body": "NCCA",
+  "source_url": "https://www.ncca.ie",
+  "source_page": "Brand identity extracted from data/ireland/ncca_policy/*.pdf covers + https://ncca.ie/en/accessibility-statement/",
+  "license": "NCCA Government of Ireland - Crown copyright",
+  "extracted_at": "2026-08-27",
+  "palette": {
+    "primary": "#CC4500",
+    "primary_secondary": "#B51E01",
+    "primary_accent": "#F5B23E",
+    "title_orange": "#C93F02",
+    "mountain_coral": "#F28453",
+    "mountain_dark_red": "#882A04",
+    "mountain_grey": "#E3E3DB",
+    "deep_navy": "#1E2D5C"
+  },
+  "typography": {
+    "display": "Tahoma",
+    "body": "Times New Roman",
+    "fallback": "Arial"
+  },
+  "accessibility": {
+    "wcag_level": "2.1 AA",
+    "declaration_url": "https://ncca.ie/en/accessibility-statement/",
+    "declaration_status": "partially compliant",
+    "legislation": "Disability Act 2005, EU S.I. 358/2020"
+  }
+}

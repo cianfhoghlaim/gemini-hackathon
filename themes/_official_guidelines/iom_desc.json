@@ -1,0 +1,22 @@
+{
+  "jurisdiction": "isle_of_man",
+  "awarding_body": "IoM Government (DESC: Department of Education, Sport & Culture)",
+  "source_url": "https://www.yumpu.com/en/document/view/22052354/isle-of-man-government-corporate-identity-guidelines",
+  "source_page": "IoM Government Corporate Identity Guidelines (Oct 2006), p.17 (Corporate Fonts) + p.19 (Corporate colours)",
+  "license": "IoM Government Crown copyright",
+  "extracted_at": "2026-08-27",
+  "palette": {
+    "iom_red": "#BE1622",
+    "iom_grey": "#58595B",
+    "triskelion_yellow": "#F1B434"
+  },
+  "typography": {
+    "primary": "Tahoma",
+    "manx_language": "Same as English (no accented letters in modern Manx spelling)"
+  },
+  "accessibility": {
+    "wcag_level": "2.2 AA (target)",
+    "declaration_status": "IoM follows UK PSBAR standard by adoption",
+    "legislation": "Equality Act 2010 (UK extended) + Manx Equality Act 2017"
+  }
+}

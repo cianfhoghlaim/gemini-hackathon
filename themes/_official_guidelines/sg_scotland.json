@@ -1,0 +1,37 @@
+{
+  "jurisdiction": "scotland",
+  "awarding_body": "Education Scotland + Scottish Government (SG Design System)",
+  "source_url": "https://designsystem.gov.scot/styles/colour",
+  "source_page": "Main colours + Extended palette + Typography",
+  "license": "Open Government Licence v3.0",
+  "extracted_at": "2026-08-27",
+  "palette": {
+    "brand": "#0065bd",
+    "secondary_brand": "#333e48",
+    "text": "#1a1a1a",
+    "link": "#0065bd",
+    "link_hover": "#00437e",
+    "focus_background": "#fdd522",
+    "positive": "#1a7032",
+    "negative": "#d32205",
+    "extended_dark_blue": "#00437e",
+    "extended_darker_blue": "#002d54",
+    "extended_purple": "#741e6d",
+    "extended_pink": "#e5007e",
+    "extended_yellow": "#fdd522",
+    "extended_teal": "#28a197"
+  },
+  "typography": {
+    "body": "Roboto 300/400/700",
+    "h1_small": "30px / 40px",
+    "h1_large": "44px / 56px",
+    "body_small": "16px / 24px",
+    "body_large": "19px / 32px"
+  },
+  "accessibility": {
+    "wcag_level": "2.2 AA",
+    "declaration_url": "https://designsystem.gov.scot/styles/colour",
+    "declaration_status": "Robo font is WCAG 2.2 contrast-safe by default",
+    "legislation": "Equality Act 2010 (UK-wide) + PSBAR 2018"
+  }
+}
