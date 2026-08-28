@@ -4,11 +4,19 @@ Routes to the model-key in the LiteLLM registry. The full list at
 https://docs.litellm.ai/docs/providers covers Gemini (gemini-image-1.0, etc.),
 Vertex image generation, DALL-E, Stable Diffusion, and more.
 
-For the gemini_hackathon submission we use this for two Google models:
+For the gemini_hackathon submission we use this for Google models:
   - gemini-2.5-flash-image       (Gemini native image gen, multimodal output)
-  - imagen-3.0-generate-002      (Vertex Imagen)
+  - imagen-3.0-generate-002      (Vertex Imagen 3)
+  - imagen-4.0-generate-preview-06-06  (Vertex Imagen 4 preview — NEW Phase 2)
+  - gemini-3.5-flash            (the VLM extractor + primary)
+  - gemini-2.5-flash            (VLM fallback)
 
-Both are Google models and satisfy the hackathon's Google infrastructure
+For local image generation via Hugging Face (the Gemma / DiffusionGemma bonus):
+  - google/diffusiongemma-26B-A4B-it    via HF Inference Endpoints / llama-swap
+  - google/gemma-4-26B-A4B-it-qat-q4_0-gguf  via llama-swap local
+  - google/gemma-4-E4B-it-qat-q4_0-gguf     via llama-swap local (multimodal)
+
+All are Google models and satisfy the hackathon's Google infrastructure
 requirement. LiteLLM transparently picks Vertex AI when VERTEXAI_PROJECT
 is set, or AI Studio when GEMINI_API_KEY is set.
 """
@@ -104,3 +112,42 @@ __all__ = [
     "LiteLLMImageResult",
     "generate_with_litellm",
 ]
+
+
+# ---------------------------------------------------------------------------
+# HF / local-fallback image generation registry (Phase 2)
+# ---------------------------------------------------------------------------
+# The Google HF catalog of image-gen models for the bonus +0.4 (Gemma + DiffusionGemma).
+# These route through llama-swap or HF Inference Endpoints — not through LiteLLM.
+
+HF_IMAGEGEN_REGISTRY: dict[str, dict[str, str]] = {
+    # Google's first image-gen Gemma (Jun 2026, Apache-2.0, 25.8B MoE)
+    "google/diffusiongemma-26B-A4B-it": {
+        "license": "apache-2.0",
+        "params": "25.8B (MoE 4B active)",
+        "endpoint": "huggingface",
+        "use_for": "Image gen — primary Google HF model",
+        "downloads": "4.9M",
+    },
+    # Google's flagship multimodal Gemma 4 (52.8M DL #1 Gemma 4)
+    "google/gemma-4-26B-A4B-it-qat-q4_0-gguf": {
+        "license": "apache-2.0",
+        "params": "25.8B Q4 (~16 GB GGUF)",
+        "endpoint": "llama-swap",
+        "use_for": "Multimodal image gen + chat (local fallback)",
+        "downloads": "16M",
+    },
+    # Gemma 4 E4B — sweet-spot VLM (28.2M DL #1 Gemma 4 multimodal)
+    "google/gemma-4-E4B-it-qat-q4_0-gguf": {
+        "license": "apache-2.0",
+        "params": "8B active Q4 (~5 GB GGUF)",
+        "endpoint": "llama-swap",
+        "use_for": "Multimodal VLM (OCR + extraction + image gen)",
+        "downloads": "28.2M",
+    },
+}
+
+
+def list_hf_imagegen_models() -> list[str]:
+    """List the HF-hosted Google image-gen models available for the hackathon."""
+    return list(HF_IMAGEGEN_REGISTRY.keys())

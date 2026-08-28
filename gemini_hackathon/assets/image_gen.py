@@ -201,11 +201,28 @@ class _LiteLLMImageBackend:
     name = ImageGenBackend.LITELLM
     model_key = "gemini-2.5-flash-image"
 
+    # The expanded allow-list (Phase 2 — All Things Agentic Hackathon).
+    # Per the official hackathon rules the project must use a Google model
+    # other than Gemini 3.5 for image gen alongside FIBO + FLUX.
+    # No Veo (video) or Lyria (music) per user request.
+    ALLOWED_MODELS: set[str] = {
+        # --- existing ---
+        "gemini-2.5-flash-image",            # Nano-Banana; text+image → image
+        "imagen-3.0-generate-002",          # Vertex Imagen 3
+        # --- added for Phase 2 ---
+        "imagen-4.0-generate-preview-06-06", # Vertex Imagen 4 (preview)
+        "gemini-3.5-flash",                  # the VLM extractor / primary
+        "gemini-2.5-flash",                  # VLM fallback
+        "vertex_ai/imagen-4",                # explicit Vertex routing
+        "vertex_ai/imagen-3.0-generate-002",
+        "vertex_ai/gemini-3.5-flash",
+    }
+
     def __init__(self, model: str = "gemini-2.5-flash-image"):
-        # Only Google models are allowed by the hackathon profile.
-        allowed = {"gemini-2.5-flash-image", "imagen-3.0-generate-002"}
-        if model not in allowed:
-            raise ValueError(f"litellm backend only accepts {allowed}; got {model!r}")
+        if model not in self.ALLOWED_MODELS:
+            raise ValueError(
+                f"litellm backend only accepts {sorted(self.ALLOWED_MODELS)}; got {model!r}"
+            )
         self.model = model
 
     def is_available(self) -> bool:
