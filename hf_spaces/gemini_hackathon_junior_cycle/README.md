@@ -8,24 +8,29 @@ sdk_version: 5.28.0
 app_file: app.py
 pinned: false
 license: mit
-short_description: "MeanScoil (Junior Cycle) — 18 NCCA subjects + 16 short courses + 36 CBAs. The formative exit-card studio + CBA descripto"
+short_description: "MeanScoil (Junior Cycle) — 18 NCCA subjects + 16 short courses + 36 CBAs. The formative exit-card studio + CBA descriptor"
 ---
 
 # MeanScoil — Junior Cycle (12-15)
 
 > **gemini_hackathon** — the British Isles Education Platform.
-> One of the 5 editorial studios that ship for the All Things
-> Agentic 2026 hackathon (the headline surfaces are the 5 HF Spaces).
+> Submission for the **Google All Things Agentic Hackathon 2026** (Fortified Enterprise Fleet track).
+> Built with **Google ADK 2** + **Gemini 3.5 Flash** + **Gemma 4 26B-A4B** (via Unsloth Studio) + **DiffusionGemma** (image gen) + **FLUX** (via InvokeAI) + **FIBO** (JSON-native image gen).
 
-See [`gemini_hackathon_gradio/editorial_studio/`](https://github.com/cianfhoghlaim/gemini_hackathon)
-for the full editorial canvas.
+## Headline demo
 
-The 5 Spaces:
-  1. `gemini_hackathon_aistear` (Aistear, 0-6)
-  2. `gemini_hackathon_bunscoil` (Bunscoil, 4-12)
-  3. `gemini_hackathon_junior_cycle` (MeanScoil, 12-15)
-  4. `gemini_hackathon_leaving_certificate` (Scoil Sinsearach, 15-19) ← the headline
-  5. `gemini_hackathon_editorial_studio` (the big canvas)
+The 5-stage British Isles education palette (Aistear → Bunscoil → MeanScoil → Scoil Sinsearach → Ollscoil) across 8 subnations (Ireland + England live; NI / Wales / Scotland / IoM deferred).
 
-Stage: **junior_cycle**.
-Title: **MeanScoil — Junior Cycle (12-15)**.
+## The 17-notebook collection
+
+The full pipeline + Google ADK / AGUI / CopilotKit walkthrough lives in [`notebooks/converted/`](https://github.com/cianfhoghlaim/gemini-hackathon/tree/main/notebooks/converted).
+
+See the full index in [`leaving_certificate/README.md`](https://huggingface.co/.../leaving_certificate).
+
+## Live demo
+
+- **Hosted URL** (Cloud Run): <https://gemini-hackathon-<hash>.a.run.app>
+- **Source repo**: <https://github.com/cianfhoghlaim/gemini-hackathon>
+- **Architecture**: [`docs/ARCHITECTURE.md`](https://github.com/cianfhoghlaim/gemini-hackathon/blob/main/docs/ARCHITECTURE.md)
+
+See the parent repo: [`gemini_hackathon_gradio/editorial_studio/`](https://github.com/cianfhoghlaim/gemini-hackathon)
