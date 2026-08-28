@@ -113,3 +113,40 @@ client<llm> TestMock {
   }
   retry_policy MiniMaxRetry
 }
+
+// ----------------------------------------------------------------------------
+// BIEP v3 extractor (canonical for the lifted lc_extraction_template.baml)
+// ----------------------------------------------------------------------------
+// Points at the Vertex Gemini 3.5 Flash backend (the All Things Agentic
+// Hackathon Tier-1 model). The 5 canonical LC6 extraction functions in
+// stages/leaving_cycle.baml use this client.
+
+client<llm> BIEPV3Extract {
+  provider "vertex-ai"
+  options {
+    model       env.VERTEX_AI_MODEL
+    credentials env.GOOGLE_APPLICATION_CREDENTIALS
+    project     env.GOOGLE_CLOUD_PROJECT
+    location    env.GOOGLE_CLOUD_LOCATION
+    temperature 0.1
+    top_p 0.95
+  }
+  retry_policy VertexRetry
+}
+
+// ----------------------------------------------------------------------------
+// Generic ExtractEn alias (for the lifted biep_subject.baml)
+// ----------------------------------------------------------------------------
+
+client<llm> ExtractEn {
+  provider "vertex-ai"
+  options {
+    model       env.VERTEX_AI_MODEL
+    credentials env.GOOGLE_APPLICATION_CREDENTIALS
+    project     env.GOOGLE_CLOUD_PROJECT
+    location    env.GOOGLE_CLOUD_LOCATION
+    temperature 0.2
+    top_p 0.95
+  }
+  retry_policy VertexRetry
+}
