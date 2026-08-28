@@ -230,4 +230,95 @@ export default defineSchema({
   })
     .index("by_learner", ["learnerId"])
     .index("by_award_type", ["awardType"]),
+
+  // ---------------------------------------------------------------------------
+  // Phase 5 — syllabus extraction comparison (BAML vs VLM)
+  // 8 subjects × 4 extraction methods = 32 rows
+  // ---------------------------------------------------------------------------
+  syllabusExtractions: defineTable({
+    subject: v.string(),
+    extractionMethod: v.union(
+      v.literal("baml"),
+      v.literal("vlm_gemini_flash"),
+      v.literal("vlm_gemma4_e4b"),
+      v.literal("vlm_paligemma2"),
+    ),
+    jaccardVsBaml: v.number(),
+    loCoverage: v.number(),
+    pydanticConformance: v.number(),
+    judgeScore: v.number(),
+    judgeRationale: v.string(),
+    costUsd: v.number(),
+    latencyMs: v.number(),
+    foundTopics: v.number(),
+    goldenTopics: v.number(),
+    durationMs: v.number(),
+    capturedAt: v.string(),
+  })
+    .index("by_subject", ["subject"])
+    .index("by_method", ["extractionMethod"])
+    .index("by_score", ["judgeScore"]),
+
+  // ---------------------------------------------------------------------------
+  // Phase 6 — per-topic asset comparison
+  // 8 subjects × 5 topics × 7 backends = 280 rows
+  // ---------------------------------------------------------------------------
+  perTopicAssets: defineTable({
+    subject: v.string(),
+    topic: v.string(),
+    backend: v.union(
+      v.literal("fibo"),
+      v.literal("diffusiongemma"),
+      v.literal("flux_schnell"),
+      v.literal("flux2_dev"),
+      v.literal("gemini_flash_image"),
+      v.literal("imagen3"),
+      v.literal("imagen4"),
+    ),
+    modelKey: v.string(),
+    imageB64: v.string(),  // truncated to 1KB in storage; full image in DuckDB
+    ssimVsReference: v.number(),
+    paletteFidelity: v.number(),
+    judgeScore: v.number(),
+    judgeRationale: v.string(),
+    costUsd: v.number(),
+    latencyMs: v.number(),
+    seed: v.number(),
+    paletteAnchorHex: v.string(),
+    capturedAt: v.string(),
+  })
+    .index("by_subject_topic", ["subject", "topic"])
+    .index("by_backend", ["backend"])
+    .index("by_score", ["judgeScore"]),
+
+  // ---------------------------------------------------------------------------
+  // Phase 6 — cert comparison (the 6-model × 6-stage matrix = 30 rows)
+  // ---------------------------------------------------------------------------
+  certificateComparisons: defineTable({
+    subnation: v.string(),
+    stage: v.string(),
+    backend: v.union(
+      v.literal("fibo"),
+      v.literal("diffusiongemma"),
+      v.literal("flux_schnell"),
+      v.literal("flux2_dev"),
+      v.literal("gemini_flash_image"),
+      v.literal("imagen3"),
+      v.literal("imagen4"),
+    ),
+    modelKey: v.string(),
+    imageB64: v.string(),
+    ssimVsReference: v.number(),
+    paletteFidelity: v.number(),
+    judgeScore: v.number(),
+    judgeRationale: v.string(),
+    costUsd: v.number(),
+    latencyMs: v.number(),
+    seed: v.number(),
+    paletteAnchorHex: v.string(),
+    capturedAt: v.string(),
+  })
+    .index("by_subnation_stage", ["subnation", "stage"])
+    .index("by_backend", ["backend"])
+    .index("by_score", ["judgeScore"]),
 });
