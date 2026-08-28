@@ -1,7 +1,7 @@
 # gemini_hackathon — Architecture
 
 > **Submission target:** Google All Things Agentic Hackathon, Aug 2026.
-> **Last updated:** 2026-08-26 (Phase 0 + Phase 9 + Phase 11 + deploy)
+> **Last updated:** 2026-08-28 (Phases 0-7 complete; Phase 9 prep; Phase 11 submission)
 
 ## TL;DR
 
@@ -12,7 +12,9 @@ with Gemini 3.5 Flash + Gemma 4 via Unsloth Studio. The user-visible
 theming derives from a per-session identity, not a colour picker. Every
 LLM call hits Vertex AI by default and falls back to AI Studio.
 Every asset-generation call hits LiteLLM-backed Google image gen with
-a deterministic fallback.
+a deterministic fallback. The 17 Jupyter notebooks in
+`notebooks/converted/` are the canonical demonstration surface — they
+walk through every pipeline + the Google ADK / AGUI / CopilotKit internals.
 
 The seven "Fleet primitives" from the parent monorepo are renamed
 here as the **Fortified Enterprise Fleet track's 4 pillars** (mapping in
@@ -224,6 +226,102 @@ work without any frontend changes.
 - `/api/agents/chat` — ADK agent turn
 - `/api/assets/generate` — image-gen pipeline
 - `/api/duckdb` — DuckDB file (or 404 when not materialised)
+- `/api/certificate/generate` — the W14 LC/JC certificate pipeline (Phase 7)
+- `/api/certificate/compare` — the 7-model × 8-subject × 5-topic asset comparison (Phase 6)
+- `/api/observability/health` — the GCP-native OTel + Fleet wiring (Phase 1)
+
+## The 17-notebook collection (`notebooks/converted/`)
+
+Per the user's "notebooks ARE the demo" pivot, every pipeline + every
+Google ADK / AGUI / CopilotKit surface has a corresponding `.ipynb`
+artefact in `notebooks/converted/`. Each notebook has a **5-layer
+walkthrough**:
+
+1. **Title + provenance** — what it shows, source marimo path, conversion method
+2. **Google ADK wiring** — the LlmAgent + 5 tools + App + Runner stack
+3. **AGUI 13-event protocol** — the events emitted during a chat turn
+4. **CopilotKit consumption** — the runtime + route map + useRenderTool patterns
+5. **The pipeline content** — the original marimo notebook (6-step BIEP pipeline)
+
+### The 4 ADK-focused notebooks (Phase 7.4)
+
+| Notebook | Pipeline layer |
+|---|---|
+| `google_adk_agent_tree.ipynb` | The LlmAgent + 5 tools + App + Runner + Fleet |
+| `agui_event_protocol.ipynb` | The 13 AGUI event types + render_agui_events |
+| `copilotkit_runtime_config.ipynb` | The CopilotKit + AGUI + TanStack Start wiring |
+| `fleet_primitives.ipynb` | The 7 Fleet primitives wrapping run_agent_turn |
+
+### The 13 marimo → .ipynb conversions (Phase 7.2)
+
+| Notebook | Subject / Pipeline |
+|---|---|
+| `lc_mathematics.ipynb` | LC Maths — 6-step BIEP pipeline |
+| `lc_english.ipynb` | LC English — 6-step BIEP pipeline |
+| `lc_gaeilge.ipynb` | LC Gaeilge — 6-step BIEP pipeline (bilingual) |
+| `lc_chemistry.ipynb` | LC Chemistry — 6-step BIEP pipeline |
+| `lc_physics.ipynb` | LC Physics — 6-step BIEP pipeline |
+| `lc_biology.ipynb` | LC Biology — 6-step BIEP pipeline |
+| `lc_geography.ipynb` | LC Geography — 6-step BIEP pipeline |
+| `lc_computer_science.ipynb` | LC Computer Science — 6-step BIEP pipeline |
+| `leaving_cert_subject_panel.ipynb` | 7-tab grouped LC panel |
+| `biep_subject_full_pipeline.ipynb` | Parameterised 6-subject pipeline |
+| `marimo_patterns_tour.ipynb` | The 6-pillar marimo v14 demo (P1-P6) |
+| `unsloth_vision_compare.ipynb` | The 10-way OCR/VLM benchmark |
+| `control_panel.ipynb` | The 5-tab deployment control panel |
+
+### The 5-layer walkthrough (in each notebook)
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ Layer 1 — Title + provenance cell (markdown) │
+│  • What this notebook shows │
+│  • Source marimo file path in cianfhoghlaim/notebooks/ │
+│  • Converted via `marimo export ipynb` (gemini_hackathon/scripts/convert_marimo_to_ipynb.sh) │
+│  • The8 NCCA LC subjects this covers (if per-subject) │
+└──────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ Layer 2 — Google ADK wiring (code + markdown) │
+│  • The LlmAgent tree for this pipeline (root + sub-agents + tools) │
+│  • The 5 FunctionTool wrappers + their docstrings │
+│  • The App(root_agent=..., name=...) production wrapper │
+│  • The InMemoryRunner(session_service=...) config │
+│  • The run_turn() loop with ModelArmor preflight + Observability.trace │
+│  • The Fleet primitives (FleetGateway, FleetIdentity, FleetMemory) wrapping │
+└──────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ Layer 3 — AGUI 13-event protocol (code + markdown) │
+│  • The 13 AGUI event types with example payloads │
+│  • The render_agui_events() loop that converts ADK Event → AgUiEvent │
+│  • The SSE streaming pattern from the FastAPI backend →
+│    /api/copilotkit/chat/completions → CopilotKit React provider │
+└──────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ Layer 4 — CopilotKit consumption (code + markdown) │
+│  • The <CopilotKit runtimeUrl="..." agent="gemini_hackathon_agent"> │
+│    wrapper in web/src/routes/__root.tsx:14 │
+│  • The mcp_servers: { stitch: {...}, ...} runtime config │
+│  • The useFrontendTool / useRenderTool patterns for surfacing tools to the UI │
+│  • The route map (web/src/routes/) that consumes each AGUI event type │
+└──────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ Layer 5 — The pipeline content (the original marimo notebook) │
+│  • The 6-step BIEP pipeline chart (DLT → BAML → CocoIndex → Cognee → RAGAS → Marimo) │
+│  • The dataframe + altair chart + BAML stub + CocoIndex query │
+│  • The pipeline outputs (what each step writes to which backend) │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+Run all 17 notebooks with:
+```bash
+cd /Users/cianmacandeisigh/dev/gemini_hackathon
+uv run --with jupyter jupyter nbconvert --to notebook --execute --inplace notebooks/converted/*.ipynb
+```
+
+The `notebooks/_shared/converted/marimo_stub.py` is the runtime replacement
+that lets the converted `.ipynb` files execute end-to-end in any Jupyter
+kernel without the marimo runtime. Every `mo.ui.*` call returns the data
+arg + prints `None` (graceful no-op).
 
 ## What's NOT in scope (deferred)
 
