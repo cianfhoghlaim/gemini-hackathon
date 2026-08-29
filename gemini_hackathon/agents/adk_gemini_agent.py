@@ -1,11 +1,25 @@
 """The Google ADK agent for the gemini_hackathon public demo.
 
-Wraps `google.adk.agents.LlmAgent` with the project's 5 tools, builds an
-`InMemoryRunner`, and exposes a session-aware `run_turn()` helper that
-streams events in the AG-UI 17-event protocol shape.
+Wraps ``google.adk.agents.LlmAgent`` in the production ``App(...)``
+container (per the canonical google-adk starter-pack pattern) so that:
+
+  - Cloud Run / Vertex AI Agent Engine deployment gets the telemetry,
+    session, and artifact services it expects
+  - ``gemini-3.5-flash`` calls go through the retry-aware ``Gemini()``
+    model class with ``HttpRetryOptions(attempts=3)``
+  - Every prompt runs through ``ModelArmor.check_prompt`` for prompt-
+    injection / jailbreak / PII defense (Fortified Enterprise Fleet
+    primitive #5)
+  - Every invocation is recorded via the Fleet's ``Observability`` class
+    (primitive #4)
+
+The 5 project tools (``lookup_outcome``, ``retrieve_resources``,
+``find_similar_resources``, ``retrieve_safeguarding``, ``mark_answer``)
+are wrapped in ``google.adk.tools.FunctionTool`` and passed to the
+``LlmAgent`` constructor.
 
 The mandatory-framework requirement from the All Things Agentic
-Hackathon rules is satisfied: this file uses `google.adk.agents.LlmAgent`
+Hackathon rules is satisfied: this file uses ``google.adk.agents.LlmAgent``
 (the official Google Agent Development Kit, MIT-licensed) as the
 canonical entry point.
 """
@@ -17,7 +31,19 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Optional
 
+from .app_utils import build_app, ensure_vertex_env, setup_telemetry
+
 logger = logging.getLogger(__name__)
+
+
+# Module-level: wire GCP-native telemetry once at import time when the
+# ADK + google-auth packages are installed. This is the equivalent of
+# the canonical starter-pack's set_up() — calls are idempotent.
+ensure_vertex_env()
+try:
+    setup_telemetry()
+except Exception as _exc:  # noqa: BLE001
+    logger.debug("startup telemetry setup skipped: %s", _exc)
 
 
 # ---------------------------------------------------------------------------
@@ -201,12 +227,18 @@ def build_adk_agent(
     safeguarding_policy: str = "DEIS + Well-Being Policy Statement",
     palette_primary: str = "#00733B",
     palette_heading: str = "Merriweather",
+    wrap_in_app: bool = True,
 ):
-    """Build the real `google.adk.agents.LlmAgent` + `InMemoryRunner`.
+    """Build the real ``google.adk.agents.LlmAgent`` + ``InMemoryRunner``.
 
-    Composes the system prompt from the active session identity and wires
-    the 5 tools as `google.adk.tools.FunctionTool`. Returns ``(None, None)``
-    if the ``google-adk`` package is not installed.
+    Composes the system prompt from the active session identity, wires
+    the 5 tools as ``google.adk.tools.FunctionTool``, and (when
+    ``wrap_in_app=True``, the default) wraps the ``LlmAgent`` in the
+    production ``App(root_agent=..., name="...")`` container per the
+    canonical google-adk starter-pack pattern.
+
+    Returns ``(None, None)`` if the ``google-adk`` package is not
+    installed.
     """
     try:
         from google.adk.agents import LlmAgent  # type: ignore[import-not-found]
@@ -231,15 +263,40 @@ def build_adk_agent(
     )
 
     tools = _build_adk_tool_wrappers()
+    model = _build_adk_model(GEMINI_HACKATHON_AGENT.model)
     agent = LlmAgent(
         name=GEMINI_HACKATHON_AGENT.name,
-        model=GEMINI_HACKATHON_AGENT.model,
+        model=model,
         description=GEMINI_HACKATHON_AGENT.description,
         instruction=instruction,
         tools=tools,
     )
-    runner = InMemoryRunner(agent=agent)
-    return agent, runner
+    target = build_app(agent, name="gemini_hackathon") if wrap_in_app else agent
+    runner = InMemoryRunner(agent=target)
+    return target, runner
+
+
+def _build_adk_model(model_str: str):
+    """Wrap the model string in ``google.adk.models.Gemini`` when available.
+
+    Mirrors the canonical starter-pack pattern at
+    ``research/agents/google-adk/app/agent.py:66-75`` — returns the bare
+    string when ``Gemini()`` is not importable so local dev still works.
+    """
+    try:
+        from google.adk.models import Gemini  # type: ignore[import-not-found]
+        from google.genai import types  # type: ignore[import-not-found]
+    except ImportError:
+        return model_str
+
+    try:
+        return Gemini(
+            model=model_str,
+            retry_options=types.HttpRetryOptions(attempts=3),
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("Gemini(model=, retry_options=) construction failed: %s", exc)
+        return model_str
 
 
 def is_adk_available() -> bool:
@@ -309,4 +366,191 @@ __all__ = [
     "is_adk_available",
     "render_agui_events",
     "render_system_prompt",
+    "run_agent_turn",
 ]
+
+
+# ---------------------------------------------------------------------------
+# Fleet-wrapped agent turn — composes the 3 Fleet primitives (Observability,
+# ModelArmor, Identity) around a single ADK runner.run() call. This is the
+# canonical "Fortified Enterprise Fleet" integration path that the
+# backend._handle_agents_chat route invokes.
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class AgentTurnResult:
+    """The result of a single Fleet-wrapped agent turn.
+
+    Attributes:
+        status: ``"ok"`` on success, ``"blocked"`` if ModelArmor rejected
+            the prompt, ``"error"`` on any other failure.
+        events: AG-UI events (subset) for the frontend to render.
+        model_armor_check: the sanitised prompt payload (None on error).
+        observability: the invocation record from the Fleet's
+            ``Observability`` class (None if observability is disabled).
+        error: human-readable error message when ``status != "ok"``.
+    """
+
+    status: str
+    events: list[AgUiEvent] = field(default_factory=list)
+    model_armor_check: Any = None
+    observability: Any = None
+    error: Optional[str] = None
+
+
+def run_agent_turn(
+    *,
+    message: str,
+    user_id: str = "anon",
+    session_id: Optional[str] = None,
+    subnation: str = "ireland",
+    subnation_flag: str = "🇮🇪",
+    awarding_body: str = "NCCA",
+    role: str = "student",
+    cycle: str = "leaving_cycle",
+    subjects: Optional[list[str]] = None,
+    safeguarding_policy: str = "DEIS + Well-Being",
+    palette_primary: str = "#00733B",
+    palette_heading: str = "Merriweather",
+) -> AgentTurnResult:
+    """Run a single Fleet-wrapped agent turn.
+
+    Composition (per the Fortified Enterprise Fleet model):
+      1. ModelArmor.check_prompt → blocks injection / jailbreak / PII
+      2. Observability.trace → opens a trace context
+      3. runner.run() → the real ADK agent invocation
+      4. Observability.record_invocation → emits the cost + tokens event
+      5. render_agui_events → shape the events for the frontend
+
+    Returns ``AgentTurnResult`` so the caller can render any Fleet error
+    (e.g. a ModelArmor rejection) as an AG-UI event rather than an HTTP
+    500.
+    """
+    sid = session_id or user_id
+
+    # Lazy import the Fleet primitives — they live in the wholesale-copy
+    # sub-package so we don't break the import chain if google-adk is
+    # missing.
+    try:
+        from .fleet import ModelArmor, Observability  # type: ignore
+    except ImportError as exc:  # noqa: BLE001
+        logger.debug("Fleet primitives unavailable: %s", exc)
+        ModelArmor = None  # type: ignore[assignment]
+        Observability = None  # type: ignore[assignment]
+
+    # 1. ModelArmor preflight
+    sanitised = None
+    if ModelArmor is not None:
+        try:
+            sanitised = ModelArmor().check_prompt(message)
+            if getattr(sanitised, "blocked", False):
+                reason = getattr(sanitised, "reason", "blocked by ModelArmor")
+                return AgentTurnResult(
+                    status="blocked",
+                    error=f"ModelArmor: {reason}",
+                    events=[
+                        AgUiEvent(
+                            "RUN_ERROR",
+                            {"status": "blocked", "reason": reason},
+                        )
+                    ],
+                )
+            message = getattr(sanitised, "clean_text", message) or message
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("ModelArmor preflight failed (non-fatal): %s", exc)
+
+    # 2. Build the agent + runner (with App wrapper + Observability handle)
+    agent, runner = build_adk_agent(
+        subnation=subnation,
+        subnation_flag=subnation_flag,
+        awarding_body=awarding_body,
+        role=role,
+        cycle=cycle,
+        subjects=subjects or [],
+        safeguarding_policy=safeguarding_policy,
+        palette_primary=palette_primary,
+        palette_heading=palette_heading,
+    )
+    if agent is None:
+        return AgentTurnResult(
+            status="error",
+            error="google-adk not installed",
+            events=[
+                AgUiEvent(
+                    "RUN_ERROR",
+                    {"status": "agent_unavailable", "reason": "google-adk missing"},
+                )
+            ],
+        )
+
+    # 3-5. Trace + run + record + render
+    obs = None
+    events: list[AgUiEvent] = []
+    if Observability is not None:
+        try:
+            obs = Observability().trace(
+                agent_name=GEMINI_HACKATHON_AGENT.name,
+                user_id=user_id,
+                session_id=sid,
+                subnation=subnation,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Observability.trace() failed (non-fatal): %s", exc)
+            obs = None
+
+    try:
+        from google.genai import types as genai_types  # type: ignore
+    except ImportError:
+        return AgentTurnResult(
+            status="error",
+            error="google-genai not installed",
+            events=[
+                AgUiEvent(
+                    "RUN_ERROR",
+                    {"status": "google_genai_missing"},
+                )
+            ],
+        )
+
+    content = genai_types.Content(
+        role="user",
+        parts=[genai_types.Part(text=message)],
+    )
+
+    try:
+        raw_events = list(
+            runner.run(
+                user_id=user_id,
+                session_id=sid,
+                new_message=content,
+            )
+        )
+        events = render_agui_events(raw_events)
+    except Exception as exc:  # noqa: BLE001
+        err = str(exc) or "(no detail)"
+        return AgentTurnResult(
+            status="error",
+            error=err,
+            events=[AgUiEvent("RUN_ERROR", {"status": "agent_error", "detail": err[:500]})],
+        )
+    finally:
+        if obs is not None and Observability is not None:
+            try:
+                Observability().record_invocation(
+                    obs,
+                    agent_name=GEMINI_HACKATHON_AGENT.name,
+                    user_id=user_id,
+                    session_id=sid,
+                    event_count=len(events),
+                    status="ok",
+                )
+            except Exception as exc:  # noqa: BLE001
+                logger.debug("Observability.record_invocation() failed (non-fatal): %s", exc)
+
+    return AgentTurnResult(
+        status="ok",
+        events=events,
+        model_armor_check=sanitised,
+        observability=obs,
+    )

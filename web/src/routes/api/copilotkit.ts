@@ -1,55 +1,33 @@
+/**
+ * /api/copilotkit/** — delegate to the Firebase Cloud Function `chatHandler`
+ * which streams Gemini 3.5 Flash responses via Server-Sent Events.
+ *
+ * Replaces the prior TanStack Start reverse-proxy to the Python `backend.py`
+ * (`web/src/routes/api/copilotkit.ts`). The CopilotKit runtime was mounted-but-
+ * unused; the new path is direct Firebase AI streaming.
+ */
+
 import { createFileRoute } from "@tanstack/react-router";
+import { getIdToken } from "../../lib/auth";
 
-export const Route = createFileRoute("/api/copilotkit")({
-  server: {
-    handlers: {
-      GET: async ({ request }: { request: Request }) =>
-        proxyToPythonBackend(request),
-      POST: async ({ request }: { request: Request }) =>
-        proxyToPythonBackend(request),
-      PUT: async ({ request }: { request: Request }) =>
-        proxyToPythonBackend(request),
-      DELETE: async ({ request }: { request: Request }) =>
-        proxyToPythonBackend(request),
-    },
-  },
-});
+const FUNCTIONS_BASE =
+  import.meta.env.VITE_FIREBASE_FUNCTIONS_URL ??
+  `https://europe-west1-${import.meta.env.VITE_FIREBASE_PROJECT_ID ?? "gemini-hackathon-prod"}.cloudfunctions.net`;
 
-async function proxyToPythonBackend(request: Request): Promise<Response> {
-  const pythonBackend =
-    process.env.PYTHON_BACKEND_URL ?? "http://localhost:8000";
-
+async function proxyToChatStream(request: Request): Promise<Response> {
+  const token = await getIdToken();
   const url = new URL(request.url);
-  // The route is exactly /api/copilotkit; the Python backend mirrors at /api/copilotkit
-  const finalUrl = `${pythonBackend.replace(/\/+$/, "")}${url.pathname}${url.search}`;
-
-  let upstream: Response;
-  try {
-    upstream = await fetch(finalUrl, {
-      method: request.method,
-      headers: request.headers,
-      body: request.body,
-      // @ts-expect-error duplex is required for streaming bodies
-      duplex: "half",
-    });
-  } catch (err) {
-    return new Response(
-      JSON.stringify({
-        error: "python_backend_unreachable",
-        python_backend: pythonBackend,
-        detail: String(err),
-        hint: "Start the Python backend with `mise run backend`.",
-      }),
-      {
-        status: 503,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-      },
-    );
-  }
-
+  const finalUrl = `${FUNCTIONS_BASE}/chatStream${url.pathname.replace(/^\/api\/copilotkit/, "")}${url.search}`;
+  const upstream = await fetch(finalUrl, {
+    method: request.method,
+    headers: {
+      ...Object.fromEntries(request.headers),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: request.body,
+    // @ts-expect-error duplex is required for streaming bodies
+    duplex: "half",
+  });
   return new Response(upstream.body, {
     status: upstream.status,
     headers: {
@@ -58,3 +36,14 @@ async function proxyToPythonBackend(request: Request): Promise<Response> {
     },
   });
 }
+
+export const Route = createFileRoute("/api/copilotkit")({
+  server: {
+    handlers: {
+      GET: async ({ request }) => proxyToChatStream(request),
+      POST: async ({ request }) => proxyToChatStream(request),
+      PUT: async ({ request }) => proxyToChatStream(request),
+      DELETE: async ({ request }) => proxyToChatStream(request),
+    },
+  },
+});

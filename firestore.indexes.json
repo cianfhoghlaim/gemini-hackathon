@@ -1,0 +1,69 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "perTopicAssets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "subject", "order": "ASCENDING" },
+        { "fieldPath": "topic",   "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "perTopicAssets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "backend", "order": "ASCENDING" },
+        { "fieldPath": "judgeScore", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "syllabusExtractions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "subject", "order": "ASCENDING" },
+        { "fieldPath": "extractionMethod", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "certificateComparisons",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "subnation", "order": "ASCENDING" },
+        { "fieldPath": "stage",     "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "certificateComparisons",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "backend", "order": "ASCENDING" },
+        { "fieldPath": "judgeScore", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "learningOutcomes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "sourceKey", "order": "ASCENDING" },
+        { "fieldPath": "outcomeId", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "equivalencies",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "sourceKey",   "order": "ASCENDING" },
+        { "fieldPath": "subjectSlug", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "assessmentEvents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId",   "order": "ASCENDING" },
+        { "fieldPath": "outcomeId", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

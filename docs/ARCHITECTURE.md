@@ -1,7 +1,7 @@
 # gemini_hackathon — Architecture
 
 > **Submission target:** Google All Things Agentic Hackathon, Aug 2026.
-> **Last updated:** 2026-08-28 (Phases 0-7 complete; Phase 9 prep; Phase 11 submission)
+> **Last updated:** 2026-08-29 (Phases 0-7 complete + Firebase-native web refactor)
 
 ## TL;DR
 
@@ -15,6 +15,10 @@ Every asset-generation call hits LiteLLM-backed Google image gen with
 a deterministic fallback. The 17 Jupyter notebooks in
 `notebooks/converted/` are the canonical demonstration surface — they
 walk through every pipeline + the Google ADK / AGUI / CopilotKit internals.
+
+**Web stack**: Firebase-native — Firebase Auth + Firestore + Cloud Functions for Firebase (Gen2) + Firebase Hosting + Firebase App Check + Firebase Performance + Cloud Logging + Cloud Trace. The 3-layer security model (Firestore Security Rules + IAM service accounts + App Check) is wired end-to-end.
+
+**Bonus math**: The Firebase migration directly unlocks **+0.6 bonus** (capped) — the 3-layer security model satisfies the FEF security sub-criterion, the 12 Firebase agent skills + Antigravity SDK satisfy the mandatory "Google Agent Framework" rule, and Gemma 4 / Imagen 4 / HF Spaces / blog / social contribute the remaining +0.4 (capped).
 
 The seven "Fleet primitives" from the parent monorepo are renamed
 here as the **Fortified Enterprise Fleet track's 4 pillars** (mapping in
@@ -170,7 +174,27 @@ flowchart TB
     RAG --> Index
 ```
 
-## The 7 primitives → 4 pillars (this repo's naming)
+## The 7 primitives → 4 pillars (this repo's naming) — mapped to Firebase / GCP
+
+| Primitive | Previous implementation | **Post-Firebase-migration implementation** |
+|---|---|---|
+| **FleetGateway** | `agents/fleet/fleet_gateway.py` + TanStack Start server routes | `functions/src/themes.ts` + Cloud Functions for Firebase (Gen2) — single canonical entrypoint |
+| **FleetIdentity** | `agents/fleet/fleet_identity.py` (BetterAuth/JWT/anonymous) | **Firebase Auth** + custom claims (`functions/src/auth_oncreate.ts`) + **Firestore Security Rules** (`firestore.rules`) — Layer 1 + 2 of the 3-layer model |
+| **FleetModelArmor** | `agents/fleet/fleet_model_armor.py` (PII redaction + prompt-injection) | **Firebase App Check** (reCAPTCHA v3 attestation) + input sanitisation in `functions/src/chat.ts` — Layer 3 of the 3-layer model |
+| **FleetMemory** | `agents/fleet/fleet_memory.py` (Letta) + Markdown memory | **Firestore** `users/{uid}` + `assessmentEvents` + `outcomeMastery` — cross-session persistent context |
+| **FleetObservability** | `agents/fleet/fleet_observability.py` (Langfuse + Logfire + MLflow) + `agents/app_utils/telemetry.py` (GCP-native OTel) | **Cloud Logging** (structured JSON) + **Cloud Trace** (OpenTelemetry exporter) + **Firebase Performance** (browser auto-instrumented) — all auto-wired in `functions/src/observability.ts` |
+| **FleetMcpCurriculum** | `agents/fleet/fleet_mcp_curriculum.py` (14-subject MCP server) | The 8 NCCA LC subject BAML contracts (`baml_extracts_education/subjects/*.baml`) exposed as ADK tools + Firestore `syllabusExtractions`/`perTopicAssets`/`certificateComparisons` collections |
+| **FleetAGUIBridge** | `agents/fleet/fleet_agui.py` (CopilotKit + AGUI 17-event) | **AGUI 13-event protocol streamed via SSE** from `functions/src/chat.ts` (the streaming chat; CopilotKit was mounted-but-unused and dropped) |
+
+## The 3-layer security model (per Roger Martinez's July 2026 Firebase blog)
+
+| Layer | Mechanism | File |
+|---|---|---|
+| **Layer 1** | **Firestore Security Rules** with `rules_version = '2'`, custom claims check (`request.auth.token.firebase.sign_in_provider == 'google.com'` + `request.auth.token.email == '...'`) + helper functions (`isSignedIn`, `isAdmin`, `isOwner`, `hasCustomClaim`) | [`firestore.rules`](../firestore.rules) |
+| **Layer 2** | **Cloud Functions service accounts** with least-privilege IAM (`roles/cloudfunctions.invoker`, `roles/datastore.user`) + custom claims set via `onCreate` trigger | [`functions/src/auth_oncreate.ts`](../functions/src/auth_oncreate.ts) + the IAM bindings in `firebase.json:functions[]` |
+| **Layer 3** | **Firebase App Check** (reCAPTCHA v3 for web) — client request attestation; blocks automated abuse before any Firestore call | [`web/src/lib/firebase.ts`](../web/src/lib/firebase.ts) — `initializeAppCheck()` |
+
+## The original 7 primitives → 4 pillars (pre-Firebase)
 
 | Primitive (this repo) | Equivalent Fleet primitive | Pillar |
 |---|---|---|

@@ -1,0 +1,163 @@
+rules_version = '2';
+
+// =============================================================================
+// Firestore Security Rules — gemini-hackathon submission
+// =============================================================================
+//
+// The 3-layer security model per Roger Martinez's July 2026 Firebase blog
+// (https://firebase.blog/posts/2026/07/three-layer-security):
+//   Layer 1 — Firestore Security Rules (this file)
+//   Layer 2 — Cloud Functions service accounts with least-privilege IAM
+//   Layer 3 — Firebase App Check (reCAPTCHA v3 web)
+//
+// Mandatory for the All Things Agentic Hackathon Fortified Enterprise Fleet
+// sub-criterion "Agent Identity (zero-trust access control)".
+// =============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---- Helper functions ------------------------------------------------------
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+             request.auth.token.firebase.sign_in_provider == 'google.com' &&
+             request.auth.token.email == 'ciancnt@gmail.com';
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function hasCustomClaim(claim) {
+      return isSignedIn() && claim in request.auth.token;
+    }
+
+    // ---- Users (one doc per Firebase Auth UID) -------------------------------
+
+    match /users/{userId} {
+      allow read:  if isOwner(userId) || isAdmin();
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ---- Sessions (per-device onboarding state) ---------------------------
+
+    match /sessions/{sessionId} {
+      allow read:  if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // ---- Palettes (read-public, write-admin) ------------------------------
+
+    match /palettes/{paletteId} {
+      allow read:   if true; // public palette catalogue
+      allow write:  if isAdmin();
+    }
+
+    // ---- Subjects (read-public, write-admin) ----------------------------
+
+    match /subjects/{subjectSlug} {
+      allow read:   if true;
+      allow write:  if isAdmin();
+    }
+
+    // ---- Safeguarding policies (read-public, write-admin) --------------
+
+    match /policies/{policyId} {
+      allow read:   if true;
+      allow write:  if isAdmin();
+    }
+
+    // ---- Learning outcomes (read-public, write-admin) -----------------
+
+    match /learningOutcomes/{outcomeId} {
+      allow read:   if true;
+      allow write:  if isAdmin();
+    }
+
+    // ---- Equivalencies (read-public, write-admin) ----------------------
+
+    match /equivalencies/{equivId} {
+      allow read:   if true;
+      allow write:  if isAdmin();
+    }
+
+    // ---- Change events (read-public, write-admin) -----------------------
+
+    match /changeEvents/{eventId} {
+      allow read:   if true;
+      allow write:  if isAdmin();
+    }
+
+    // ---- Asset provenance (the certificate image chain) --------------
+
+    match /assetProvenance/{assetId} {
+      allow read:   if true;
+      allow write:  if isAdmin();
+    }
+
+    // ---- Assessment events (formative ledger; owner-only) ------------
+
+    match /assessmentEvents/{eventId} {
+      allow read:  if isSignedIn() &&
+                    (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+
+    // ---- Outcome mastery (aggregate; owner-only) ----------------------
+
+    match /outcomeMastery/{masteryId} {
+      allow read:  if isSignedIn() &&
+                    (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // ---- Certificates (unofficial; owner-only) ------------------------
+
+    match /certificates/{certId} {
+      allow read:  if isSignedIn() &&
+                    (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isOwner(resource.data.userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ---- Phase 5 — syllabus extraction comparison (32 rows) -------------
+
+    match /syllabusExtractions/{rowId} {
+      allow read:   if true; // public comparison leaderboard
+      allow write:  if isAdmin();
+    }
+
+    // ---- Phase 6 — per-topic asset comparison (280 rows) ---------------
+
+    match /perTopicAssets/{rowId} {
+      allow read:   if true;
+      allow write:  if isAdmin();
+    }
+
+    // ---- Phase 6 — certificate comparison (30 rows) ---------------------
+
+    match /certificateComparisons/{rowId} {
+      allow read:   if true;
+      allow write:  if isAdmin();
+    }
+
+    // ---- Design tokens (Stitch-managed) ----------------------------------
+
+    match /design_tokens/{tokenId} {
+      allow read:   if true;
+      allow write:  if isAdmin();
+    }
+  }
+}

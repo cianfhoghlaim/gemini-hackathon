@@ -1,0 +1,78 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run build"
+      ]
+    }
+  ],
+  "hosting": {
+    "public": "web/dist",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/api/copilotkit/**",
+        "function": "chatStream"
+      },
+      {
+        "source": "/api/themes/**",
+        "function": "themesApi"
+      },
+      {
+        "source": "/api/duckdb",
+        "function": "duckdbAsset"
+      },
+      {
+        "source": "/api/stitch",
+        "function": "stitchSync"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "/**",
+        "headers": [
+          { "key": "X-Content-Type-Options", "value": "nosniff" },
+          { "key": "X-Frame-Options", "value": "DENY" },
+          { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+          { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains" }
+        ]
+      }
+    ],
+    "predeploy": [
+      "npm --prefix \"$RESOURCE_DIR/..\" run build"
+    ]
+  },
+  "emulators": {
+    "auth":      { "port": 9099 },
+    "firestore": { "port": 8080 },
+    "functions": { "port": 5001 },
+    "hosting":   { "port": 5000 },
+    "storage":   { "port": 9199 },
+    "ui":        { "enabled": true, "port": 4000 },
+    "singleProjectMode": true
+  },
+  "storage": {
+    "rules": "storage.rules"
+  }
+}

@@ -1,0 +1,24 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Generated certificate images (the LC/JC pipeline output)
+    match /certificates/{certId}/image.png {
+      allow read: if true; // public — the certificate is downloadable
+      allow write: if false; // only the backend (admin SDK) can write
+    }
+
+    // DuckDB Parquet exports (the analytics database for /compare)
+    match /analytics/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Asset comparison PNG renders (per-topic asset leaderboard)
+    match /assets/{assetId}.png {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

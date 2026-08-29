@@ -1,0 +1,228 @@
+{
+  "_meta": {
+    "purpose": "Curated cross-jurisdiction topic equivalencies for the gemini_hackathon find_similar_resources ADK tool. Each row maps a learning outcome / topic in the active subnation to the canonical equivalent topic name in every other British Isles jurisdiction + awarding body. Sourced from the published syllabus documents for NCCA, AQA, OCR, Pearson Edexcel, SQA, WJEC, CCEA + the expansion-pack crown dependencies.",
+    "version": "1.0.0",
+    "last_updated": "2026-08-27",
+    "source_documents": [
+      "NCCA Leaving Certificate Mathematics syllabus (2024)",
+      "AQA A-Level Mathematics (7357)",
+      "OCR A-Level Mathematics A (H240)",
+      "Pearson Edexcel A-Level Mathematics (9MA0)",
+      "SQA Higher Mathematics",
+      "WJEC A-Level Mathematics",
+      "CCEA GCE Mathematics",
+      "NCCA Leaving Certificate English syllabus (2017)",
+      "NCCA Leaving Certificate Gaeilge syllabus (2017)",
+      "NCCA Leaving Certificate Chemistry syllabus (2014)",
+      "NCCA Leaving Certificate Geography syllabus (2017)"
+    ]
+  },
+  "subjects": {
+    "ncca_maths_lc": {
+      "subject_name": "Mathematics",
+      "home_jurisdiction": "ireland",
+      "topics": [
+        {
+          "topic": "Algebra & Functions",
+          "equivalents": {
+            "england": [
+              {"awarding_body": "AQA", "topic": "Algebra and functions", "url": "https://www.aqa.org.uk/subjects/mathematics/as-and-a-level/mathematics-7357"},
+              {"awarding_body": "OCR", "topic": "Algebra", "url": "https://www.ocr.org.uk/qualifications/as-and-a-level/mathematics-a-h240/"},
+              {"awarding_body": "Pearson", "topic": "Pure Mathematics 1 — Algebra", "url": "https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/mathematics-2017.html"}
+            ],
+            "scotland": [
+              {"awarding_body": "SQA", "topic": "Expressions and Functions", "url": "https://www.sqa.org.uk/sqa/64717.html"}
+            ],
+            "wales": [
+              {"awarding_body": "WJEC", "topic": "Algebra and Functions", "url": "https://www.wjec.co.uk/qualifications/mathematics-as-a-level/"}
+            ],
+            "northern_ireland": [
+              {"awarding_body": "CCEA", "topic": "Algebra", "url": "https://ccea.org.uk/qualifications/gce/mathematics"}
+            ]
+          }
+        },
+        {
+          "topic": "Calculus (Differentiation & Integration)",
+          "equivalents": {
+            "england": [
+              {"awarding_body": "AQA", "topic": "Calculus", "url": "https://www.aqa.org.uk/subjects/mathematics/as-and-a-level/mathematics-7357"},
+              {"awarding_body": "OCR", "topic": "Calculus", "url": "https://www.ocr.org.uk/qualifications/as-and-a-level/mathematics-a-h240/"},
+              {"awarding_body": "Pearson", "topic": "Pure 2 — Calculus", "url": "https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/mathematics-2017.html"}
+            ],
+            "scotland": [{"awarding_body": "SQA", "topic": "Differentiation & Integration", "url": "https://www.sqa.org.uk/sqa/64717.html"}],
+            "wales": [{"awarding_body": "WJEC", "topic": "Calculus", "url": "https://www.wjec.co.uk/qualifications/mathematics-as-a-level/"}],
+            "northern_ireland": [{"awarding_body": "CCEA", "topic": "Calculus", "url": "https://ccea.org.uk/qualifications/gce/mathematics"}]
+          }
+        },
+        {
+          "topic": "Complex Numbers",
+          "equivalents": {
+            "england": [
+              {"awarding_body": "AQA", "topic": "Complex numbers (A-Level Further)", "url": "https://www.aqa.org.uk/subjects/mathematics/as-and-a-level/mathematics-7367"},
+              {"awarding_body": "OCR", "topic": "Complex numbers", "url": "https://www.ocr.org.uk/qualifications/as-and-a-level/mathematics-a-h240/"},
+              {"awarding_body": "Pearson", "topic": "Pure 2 — Complex numbers", "url": "https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/mathematics-2017.html"}
+            ],
+            "scotland": [{"awarding_body": "SQA", "topic": "Complex numbers (Advanced Higher)", "url": "https://www.sqa.org.uk/sqa/56947.html"}],
+            "wales": [{"awarding_body": "WJEC", "topic": "Complex numbers", "url": "https://www.wjec.co.uk/qualifications/mathematics-as-a-level/"}],
+            "northern_ireland": [{"awarding_body": "CCEA", "topic": "Complex numbers (A2)", "url": "https://ccea.org.uk/qualifications/gce/mathematics"}]
+          }
+        },
+        {
+          "topic": "Mechanics (Forces, Motion, Momentum)",
+          "equivalents": {
+            "england": [
+              {"awarding_body": "AQA", "topic": "Mechanics", "url": "https://www.aqa.org.uk/subjects/mathematics/as-and-a-level/mathematics-7357"},
+              {"awarding_body": "OCR", "topic": "Mechanics", "url": "https://www.ocr.org.uk/qualifications/as-and-a-level/mathematics-a-h240/"},
+              {"awarding_body": "Pearson", "topic": "Applied 1 — Mechanics", "url": "https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/mathematics-2017.html"}
+            ],
+            "scotland": [{"awarding_body": "SQA", "topic": "Mechanics", "url": "https://www.sqa.org.uk/sqa/64717.html"}],
+            "wales": [{"awarding_body": "WJEC", "topic": "Mechanics", "url": "https://www.wjec.co.uk/qualifications/mathematics-as-a-level/"}],
+            "northern_ireland": [{"awarding_body": "CCEA", "topic": "Mechanics", "url": "https://ccea.org.uk/qualifications/gce/mathematics"}]
+          }
+        },
+        {
+          "topic": "Statistics & Probability",
+          "equivalents": {
+            "england": [
+              {"awarding_body": "AQA", "topic": "Statistics", "url": "https://www.aqa.org.uk/subjects/mathematics/as-and-a-level/mathematics-7357"},
+              {"awarding_body": "OCR", "topic": "Statistics", "url": "https://www.ocr.org.uk/qualifications/as-and-a-level/mathematics-a-h240/"},
+              {"awarding_body": "Pearson", "topic": "Applied 1 — Statistics", "url": "https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/mathematics-2017.html"}
+            ],
+            "scotland": [{"awarding_body": "SQA", "topic": "Statistics", "url": "https://www.sqa.org.uk/sqa/64717.html"}],
+            "wales": [{"awarding_body": "WJEC", "topic": "Statistics", "url": "https://www.wjec.co.uk/qualifications/mathematics-as-a-level/"}],
+            "northern_ireland": [{"awarding_body": "CCEA", "topic": "Statistics", "url": "https://ccea.org.uk/qualifications/gce/mathematics"}]
+          }
+        }
+      ]
+    },
+    "ncca_english_lc": {
+      "subject_name": "English",
+      "home_jurisdiction": "ireland",
+      "topics": [
+        {
+          "topic": "Comparative Study (Unseen + Prescribed Texts)",
+          "equivalents": {
+            "england": [
+              {"awarding_body": "AQA", "topic": "Comparative and contextual study", "url": "https://www.aqa.org.uk/subjects/english/as-and-a-level/english-literature-b-7717"},
+              {"awarding_body": "OCR", "topic": "Drama and poetry pre-1900", "url": "https://www.ocr.org.uk/qualifications/as-and-a-level/english-literature-h072-h472/"},
+              {"awarding_body": "Pearson", "topic": "Drama (Component 1)", "url": "https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/english-literature-2015.html"}
+            ],
+            "scotland": [{"awarding_body": "SQA", "topic": "Close Reading + Critical Essay (Higher)", "url": "https://www.sqa.org.uk/sqa/64717.html"}],
+            "wales": [{"awarding_body": "WJEC", "topic": "Poetry across time + Drama (Component 2)", "url": "https://www.wjec.co.uk/qualifications/english-literature-as-a-level/"}],
+            "northern_ireland": [{"awarding_body": "CCEA", "topic": "Study of written text (Component 1)", "url": "https://ccea.org.uk/qualifications/gce/english-literature"}]
+          }
+        },
+        {
+          "topic": "Composition (Personal + Discursive Writing)",
+          "equivalents": {
+            "england": [
+              {"awarding_body": "AQA", "topic": "Non-exam assessment: Critical and analytical response", "url": "https://www.aqa.org.uk/subjects/english/as-and-a-level/english-language-and-literature-b-7707"},
+              {"awarding_body": "OCR", "topic": "Writing portfolio (Component 2)", "url": "https://www.ocr.org.uk/qualifications/as-and-a-level/english-language-and-literature-emc-h074-h474/"},
+              {"awarding_body": "Pearson", "topic": "Prose (Component 1 Section B)", "url": "https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/english-language-and-literature-2015.html"}
+            ],
+            "scotland": [{"awarding_body": "SQA", "topic": "Portfolio + Discursive Folio (Higher)", "url": "https://www.sqa.org.uk/sqa/64717.html"}],
+            "wales": [{"awarding_body": "WJEC", "topic": "Non-literary Spoken/Written (Component 4)", "url": "https://www.wjec.co.uk/qualifications/english-language-and-literature-as-a-level/"}],
+            "northern_ireland": [{"awarding_body": "CCEA", "topic": "Composition (Unit 1)", "url": "https://ccea.org.uk/qualifications/gce/english-literature"}]
+          }
+        },
+        {
+          "topic": "Reading Comprehension + Unseen Texts",
+          "equivalents": {
+            "england": [
+              {"awarding_body": "AQA", "topic": "Reading as a writer (Component 1)", "url": "https://www.aqa.org.uk/subjects/english/as-and-a-level/english-language-7702"},
+              {"awarding_body": "OCR", "topic": "Exploring language (Component 1)", "url": "https://www.ocr.org.uk/qualifications/as-and-a-level/english-language-h070-h470/"},
+              {"awarding_body": "Pearson", "topic": "Voices in Speech and Writing (Component 1)", "url": "https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/english-language-2015.html"}
+            ],
+            "scotland": [{"awarding_body": "SQA", "topic": "Close Reading (Higher)", "url": "https://www.sqa.org.uk/sqa/64717.html"}],
+            "wales": [{"awarding_body": "WJEC", "topic": "Reading (Component 2 Section A)", "url": "https://www.wjec.co.uk/qualifications/english-language-as-a-level/"}],
+            "northern_ireland": [{"awarding_body": "CCEA", "topic": "Reading (Unit 3)", "url": "https://ccea.org.uk/qualifications/gce/english-literature"}]
+          }
+        }
+      ]
+    },
+    "ncca_gaeilge_lc": {
+      "subject_name": "Gaeilge (Irish)",
+      "home_jurisdiction": "ireland",
+      "topics": [
+        {
+          "topic": "Litríocht Bhéil agus Chultúrtha (Oral + Cultural Literature)",
+          "equivalents": {
+            "scotland": [{"awarding_body": "SQA", "topic": "Gàidhlig Litreachas (Higher)", "url": "https://www.sqa.org.uk/sqa/64717.html"}],
+            "wales": [{"awarding_body": "WJEC", "topic": "Cymraeg Iaith Gydag Ysgrifennu Creadigol (A-Level)", "url": "https://www.wjec.co.uk/qualifications/cymraeg-second-language-as-a-level/"}]
+          }
+        },
+        {
+          "topic": "Filíocht agus Scéal (Poetry + Prose)",
+          "equivalents": {
+            "scotland": [{"awarding_body": "SQA", "topic": "Bàrdachd agus Sgeulachdan (Higher)", "url": "https://www.sqa.org.uk/sqa/64717.html"}],
+            "wales": [{"awarding_body": "WJEC", "topic": "Barddoniaeth a Rhyddiaith Gymraeg (A-Level)", "url": "https://www.wjec.co.uk/qualifications/cymraeg-first-language-as-a-level/"}]
+          }
+        }
+      ]
+    },
+    "ncca_chem_lc": {
+      "subject_name": "Chemistry",
+      "home_jurisdiction": "ireland",
+      "topics": [
+        {
+          "topic": "Atomic Structure + Periodic Table",
+          "equivalents": {
+            "england": [
+              {"awarding_body": "AQA", "topic": "Atomic structure (Topic 1)", "url": "https://www.aqa.org.uk/subjects/chemistry/as-and-a-level/chemistry-7405"},
+              {"awarding_body": "OCR", "topic": "Atoms and reactions (Module 2)", "url": "https://www.ocr.org.uk/qualifications/as-and-a-level/chemistry-a-h432/"},
+              {"awarding_body": "Pearson", "topic": "Atomic and the Periodic Table (Topic 1)", "url": "https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/chemistry-2015.html"}
+            ],
+            "scotland": [{"awarding_body": "SQA", "topic": "Atomic Structure (Higher)", "url": "https://www.sqa.org.uk/sqa/64717.html"}],
+            "wales": [{"awarding_body": "WJEC", "topic": "Atomic Structure (Unit 1)", "url": "https://www.wjec.co.uk/qualifications/chemistry-as-a-level/"}],
+            "northern_ireland": [{"awarding_body": "CCEA", "topic": "Atomic Structure (Unit 1)", "url": "https://ccea.org.uk/qualifications/gce/chemistry"}]
+          }
+        },
+        {
+          "topic": "Organic Chemistry (Functional Groups + Reactions)",
+          "equivalents": {
+            "england": [
+              {"awarding_body": "AQA", "topic": "Organic chemistry I + II", "url": "https://www.aqa.org.uk/subjects/chemistry/as-and-a-level/chemistry-7405"},
+              {"awarding_body": "OCR", "topic": "Organic chemistry (Module 4)", "url": "https://www.ocr.org.uk/qualifications/as-and-a-level/chemistry-a-h432/"},
+              {"awarding_body": "Pearson", "topic": "Organic Chemistry I + II", "url": "https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/chemistry-2015.html"}
+            ],
+            "scotland": [{"awarding_body": "SQA", "topic": "Organic Chemistry (Higher + AH)", "url": "https://www.sqa.org.uk/sqa/64717.html"}],
+            "wales": [{"awarding_body": "WJEC", "topic": "Organic Chemistry (Unit 4)", "url": "https://www.wjec.co.uk/qualifications/chemistry-as-a-level/"}],
+            "northern_ireland": [{"awarding_body": "CCEA", "topic": "Organic Chemistry (Unit 3)", "url": "https://ccea.org.uk/qualifications/gce/chemistry"}]
+          }
+        }
+      ]
+    },
+    "ncca_geo_lc": {
+      "subject_name": "Geography",
+      "home_jurisdiction": "ireland",
+      "topics": [
+        {
+          "topic": "Physical Geography — Geomorphology",
+          "equivalents": {
+            "england": [
+              {"awarding_body": "AQA", "topic": "Coastal systems and landscapes", "url": "https://www.aqa.org.uk/subjects/geography/as-and-a-level/geography-7037"},
+              {"awarding_body": "OCR", "topic": "Landscape systems (Option A)", "url": "https://www.ocr.org.uk/qualifications/as-and-a-level/geography-h081-h481/"},
+              {"awarding_body": "Pearson", "topic": "Landscape Systems (Topic 1)", "url": "https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/geography-2016.html"}
+            ],
+            "scotland": [{"awarding_body": "SQA", "topic": "Physical Environments (Higher)", "url": "https://www.sqa.org.uk/sqa/64717.html"}],
+            "wales": [{"awarding_body": "WJEC", "topic": "Changing landscapes (Theme 1)", "url": "https://www.wjec.co.uk/qualifications/geography-as-a-level/"}],
+            "northern_ireland": [{"awarding_body": "CCEA", "topic": "Physical Geography (Unit 1)", "url": "https://ccea.org.uk/qualifications/gce/geography"}]
+          }
+        },
+        {
+          "topic": "Human Geography — Urban + Population",
+          "equivalents": {
+            "england": [
+              {"awarding_body": "AQA", "topic": "Changing urban places", "url": "https://www.aqa.org.uk/subjects/geography/as-and-a-level/geography-7037"},
+              {"awarding_body": "OCR", "topic": "Global connections", "url": "https://www.ocr.org.uk/qualifications/as-and-a-level/geography-h081-h481/"},
+              {"awarding_body": "Pearson", "topic": "Globalisation + Regenerating Places", "url": "https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/geography-2016.html"}
+            ],
+            "scotland": [{"awarding_body": "SQA", "topic": "Human Environments (Higher)", "url": "https://www.sqa.org.uk/sqa/64717.html"}],
+            "wales": [{"awarding_body": "WJEC", "topic": "Changing places (Theme 2)", "url": "https://www.wjec.co.uk/qualifications/geography-as-a-level/"}],
+            "northern_ireland": [{"awarding_body": "CCEA", "topic": "Human Geography (Unit 2)", "url": "https://ccea.org.uk/qualifications/gce/geography"}]
+          }
+        }
+      ]
+    }
+  }
+}

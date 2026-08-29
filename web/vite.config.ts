@@ -1,13 +1,9 @@
 import { defineConfig } from "vite";
-import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
 
 export default defineConfig({
-  plugins: [
-    tanstackStart(),
-    react(),
-  ],
+  plugins: [react()],
   resolve: {
     alias: {
       "~": path.resolve(__dirname, "."),
@@ -16,13 +12,14 @@ export default defineConfig({
   server: {
     port: 3000,
     host: "0.0.0.0",
-    proxy: {
-      "/api/agents": "http://localhost:8000",
-      "/api/copilotkit": "http://localhost:8000",
-    },
+    // No more proxy — the API routes delegate to Firebase Cloud Functions
+    // in production (see web/src/routes/api/{themes,copilotkit,duckdb}.ts).
+    // Locally we run them against the Functions emulator (`firebase emulators:start`).
   },
   build: {
     target: "es2022",
     sourcemap: true,
+    outDir: "dist",
+    emptyOutDir: true,
   },
 });
