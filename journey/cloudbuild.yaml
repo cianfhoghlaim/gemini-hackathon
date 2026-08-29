@@ -1,0 +1,127 @@
+# Cloud Build pipeline for the British Isles Journey — publishes all 6 levels + the orchestrator.
+#
+# Submit:
+#   gcloud builds submit --config=journey/cloudbuild.yaml \
+#     --substitutions=_REGION=europe-west1,_IMAGE_URL=$_IMAGE_URL,_EVENT_CODE=bwai-mycity
+#
+# The pipeline:
+#   1. Builds ONE container image (the gemini-hackathon image the existing
+#      cloudbuild.yaml builds, just tagged differently) — the image contains
+#      all 6 levels + the orchestrator
+#   2. Pushes to Artifact Registry
+#   3. Deploys to Cloud Run (with the 6 required env vars per
+#      GH_CLOUD_RUN_REQUIRED_VARS — but renamed per the GCP-first refactor:
+#      GCP_PROJECT_ID + VECTOR_BACKEND + EMBED_BACKEND instead of the
+#      CONVEX_DEPLOYMENT_URL + LANCE_DB_URI + FALKORDB_URL of the pre-refactor era)
+#   4. Creates the admin Firestore doc (so the workshop host doesn't have to
+#      hand-write it) via the admin_create_event script
+#   5. Runs the smoke test (hit the journey's /api/health + a sample
+#      `journey progress` lookup to confirm Firestore is wired)
+
+substitutions:
+  _REGION: europe-west1
+  _IMAGE_URL: ""
+  _EVENT_CODE: "biep-demo"
+  _ADMIN_EMAIL: ""
+  _FIRESTORE_DATABASE: "(default)"
+  _GCP_PROJECT: "REPLACE_WITH_PROJECT_ID"
+  _MAX_PARTICIPANTS: "200"
+
+steps:
+  # 1. Build the Docker image. The Dockerfile already builds the
+  #    gemini-hackathon runtime; this is the same image, just tagged for the
+  #    journey service.
+  - name: "gcr.io/cloud-builders/docker:latest"
+    id: "build"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        set -euo pipefail
+        docker build \
+          --build-arg BUILDKIT_INLINE_CACHE=1 \
+          -t "$_IMAGE_URL" \
+          -f Dockerfile \
+          .
+
+  # 2. Push to Artifact Registry.
+  - name: "gcr.io/cloud-builders/docker:latest"
+    id: "push"
+    entrypoint: "bash"
+    args: ["-c", "docker push $_IMAGE_URL"]
+
+  # 3. Deploy to Cloud Run. Same env var contract as the editorial studio
+  #    (Phase 8's Cloud Run deploy), with the journey-specific additions
+  #    (`_EVENT_CODE` is baked into the deployed service so the journey
+  #    knows which workshop's learners to scope to).
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk:latest"
+    id: "deploy-cloud-run"
+    entrypoint: "gcloud"
+    args:
+      - "run"
+      - "deploy"
+      - "gemini-hackathon-journey"
+      - "--project=${_GCP_PROJECT}"
+      - "--region=$_REGION"
+      - "--platform=managed"
+      - "--image=$_IMAGE_URL"
+      - "--memory=4Gi"
+      - "--cpu=2"
+      - "--timeout=600"
+      - "--concurrency=80"
+      - "--min-instances=0"
+      - "--max-instances=10"
+      - "--allow-unauthenticated"
+      - "--port=8080"
+      - "--set-env-vars=MODEL_PROFILE=hackathon,GEMINI_BACKEND=vertex,GOOGLE_CLOUD_LOCATION=$_REGION,EMBED_BACKEND=vertex,VECTOR_BACKEND=firestore,JOURNEY_EVENT_CODE=$_EVENT_CODE,JOURNEY_MAX_PARTICIPANTS=$_MAX_PARTICIPANTS,JOURNEY_FIRESTORE_DATABASE=$_FIRESTORE_DATABASE"
+      - "--set-secrets=GEMINI_API_KEY=projects/${_GCP_PROJECT}/secrets/GEMINI_API_KEY:latest"
+      - "--set-secrets=HF_TOKEN=projects/${_GCP_PROJECT}/secrets/HF_TOKEN:latest"
+      - "--set-secrets=UNSLOTH_API_KEY=projects/${_GCP_PROJECT}/secrets/UNSLOTH_API_KEY:latest"
+      - "--service-account=gemini-hackathon-journey@${_GCP_PROJECT}.iam.gserviceaccount.com"
+
+  # 4. Create the workshop admin Firestore doc. Uses the deployed service's
+  #    /api/admin/events endpoint (idempotent — re-deploys are safe).
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk:latest"
+    id: "seed-event"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        set -euo pipefail
+        SERVICE_URL=$(gcloud run services describe gemini-hackathon-journey \
+          --region=$_REGION --format='value(status.url)')
+        # Wait for the service to finish its cold start
+        for i in 1 2 3 4 5; do
+          if curl -fsf "$SERVICE_URL/api/health" >/dev/null; then break; fi
+          sleep 10
+        done
+        curl -fsS -X POST "$SERVICE_URL/api/admin/events" \
+          -H "Content-Type: application/json" \
+          -d "$(cat <<EOF
+        {"code": "$_EVENT_CODE",
+         "name": "British Isles Journey Workshop",
+         "max_participants": $_MAX_PARTICIPANTS,
+         "admin_email": "$_ADMIN_EMAIL"}
+        EOF
+        )"
+
+  # 5. Smoke test the full pipeline.
+  - name: "gcr.io/cloud-builders/docker:latest"
+    id: "smoke"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        set -euo pipefail
+        SERVICE_URL=$(gcloud run services describe gemini-hackathon-journey \
+          --region=$_REGION --format='value(status.url)')
+        # Health check
+        curl -fsSf "$SERVICE_URL/api/health" || { echo "smoke: /api/health failed"; exit 1; }
+        # Per-level progress lookup
+        curl -fsSf "$SERVICE_URL/api/journey/progress?event_code=$_EVENT_CODE" || { echo "smoke: /api/journey/progress failed"; exit 1; }
+
+timeout: 1800s
+options:
+  logging: CLOUD_LOGGING_ONLY
+images:
+  - "$_IMAGE_URL"

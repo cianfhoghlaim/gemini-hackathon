@@ -223,6 +223,74 @@ run = "uv run python -m scripts.generate_cloud_run_studios"
 description = "Regenerate + push the 5 HF Spaces mirrors (secondary distribution channel — Cloud Run is canonical, per Phase 8)"
 run = "uv run python -m hf_spaces._generate && echo 'Review hf_spaces/*/ then: hf upload <space> hf_spaces/<space> --repo-type space'"
 
+# ---- British Isles Journey (Phases A-E) ---------------------------------
+
+[tasks."journey:setup"]
+description = "Bootstrap the Journey locally (venv + ADC + .env + Firestore seed + Vertex check)"
+run = "./journey/scripts/setup.sh"
+
+[tasks."journey:verify"]
+description = "Run the Journey's 8-tick smoke gate (no GCP credentials needed)"
+run = "./journey/scripts/verify.sh"
+
+[tasks."journey:test"]
+description = "Run the Journey's pytest suite (24 tests: orchestrator + per-level)"
+run = "uv run pytest journey/tests/ -v"
+
+[tasks."journey:serve"]
+description = "Launch the unified 6-level Gradio studio locally"
+run = "uv run python -m gemini_hackathon_gradio.journey_studio"
+
+[tasks."journey:deploy"]
+description = "End-to-end Cloud Build + deploy + Firestore seed + smoke (the workshop host's one command)"
+run = "./journey/scripts/deploy_journey.sh"
+
+[tasks."journey:baml-generate"]
+description = "Regenerate the BAML client (Level 1 + Level 5 BAML callers need this before any journey run)"
+depends = ["baml:generate"]
+
+[tasks."journey:bootstrap-corpus"]
+description = "One-time local corpus download (the 8-jurisdiction sample corpus needed before Level 1+ can do real Vector Search)"
+run = "uv run python -m dlt_pipelines.corpus_downloader"
+
+[tasks."journey:all"]
+description = "Run all Journey validation gates in sequence (setup -> verify -> test -> baml-generate)"
+depends = ["journey:verify", "journey:test", "journey:baml-generate"]
+
+# ---- Sourcing pipeline (Phases 0-2 of the GCP-first refactor) ---------
+
+[tasks."sourcing:sourced"]
+description = "Fetch every catalog URL, persist bytes, upsert content_artefacts (offline-safe)"
+run = "uv run python -m gemini_hackathon.journey.sourcing.pipeline --step=sourced"
+
+[tasks."sourcing:normalised"]
+description = "Read cached bytes -> extract text (3 paths) -> write derived JSON (offline-safe)"
+run = "uv run python -m gemini_hackathon.journey.sourcing.pipeline --step=normalised"
+
+[tasks."sourcing:extract-baml"]
+description = "BAML extraction for every ready content_artefact (offline-safe)"
+run = "uv run python -m gemini_hackathon.journey.sourcing.pipeline --step=extract-baml"
+
+[tasks."sourcing:status"]
+description = "Print the 9-row status table + the copilot's recommendation"
+run = "uv run python -m gemini_hackathon.journey.sourcing.pipeline --step=status"
+
+[tasks."sourcing:copilot"]
+description = "Launch the SourcingCopilot REPL (interactive deploy guide)"
+run = "uv run python -m gemini_hackathon.journey.sourcing_copilot.cli"
+
+[tasks."sourcing:copilot-status"]
+description = "One-shot SourcingCopilot status summary"
+run = "uv run python -m gemini_hackathon.journey.sourcing_copilot.cli --status"
+
+[tasks."sourcing:copilot-services"]
+description = "List deployed Cloud Run services + Cloud Scheduler jobs"
+run = "uv run python -m gemini_hackathon.journey.sourcing_copilot.cli --list-services"
+
+[tasks."sourcing:bootstrap-firestore-emulator"]
+description = "Start the Firestore emulator on localhost:8080 (for offline-dev)"
+run = "gcloud emulators firestore start --host-port=localhost:8080"
+
 [tasks.dev]
 description = "docker compose up --build (local stack: app + ollama + duckdb vol)"
 run = "docker compose up --build"

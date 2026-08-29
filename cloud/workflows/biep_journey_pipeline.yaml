@@ -1,0 +1,73 @@
+# Cloud Workflows definition: ingests the British Isles Journey corpus
+# whenever the per-subnation scraping Cloud Run Job emits a
+# `journey-corpus-ingested` Pub/Sub event.
+#
+# Phase D.2 of the GCP-first refactor. Chaining pattern lifted from the
+# existing `cloud/workflows/biep_pipeline.yaml` (the BIEP nightly pipeline).
+#
+# Workflow steps:
+#   1. Triggered by Pub/Sub (the `ingest-corpus` Cloud Run Job publishes
+#      `journey-corpus-ingested` after a successful per-subnation ingest)
+#   2. Triggers `embed-index` so the Vector Search index picks up the
+#      freshly-ingested chunks
+#   3. Triggers `ocr-consensus` for any past-paper PDFs the ingest step
+#      discovered (so the Level 2 4-path ensemble re-runs against the
+#      new corpus)
+#   4. Triggers `ledger-aggregate` so the Firestore per-learner mastery
+#      summary updates (this is a Firestore->BigQuery export, not a
+#      MasteryLedger write — the MasteryLedger is per-event-write, not
+#      batched)
+#
+# Deploy:
+#   gcloud workflows deploy biep-journey-pipeline \
+#       --source=cloud/workflows/biep_journey_pipeline.yaml \
+#       --project=$GCP_PROJECT_ID --location=$REGION
+#
+# Trigger manually:
+#   gcloud workflows execute biep-journey-pipeline --project=$GCP_PROJECT_ID
+
+main:
+  params: [event]
+  steps:
+    - log_event:
+        call: sys.log
+        args:
+          text: "journey pipeline triggered"
+          severity: INFO
+
+    - run_embed_index:
+        call: googleapis.run.v1.namespaces.jobs.run
+        args:
+          name: ${"namespaces/" + sys.get_env("GOOGLE_CLOUD_PROJECT_ID") + "/jobs/embed-index"}
+          location: ${sys.get_env("REGION")}
+        result: embed_result
+
+    - check_embed_status:
+        switch:
+          - condition: ${embed_result.metadata.status.conditions[0].type != "Completed"}
+            next: embed_failed
+        next: run_ocr_consensus
+
+    - run_ocr_consensus:
+        call: googleapis.run.v1.namespaces.jobs.run
+        args:
+          name: ${"namespaces/" + sys.get_env("GOOGLE_CLOUD_PROJECT_ID") + "/jobs/ocr-consensus"}
+          location: ${sys.get_env("REGION")}
+        result: ocr_result
+
+    - run_ledger_aggregate:
+        call: googleapis.run.v1.namespaces.jobs.run
+        args:
+          name: ${"namespaces/" + sys.get_env("GOOGLE_CLOUD_PROJECT_ID") + "/jobs/ledger-aggregate"}
+          location: ${sys.get_env("REGION")}
+        result: ledger_result
+
+    - finish:
+        return:
+          embed_status: ${embed_result.metadata.status.conditions[0].type}
+          ocr_status: ${ocr_result.metadata.status.conditions[0].type}
+          ledger_status: ${ledger_result.metadata.status.conditions[0].type}
+
+    - embed_failed:
+        raise:
+          message: "embed-index did not complete — aborting journey pipeline"

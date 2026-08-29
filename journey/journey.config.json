@@ -1,0 +1,17 @@
+{
+  "_comment": "Plain JSON. Bash-style ${VAR:-DEFAULT} substitution happens at deploy time in cloudbuild.yaml + deploy_journey.sh, NOT here (this would be invalid JSON).",
+  "event_code": "biep-demo",
+  "display_name": "British Isles Journey Workshop",
+  "default_subnation": "ireland",
+  "default_subject": "mathematics",
+  "admin_email": "",
+  "max_participants": 200,
+  "google_cloud_project": "",
+  "google_cloud_location": "europe-west1",
+  "firestore_database": "(default)",
+  "vertex_embedding_model": "gemini-embedding-001",
+  "gemini_chat_model": "gemini-3.5-flash",
+  "fibo_image_endpoint": "",
+  "memory_bank_agent_engine_id": "",
+  "levels_unlocked": ["0", "1", "2", "3", "4", "5"]
+}
