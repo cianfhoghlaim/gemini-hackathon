@@ -1,8 +1,13 @@
-"""gemini_hackathon.observability — Langfuse + MLflow + structlog.
+"""gemini_hackathon.observability — Cloud Trace/Logging + Langfuse + MLflow + structlog.
 
 Lightweight port of cianfhoghlaim/observability/* for the hackathon
-project. Uses the live Langfuse :3001 + MLflow :5050 when available;
-otherwise falls back to structured logging.
+project. Phase 7 of the GCP-first refactor added Cloud Trace + Cloud
+Logging as the primary exporters (matching what `functions/src/
+observability.ts` already does on the TypeScript side); Langfuse :3001 +
+MLflow :5050 remain as optional cianfhoghlaim-parity exporters, used when
+their env vars are set (typically local dev). All 4 are additive — none
+excludes another; every one is env-gated and degrades to structured
+logging alone when unconfigured.
 
 Each LLM call (via ``call_llm``) emits a structlog event ``llm.invocation``
 with the resolved tier + backend + latency. Agents emit
@@ -16,19 +21,19 @@ import logging
 import os
 import time
 import uuid
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import Any, Iterator
+from typing import Any
 
 import structlog
-import logging
 
 logger = structlog.get_logger(__name__)
 
 # Bridge structlog to stdlib logging so caplog still works.
 try:
     logging.basicConfig(level=logging.INFO)
-except Exception:  # noqa: BLE001
+except Exception:
     pass
 
 
@@ -107,7 +112,7 @@ def try_init_langfuse() -> Any:
         )
         logger.info("observability.langfuse_initialised")
         return client
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         logger.warning(f"observability.langfuse_unavailable reason='{type(e).__name__}: {e}'")
         return None
 
@@ -123,8 +128,65 @@ def try_init_mlflow() -> Any:
         mlflow.set_tracking_uri(uri)
         logger.info(f"observability.mlflow_initialised tracking_uri={uri}")
         return mlflow
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         logger.warning(f"observability.mlflow_unavailable reason='{type(e).__name__}: {e}'")
+        return None
+
+
+def try_init_cloud_logging() -> Any:
+    """Attach a Cloud Logging handler to the root logger if `GCP_PROJECT_ID`
+    is set, else return None. Idempotent-ish: safe to call more than once
+    (the underlying client just adds another handler; harmless in a
+    single-process Cloud Run instance).
+    """
+    project_id = os.environ.get("GCP_PROJECT_ID")
+    if not project_id:
+        logger.info("observability.cloud_logging_skipped reason='GCP_PROJECT_ID unset'")
+        return None
+    try:
+        from google.cloud import logging as cloud_logging  # noqa: PLC0415
+
+        client = cloud_logging.Client(project=project_id)
+        client.setup_logging(log_level=logging.INFO)
+        logger.info("observability.cloud_logging_initialised", project_id=project_id)
+        return client
+    except Exception as e:
+        logger.warning(f"observability.cloud_logging_unavailable reason='{type(e).__name__}: {e}'")
+        return None
+
+
+def try_init_cloud_trace() -> Any:
+    """Register a Cloud Trace span exporter via OpenTelemetry if
+    `GCP_PROJECT_ID` is set, else return None.
+
+    Requires the optional `opentelemetry-exporter-gcp-trace` package
+    (not a hard dependency of this repo — install it in the Cloud Run
+    image if trace export is wanted; degrades to structlog-only tracing
+    otherwise, which is always active via `trace_agent()` regardless).
+    """
+    project_id = os.environ.get("GCP_PROJECT_ID")
+    if not project_id:
+        logger.info("observability.cloud_trace_skipped reason='GCP_PROJECT_ID unset'")
+        return None
+    try:
+        from opentelemetry import trace  # noqa: PLC0415
+        from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter  # noqa: PLC0415
+        from opentelemetry.sdk.trace import TracerProvider  # noqa: PLC0415
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor  # noqa: PLC0415
+
+        provider = TracerProvider()
+        provider.add_span_processor(BatchSpanProcessor(CloudTraceSpanExporter(project_id=project_id)))
+        trace.set_tracer_provider(provider)
+        logger.info("observability.cloud_trace_initialised", project_id=project_id)
+        return trace.get_tracer(__name__)
+    except ImportError:
+        logger.info(
+            "observability.cloud_trace_skipped "
+            "reason='opentelemetry-exporter-gcp-trace not installed'"
+        )
+        return None
+    except Exception as e:
+        logger.warning(f"observability.cloud_trace_unavailable reason='{type(e).__name__}: {e}'")
         return None
 
 
@@ -148,6 +210,8 @@ __all__ = [
     "TraceContext",
     "log_asset_generated",
     "trace_agent",
+    "try_init_cloud_logging",
+    "try_init_cloud_trace",
     "try_init_langfuse",
     "try_init_mlflow",
 ]

@@ -1,42 +1,102 @@
-"""gemini_hackathon.ledger.backends.falkor_graph — the FalkorDB skill graph backend.
+"""gemini_hackathon.ledger.backends.firestore_graph — the skill-prerequisite graph backend.
 
-FalkorDB stores the skill-prerequisite graph. The graph is populated
-from the BIEP v1 cross-subject competency master vectors + the
-NCCA per-subject learning outcomes (W5).
+Phase 6 of the GCP-first refactor — replaces `FalkorSkillGraph`. Like
+`ConvexLedger`, the original never actually connected to a live FalkorDB
+instance; every method only ever touched an in-memory adjacency dict, so
+this is a clean swap, not a migration.
 
-Nodes: Skill (per learning outcome).
-Edges:
-  - PREREQUISITE_OF (skill → skill)
-  - ASSESSED_BY (skill → formative_artefact)
-  - UNLOCKS (mastery_event → skill)
-  - CONTRIBUTES_TO (skill → key_competency)
+The graph is populated from the BIEP v1 cross-subject competency master
+vectors + the NCCA per-subject learning outcomes.
 
-In production: writes to a FalkorDB instance. In dev (no FalkorDB):
-writes to an in-memory adjacency dict.
+Nodes: Skill (per learning outcome), stored as Firestore documents in the
+`skillNodes` collection.
+Edges: stored as Firestore documents in the `skillEdges` collection:
+  - PREREQUISITE_OF (skill -> skill)
+  - ASSESSED_BY (skill -> formative_artefact)
+  - UNLOCKS (mastery_event -> skill)
+  - CONTRIBUTES_TO (skill -> key_competency)
+
+Same synchronous method shape `FalkorSkillGraph` had (this class is used
+from `mastery_ledger.py` without `await`, so it stays sync-first — the
+`google-cloud-firestore` Python client's default `Client` is synchronous
+too, so no async wrapper is needed here).
+
+In production (`GCP_PROJECT_ID` set): writes to Firestore. In dev/offline:
+falls back to the same in-memory adjacency dict the original always used.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+
+import structlog
 
 from gemini_hackathon.ledger.types import SkillGraphEdge, SkillGraphNode
 
+logger = structlog.get_logger(__name__)
+
+try:
+    from google.cloud import firestore
+
+    FIRESTORE_AVAILABLE = True
+except ImportError:
+    FIRESTORE_AVAILABLE = False
+    firestore = None  # type: ignore[assignment]
+
 
 @dataclass
-class FalkorSkillGraph:
-    """The FalkorDB-backed skill-prerequisite graph."""
+class FirestoreSkillGraph:
+    """The Firestore-backed skill-prerequisite graph."""
 
-    falkor_url: str | None = None
+    project_id: str | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self._nodes: dict[str, SkillGraphNode] = {}
         self._edges: list[SkillGraphEdge] = []
+        self._client = None
+        if FIRESTORE_AVAILABLE and self.project_id:
+            try:
+                self._client = firestore.Client(project=self.project_id)
+            except Exception:
+                logger.exception("FirestoreSkillGraph: client init failed, using in-memory fallback")
+                self._client = None
+
+    @property
+    def available(self) -> bool:
+        return self._client is not None
 
     def upsert_node(self, node: SkillGraphNode) -> None:
         self._nodes[node.node_id] = node
+        if self.available:
+            try:
+                self._client.collection("skillNodes").document(node.node_id).set(
+                    {
+                        "subject_slug": node.subject_slug,
+                        "learning_outcome_code": node.learning_outcome_code,
+                        "description": node.description,
+                        "bloom_level": node.bloom_level,
+                        "contributes_to": node.contributes_to,
+                    }
+                )
+            except Exception:
+                logger.warning("FirestoreSkillGraph.upsert_node: Firestore write failed (in-memory copy stands)")
 
     def upsert_edge(self, edge: SkillGraphEdge) -> None:
         self._edges.append(edge)
+        if self.available:
+            try:
+                doc_id = f"{edge.edge_type}__{edge.from_node_id}__{edge.to_node_id}"
+                self._client.collection("skillEdges").document(doc_id).set(
+                    {
+                        "edge_type": edge.edge_type,
+                        "from_node_id": edge.from_node_id,
+                        "to_node_id": edge.to_node_id,
+                        "weight": edge.weight,
+                        "metadata": edge.metadata,
+                    }
+                )
+            except Exception:
+                logger.warning("FirestoreSkillGraph.upsert_edge: Firestore write failed (in-memory copy stands)")
 
     def get_node(self, node_id: str) -> SkillGraphNode | None:
         return self._nodes.get(node_id)
@@ -63,6 +123,9 @@ class FalkorSkillGraph:
         """Return the entire graph as a serialisable dict.
 
         Suitable for the editorial canvas UI + the certificate pipeline.
+        Reads from the in-memory mirror (kept in sync with every
+        `upsert_node`/`upsert_edge` call) rather than re-querying
+        Firestore, so this stays fast and works offline too.
         """
         return {
             "nodes": [
@@ -94,7 +157,6 @@ class FalkorSkillGraph:
         Demonstrates the 3 edge types + the 5 Key Competencies.
         Run automatically at construction (for dev convenience).
         """
-        # 8 nodes (1 per LC Mathematics learning outcome)
         math_outcomes = [
             ("MA-LC-MA-1.1", "Complex numbers — addition, multiplication, modulus"),
             ("MA-LC-MA-1.2", "Complex numbers — argand diagram, polar form"),
@@ -114,7 +176,6 @@ class FalkorSkillGraph:
                 bloom_level="apply",
                 contributes_to=["communicating", "managing_information_and_thinking"],
             ))
-        # Prerequisites (each step builds on the previous)
         for prev, curr in zip(math_outcomes, math_outcomes[1:]):
             self.upsert_edge(SkillGraphEdge(
                 edge_type="PREREQUISITE_OF",
@@ -122,7 +183,6 @@ class FalkorSkillGraph:
                 to_node_id=curr[0],
                 weight=1.0,
             ))
-        # Mastery unlocks the next step
         for prev, curr in zip(math_outcomes, math_outcomes[1:]):
             self.upsert_edge(SkillGraphEdge(
                 edge_type="UNLOCKS",
@@ -130,7 +190,6 @@ class FalkorSkillGraph:
                 to_node_id=curr[0],
                 weight=0.8,
             ))
-        # 1 mastery event unlocks the first outcome
         self.upsert_edge(SkillGraphEdge(
             edge_type="UNLOCKS",
             from_node_id="exit_card_MA-LC-MA-1.1",
@@ -140,4 +199,4 @@ class FalkorSkillGraph:
         ))
 
 
-__all__ = ["FalkorSkillGraph"]
+__all__ = ["FirestoreSkillGraph"]

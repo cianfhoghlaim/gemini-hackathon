@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 
 @dataclass
@@ -26,7 +26,7 @@ class MasteryRecord:
     # 5 NCCA Key Competencies (lifted from W8)
     key_competency_codes: list[str] = field(default_factory=list)
     # Spaced repetition metadata
-    next_review_date: Optional[str] = None  # ISO datetime
+    next_review_date: str | None = None  # ISO datetime
     last_updated: str = field(default_factory=lambda: datetime.now().isoformat())
 
 
@@ -87,9 +87,9 @@ class SkillGraphEdge:
 
 
 __all__ = [
+    "AchievementRecord",
     "MasteryRecord",
     "MasteryUpdate",
-    "AchievementRecord",
-    "SkillGraphNode",
     "SkillGraphEdge",
+    "SkillGraphNode",
 ]

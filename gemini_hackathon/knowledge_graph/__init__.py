@@ -1,9 +1,14 @@
-"""gemini_hackathon.knowledge_graph.hybrid_search — FalkorDB + LanceDB hybrid search.
+"""gemini_hackathon.knowledge_graph.hybrid_search — Firestore/Vertex hybrid search.
 
-Lifted from `cianfhoghlaim/docs/sruth/tuath/knowledge_graph/hybrid_search.py`
-and adapted for the British Isles education system.
+Phase 6 of the GCP-first refactor. Was: LanceDB (vector) + FalkorDB
+(graph) — both stub-only (`_vector_search`/`_graph_search` were `return
+[]` with a docstring describing the intended real implementation, never
+written). Now: the Phase 2 `VectorTarget` (Firestore `FindNearest` /
+Vertex AI Vector Search) for vector search + the Phase 6
+`FirestoreSkillGraph`'s node/edge collections for graph search — both
+genuinely implemented, not stubs.
 
-`content_type` values are now education-centric (not mythology-centric):
+`content_type` values are education-centric:
   - `curriculum_unit` — JC / LC / Primary / Early Years / Tertiary
   - `learning_outcome` — a NCCA learning outcome (from BAML extract)
   - `marking_scheme` — a LC marking scheme row
@@ -13,15 +18,28 @@ and adapted for the British Isles education system.
   - `subject_specialist` — a per-subject ADK agent (W7)
 
 Search modes are unchanged (VECTOR / GRAPH / HYBRID).
+
+Honesty note on `_graph_search`: Firestore has no full-text search index,
+so the graph path does a substring match over node descriptions rather
+than a real query-language traversal (the FalkorDB stub's docstring
+described `graph_client.cypher("MATCH ... WHERE n.text CONTAINS $q")` —
+Firestore has no Cypher equivalent). A real deployment wanting proper
+full-text graph search should sit a search index (Vertex AI Search,
+Algolia, or Typesense) in front of the `skillNodes` collection; this
+module's substring match is a working placeholder, not a permanent design.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+import os
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
+import structlog
 from pydantic import BaseModel, Field
+
+logger = structlog.get_logger(__name__)
 
 
 class SearchMode(str, Enum):
@@ -33,11 +51,7 @@ class SearchMode(str, Enum):
 
 
 class ContentType(str, Enum):
-    """The education-system content types indexed by the hybrid search.
-
-    Replaces the Celtic-mythology content types from the sruth/tuath
-    original (`curriculum, mythology, character, story, location`).
-    """
+    """The education-system content types indexed by the hybrid search."""
 
     CURRICULUM_UNIT = "curriculum_unit"
     LEARNING_OUTCOME = "learning_outcome"
@@ -77,30 +91,42 @@ class HybridSearchEngine:
     """Hybrid search engine combining vector and graph search.
 
     Uses:
-    - LanceDB for vector similarity (BAAI/bge-m3 multilingual embeddings,
-      1024-dim per the BIEP v1 spec)
-    - FalkorDB for graph traversal (the skill-prerequisite + key-competency
-      graph from W9)
+    - The Phase 2 `VectorTarget` for vector similarity (Firestore
+      `FindNearest` by default, or Vertex AI Vector Search via
+      `VECTOR_BACKEND=vertex`) — `gemini-embedding-001`, 1536-dim.
+    - The Phase 6 `FirestoreSkillGraph`'s `skillNodes`/`skillEdges`
+      collections for graph traversal (substring match — see the module
+      docstring's honesty note).
+
+    `lance_uri` is kept as a constructor parameter for backward-compatible
+    call sites but is unused (no LanceDB dependency remains); prefer
+    omitting it in new code.
     """
 
-    lance_uri: str
+    lance_uri: str = ""
     graph_client: Any | None = None
+    vector_table_name: str = "biep_hybrid_search_chunks"
 
     def __post_init__(self):
-        """Lazy-import LanceDB at construction time (defer hard dep)."""
-        try:
-            import lancedb
+        from cocoindex_flows._shared._vector_target import get_vector_target
 
-            self._lance_db = lancedb.connect(self.lance_uri)
-        except ImportError:
-            self._lance_db = None
+        try:
+            self._vector_target = get_vector_target()
+        except Exception:
+            logger.exception("HybridSearchEngine: vector target init failed")
+            self._vector_target = None
+
+        if self.graph_client is None:
+            from gemini_hackathon.ledger.backends.firestore_graph import FirestoreSkillGraph
+
+            self.graph_client = FirestoreSkillGraph(project_id=os.environ.get("GCP_PROJECT_ID"))
 
     async def search(
         self,
         query: str,
         mode: SearchMode = SearchMode.HYBRID,
-        content_types: Optional[list[ContentType]] = None,
-        config: Optional[HybridSearchConfig] = None,
+        content_types: list[ContentType] | None = None,
+        config: HybridSearchConfig | None = None,
     ) -> list[SearchResult]:
         """Perform hybrid search across the British Isles education corpus.
 
@@ -116,47 +142,89 @@ class HybridSearchEngine:
         config = config or HybridSearchConfig()
         results: list[SearchResult] = []
 
-        # Vector search (LanceDB)
-        if mode in (SearchMode.VECTOR, SearchMode.HYBRID) and self._lance_db is not None:
+        if mode in (SearchMode.VECTOR, SearchMode.HYBRID) and self._vector_target is not None:
             results.extend(await self._vector_search(query, content_types, config))
 
-        # Graph search (FalkorDB)
         if mode in (SearchMode.GRAPH, SearchMode.HYBRID) and self.graph_client is not None:
             results.extend(await self._graph_search(query, content_types, config))
 
-        # Reciprocal rank fusion (for HYBRID)
         if mode == SearchMode.HYBRID and len(results) > 0:
             results = self._reciprocal_rank_fusion(results)
 
-        # Filter by min_score
         results = [r for r in results if r.score >= config.min_score]
         return results[: config.max_results]
 
     async def _vector_search(
         self,
         query: str,
-        content_types: Optional[list[ContentType]],
+        content_types: list[ContentType] | None,
         config: HybridSearchConfig,
     ) -> list[SearchResult]:
-        """Vector similarity search via LanceDB.
+        """Vector similarity search via the `VectorTarget`."""
+        from cocoindex_flows._shared._vertex_embedder import VertexEmbedder
 
-        Stub implementation — the real implementation calls
-        `lance_db.create_table("search", ...) + lance_db.search().limit(N)`.
-        """
-        return []
+        embedder = VertexEmbedder()
+        if not embedder.available:
+            logger.warning("_vector_search: VertexEmbedder unavailable, returning no vector results")
+            return []
+
+        query_vector = await embedder.embed_query(query)
+        matches = await self._vector_target.find_nearest(
+            self.vector_table_name, query_vector, k=config.max_results
+        )
+        results = []
+        for m in matches:
+            payload = m.payload or {}
+            content_type_str = payload.get("content_type", ContentType.CURRICULUM_UNIT.value)
+            try:
+                content_type = ContentType(content_type_str)
+            except ValueError:
+                content_type = ContentType.CURRICULUM_UNIT
+            if content_types and content_type not in content_types:
+                continue
+            results.append(
+                SearchResult(
+                    id=m.id,
+                    content_type=content_type,
+                    title=payload.get("title", payload.get("source_file", m.id)),
+                    content=payload.get("text", ""),
+                    score=m.score,
+                    source="vector",
+                    metadata=payload,
+                )
+            )
+        return results
 
     async def _graph_search(
         self,
         query: str,
-        content_types: Optional[list[ContentType]],
+        content_types: list[ContentType] | None,
         config: HybridSearchConfig,
     ) -> list[SearchResult]:
-        """Graph traversal via FalkorDB.
-
-        Stub implementation — the real implementation calls
-        `graph_client.cypher("MATCH (n:CurriculumUnit) WHERE n.text CONTAINS $q ...")`.
-        """
-        return []
+        """Graph traversal via `FirestoreSkillGraph` (substring match over
+        node descriptions — see the module docstring's honesty note)."""
+        graph = self.graph_client.get_full_graph()
+        query_lower = query.lower()
+        results = []
+        for node in graph.get("nodes", []):
+            description = node.get("description", "")
+            if query_lower not in description.lower():
+                continue
+            results.append(
+                SearchResult(
+                    id=node["id"],
+                    content_type=ContentType.LEARNING_OUTCOME,
+                    title=node.get("learning_outcome_code", node["id"]),
+                    content=description,
+                    score=0.5,  # substring match — a fixed confidence, not a graded rank
+                    source="graph",
+                    metadata={"subject_slug": node.get("subject_slug", "")},
+                    related_entities=node.get("contributes_to", []),
+                )
+            )
+            if len(results) >= config.max_results:
+                break
+        return results
 
     def _reciprocal_rank_fusion(
         self, results: list[SearchResult], k: int = 60
@@ -188,9 +256,9 @@ class HybridSearchEngine:
 
 
 __all__ = [
-    "SearchMode",
     "ContentType",
-    "SearchResult",
     "HybridSearchConfig",
     "HybridSearchEngine",
+    "SearchMode",
+    "SearchResult",
 ]

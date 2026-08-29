@@ -64,6 +64,39 @@ variable "allow_unauthenticated" {
 }
 
 # ---------------------------------------------------------------------------
+# API enablement — everything Phases 1-7 depend on. `disable_on_destroy =
+# false` so a `terraform destroy` doesn't take down APIs other stacks in the
+# same project rely on.
+# ---------------------------------------------------------------------------
+
+locals {
+  required_apis = [
+    "run.googleapis.com",
+    "artifactregistry.googleapis.com",
+    "secretmanager.googleapis.com",
+    "aiplatform.googleapis.com",       # Vertex AI (Gemini, embeddings, Vector Search)
+    "documentai.googleapis.com",       # Document AI (OCR ensemble path 1)
+    "bigquery.googleapis.com",         # BIEP warehouse (dlt destination)
+    "storage.googleapis.com",          # GCS raw/derived/assets buckets
+    "firestore.googleapis.com",        # MasteryLedger + session + vector FindNearest
+    "workflows.googleapis.com",        # Cloud Workflows (ingest -> extract -> embed)
+    "cloudscheduler.googleapis.com",   # nightly corpus ingestion trigger
+    "pubsub.googleapis.com",           # OCR completion fan-out (replaces OCR_WEBHOOK_URL)
+    "run.googleapis.com",              # Cloud Run Jobs share this API
+    "cloudtrace.googleapis.com",       # observability
+    "logging.googleapis.com",          # observability
+  ]
+}
+
+resource "google_project_service" "required" {
+  for_each                  = toset(local.required_apis)
+  project                   = var.project_id
+  service                   = each.value
+  disable_dependent_services = false
+  disable_on_destroy        = false
+}
+
+# ---------------------------------------------------------------------------
 # Artifact Registry
 # ---------------------------------------------------------------------------
 
@@ -72,6 +105,8 @@ resource "google_artifact_registry_repository" "gemini_hackathon" {
   location      = var.region
   repository_id = "gemini-hackathon"
   format        = "DOCKER"
+
+  depends_on = [google_project_service.required]
 }
 
 # ---------------------------------------------------------------------------
@@ -82,6 +117,8 @@ resource "google_cloud_run_service" "gemini_hackathon" {
   project  = var.project_id
   location = var.region
   name     = var.service_name
+
+  depends_on = [google_project_service.required]
 
   template {
     spec {
@@ -161,14 +198,17 @@ resource "google_cloud_run_service" "gemini_hackathon" {
 }
 
 # Allow public invocation if the variable is true.
+#
+# NOTE: `google_iam_policy` takes repeatable `binding { role, members }`
+# blocks, not a `binding_data = jsonencode(...)` argument — the latter does
+# not exist on this data source and previously made this file unplannable.
 data "google_iam_policy" "noauth" {
-  count        = var.allow_unauthenticated ? 1 : 0
-  binding_data = jsonencode(
-    {
-      role    = "roles/run.invoker"
-      members = ["allUsers"]
-    }
-  )
+  count = var.allow_unauthenticated ? 1 : 0
+
+  binding {
+    role    = "roles/run.invoker"
+    members = ["allUsers"]
+  }
 }
 
 resource "google_cloud_run_service_iam_policy" "noauth" {
@@ -176,7 +216,7 @@ resource "google_cloud_run_service_iam_policy" "noauth" {
   location    = google_cloud_run_service.gemini_hackathon.location
   project     = google_cloud_run_service.gemini_hackathon.project
   service     = google_cloud_run_service.gemini_hackathon.name
-  policy_data = data.google_iam_policy.noauth[count].policy_data
+  policy_data = data.google_iam_policy.noauth[count.index].policy_data
 }
 
 # ---------------------------------------------------------------------------
@@ -208,10 +248,10 @@ resource "google_secret_manager_secret" "gemini_api_key" {
 }
 
 data "google_iam_policy" "cloudrun_secrets_reader" {
-  binding_data = jsonencode({
+  binding {
     role    = "roles/secretmanager.secretAccessor"
     members = var.service_account == "" ? [] : ["serviceAccount:${var.service_account}"]
-  })
+  }
 }
 
 resource "google_secret_manager_secret_iam_policy" "unsloth_api_key" {
@@ -233,6 +273,70 @@ resource "google_secret_manager_secret_iam_policy" "gemini_api_key" {
 }
 
 # ---------------------------------------------------------------------------
+# GCS buckets (Phase 1 — the data substrate; replaces Garage S3)
+# ---------------------------------------------------------------------------
+
+resource "google_storage_bucket" "biep_raw" {
+  project                     = var.project_id
+  name                         = "${var.project_id}-biep-raw"
+  location                     = var.region
+  uniform_bucket_level_access = true
+  force_destroy                = false
+  depends_on                   = [google_project_service.required]
+}
+
+resource "google_storage_bucket" "biep_derived" {
+  project                     = var.project_id
+  name                         = "${var.project_id}-biep-derived"
+  location                     = var.region
+  uniform_bucket_level_access = true
+  force_destroy                = false
+  depends_on                   = [google_project_service.required]
+}
+
+resource "google_storage_bucket" "biep_assets" {
+  project                     = var.project_id
+  name                         = "${var.project_id}-biep-assets"
+  location                     = var.region
+  uniform_bucket_level_access = true
+  force_destroy                = false
+  depends_on                   = [google_project_service.required]
+}
+
+# ---------------------------------------------------------------------------
+# BigQuery dataset (Phase 1 — the DLT `bigquery_biep` named destination)
+# ---------------------------------------------------------------------------
+
+resource "google_bigquery_dataset" "biep" {
+  project                    = var.project_id
+  dataset_id                  = "biep"
+  location                    = var.region
+  delete_contents_on_destroy = false
+  depends_on                  = [google_project_service.required]
+}
+
+# ---------------------------------------------------------------------------
+# Firestore (Phase 2/6 — MasteryLedger + vector FindNearest + session state)
+#
+# NOTE: a project can only have ONE Firestore database in Native mode named
+# "(default)". If Firebase (firebase.json) already provisioned it via
+# `firebase deploy`, import it instead of applying this resource:
+#   terraform import google_firestore_database.default "projects/<id>/databases/(default)"
+# ---------------------------------------------------------------------------
+
+resource "google_firestore_database" "default" {
+  project     = var.project_id
+  name        = "(default)"
+  location_id = var.region
+  type        = "FIRESTORE_NATIVE"
+  depends_on  = [google_project_service.required]
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+# ---------------------------------------------------------------------------
 # Outputs
 # ---------------------------------------------------------------------------
 
@@ -242,4 +346,20 @@ output "service_url" {
 
 output "image_url" {
   value = google_artifact_registry_repository.gemini_hackathon.repository_url
+}
+
+output "gcs_raw_bucket" {
+  value = google_storage_bucket.biep_raw.name
+}
+
+output "gcs_derived_bucket" {
+  value = google_storage_bucket.biep_derived.name
+}
+
+output "gcs_assets_bucket" {
+  value = google_storage_bucket.biep_assets.name
+}
+
+output "bigquery_dataset" {
+  value = google_bigquery_dataset.biep.dataset_id
 }

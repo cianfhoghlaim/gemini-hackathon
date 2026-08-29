@@ -59,7 +59,7 @@ def render_certificate_markdown(cert: CertificateRecord) -> tuple[str, dict[str,
     """Render the certificate as markdown + a metadata dict.
 
     The metadata dict is keyed by `AwardType.<LOWER>` strings — same shape
-    as the Phase-3 ``AwardType`` enum used in the Convex schema.
+    as the Phase-3 ``AwardType`` enum used in the Firestore schema.
     """
     outcomes_section = ""
     if cert.outcomes_covered:

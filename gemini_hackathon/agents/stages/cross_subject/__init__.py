@@ -66,8 +66,9 @@ async def decompose_into_competency_updates(node_input: Any) -> "Event":
 async def write_competency_update(node_input: Any) -> "Event":
     """One worker that writes a competency update to the skill-progression ledger (W9).
 
-    Bounded by `RetryConfig(max_attempts=3)` so a transient Convex /
-    LanceDB / FalkorDB failure doesn't discard the whole fan-out.
+    Bounded by `RetryConfig(max_attempts=3)` so a transient Firestore
+    ledger / mastery-vector / skill-graph write failure doesn't discard
+    the whole fan-out (see `gemini_hackathon.ledger.MasteryLedger`).
     """
     update = node_input  # the per-competency dict
     return Event(output={"written": True, "update": update})

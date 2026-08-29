@@ -17,8 +17,9 @@ in the 5 NCCA policy documents + the learner's mastery ledger.
      (subject × stage → visual prompt).
   6. ComposeCertificate — PIL: background + text overlay + seal
      + competency strip + provenance footer.
-  7. SaveToProvenance — write the result to Convex + LanceDB +
-     markdown memory (W9 MasteryLedger).
+  7. SaveToProvenance — write the result to Firestore + the mastery-vector
+     store + markdown memory (W9 MasteryLedger — Google-native since the
+     Phase 6 GCP-first refactor; see gemini_hackathon/ledger/).
 
 The output is a `CertificateRecord` with:
   - learner_id + name + subject + stage

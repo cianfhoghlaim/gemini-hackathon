@@ -205,6 +205,24 @@ run = "cd site && python -m http.server 8000"
 description = "docker build -t gemini-hackathon:dev ."
 run = "docker build -t gemini-hackathon:dev ."
 
+# ---- GCP-first refactor (Phases 3/4/7/8) -----------------------------------
+
+[tasks."gcp:ingest-corpus"]
+description = "Fetch the 8-jurisdiction British Isles catalog (Phase 3) — local run of the ingest-corpus Cloud Run Job"
+run = "uv run python -m dlt_pipelines.corpus_downloader"
+
+[tasks."gcp:embed-index"]
+description = "Run the 114+8 CocoIndex Apps (Phase 4) — local run of the embed-index Cloud Run Job"
+run = "uv run python -m scripts.run_cocoindex_factories"
+
+[tasks."gcp:generate-studio-dockerfiles"]
+description = "Regenerate Dockerfile.cloudrun + cloudbuild.cloudrun.yaml for the 4 non-editorial Gradio studios (Phase 8)"
+run = "uv run python -m scripts.generate_cloud_run_studios"
+
+[tasks."hf:publish"]
+description = "Regenerate + push the 5 HF Spaces mirrors (secondary distribution channel — Cloud Run is canonical, per Phase 8)"
+run = "uv run python -m hf_spaces._generate && echo 'Review hf_spaces/*/ then: hf upload <space> hf_spaces/<space> --repo-type space'"
+
 [tasks.dev]
 description = "docker compose up --build (local stack: app + ollama + duckdb vol)"
 run = "docker compose up --build"

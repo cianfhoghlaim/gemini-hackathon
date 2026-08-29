@@ -7,9 +7,10 @@ The session binds:
   - active cycle + selected subjects
   - auto-resolved safeguarding + palette source keys
 
-In production the session is durable (Convex `userSessions` + BetterAuth
-JWT); in dev it lives in localStorage. The session is the load-bearing
-piece for per-route content scoping.
+In production the session is durable (Firestore `users/{uid}` + Firebase
+Auth ID token — see `web/src/lib/firebase.ts` + `functions/src/
+auth_oncreate.ts`); in dev it lives in localStorage. The session is the
+load-bearing piece for per-route content scoping.
 """
 
 from .schema import (

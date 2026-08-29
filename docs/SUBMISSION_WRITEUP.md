@@ -5,7 +5,7 @@
 
 ## 200-word writeup
 
-The gemini-hackathon submission is a British Isles education platform covering 5 stages (Aistear → Bunscoil → MeanScoil → Scoil Sinsearach → Ollscoil) across 8 subnations (Ireland + England live; NI / Wales / Scotland / IoM deferred). The **showcase** is the **LC/JC certificate pipeline**: 7 stages that take a learner_id + subject + stage, extract the NCCA learning outcomes from the 5 NCCA policy PDFs via BAML, RAG-search the policy corpus via a LanceDB + FalkorDB hybrid, generate the certificate background via FIBO + the 14-subject × 5-stage prompt bank, and compose the certificate via PIL (1200×850) with the official NCCA palette + the UNOFFICIAL banner + a 5-PDF provenance footer. Every claim cites a page. The **bonus** is the **280-cell asset-comparison leaderboard**: 8 NCCA LC subjects × 5 topics × 7 backends (FIBO + DiffusionGemma + FLUX.1-schnell + FLUX.2-dev + Gemini 2.5 Flash Image + Imagen 3 + Imagen 4) compared on SSIM, palette fidelity, cost, latency, and an LLM-judge subjective score. The **17 Jupyter notebooks** in `notebooks/converted/` (13 marimo conversions + 4 ADK-focused originals) walk through every pipeline + the Google ADK agent tree + the AGUI 13-event protocol + the CopilotKit runtime + the 7 Fleet primitives.
+The gemini-hackathon submission is a British Isles education platform covering 5 stages (Aistear → Bunscoil → MeanScoil → Scoil Sinsearach → Ollscoil) across all 8 British Isles subnations (Ireland + England fully populated; NI / Scotland / Wales / Isle of Man / Jersey / Guernsey wired end-to-end with schema-complete pipelines, corpus coverage growing as each jurisdiction's official sources are ingested). The **showcase** is the **LC/JC certificate pipeline**: 7 stages that take a learner_id + subject + stage, extract the NCCA learning outcomes from the 5 NCCA policy PDFs via BAML, RAG-search the policy corpus via a Firestore/Vertex AI Vector Search hybrid, generate the certificate background via FIBO + the 14-subject × 5-stage prompt bank, and compose the certificate via PIL (1200×850) with the official NCCA palette + the UNOFFICIAL banner + a 5-PDF provenance footer. Every claim cites a page. The **bonus** is the **280-cell asset-comparison leaderboard**: 8 NCCA LC subjects × 5 topics × 7 backends (FIBO + DiffusionGemma + FLUX.1-schnell + FLUX.2-dev + Gemini 2.5 Flash Image + Imagen 3 + Imagen 4) compared on SSIM, palette fidelity, cost, latency, and an LLM-judge subjective score. The **17 Jupyter notebooks** in `notebooks/converted/` (13 marimo conversions + 4 ADK-focused originals) walk through every pipeline + the Google ADK agent tree + the AGUI 13-event protocol + the CopilotKit runtime + the 7 Fleet primitives.
 
 *Submitted for the purposes of entering this hackathon.*
 
@@ -19,13 +19,24 @@ The gemini-hackathon submission is a British Isles education platform covering 5
 - **FLUX.1-schnell** + **FLUX.2-dev** via InvokeAI (image gen)
 - **FIBO** via ComfyUI (JSON-native image gen)
 - **BAML** (`baml-py >= 0.223`) — structured extraction
-- **CocoIndex** + **LanceDB** + **FalkorDB** (MasteryLedger 4-backend)
-- **DuckDB** + **MotherDuck** (data plane)
-- **Convex** (UI surface, 13 tables)
-- **TanStack Start** + **CopilotKit** + **AG-UI** (web)
+- **CocoIndex** + **Vertex AI `gemini-embedding-001`** — the embedding layer
+  (BGE-M3/sentence-transformers is the offline dev fallback only)
+- **Firestore `FindNearest`** + **Vertex AI Vector Search** (dual-backed
+  `VectorTarget`, benchmarked head-to-head on identical 1536-d vectors) —
+  the MasteryLedger's vector backend
+- **Document AI** + **Gemini 3.5 Flash native PDF** — the 4-path OCR
+  ensemble (RAGAS `biiep_extraction_consensus` vote)
+- **BigQuery** + **Cloud Storage** (data plane; replaces DuckLake/MotherDuck
+  for the deployed path — `duckdb_local` remains the offline dev default)
+- **Firestore** (UI-facing MasteryLedger rows + session state + skill graph
+  — replaces Convex)
+- **Firebase** — Hosting + Auth + App Check + Cloud Functions Gen2 (web)
+- **Cloud Run** + **Cloud Run Jobs** + **Cloud Workflows** + **Cloud
+  Scheduler** (deployment + ingestion orchestration)
+- **Cloud Trace** + **Cloud Logging** (observability)
 - **Marimo** + **Jupyter** (notebooks — 17 .ipynb artefacts)
-- **Google Cloud Run** (deployment)
-- **Hugging Face Spaces** (5 studios)
+- **Hugging Face Spaces** (5 studios — secondary distribution channel,
+  generated from the same Gradio source that ships on Cloud Run)
 
 ## Live demo
 

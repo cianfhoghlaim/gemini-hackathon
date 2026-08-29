@@ -1,18 +1,27 @@
 """gemini_hackathon.ledger — the skill-progression ledger.
 
-3-layer persistence + the unified `MasteryLedger` API:
+Google-native persistence (Phase 6 of the GCP-first refactor) + the
+unified `MasteryLedger` API:
 
-  - Convex (`ConvexLedger`): per-learner achievement ledger rows (UI-facing).
-    The schema: `achievements: {learner_id, subject_slug, outcome_code,
-    mastery_score, evidence_id[], unlocked_by, awarded_certificate_ids}[]`.
+  - Firestore (`FirestoreLedger`): per-learner achievement ledger rows
+    (UI-facing). The schema: `learners/{learner_id}/achievements/
+    {subject_slug}__{learning_outcome_code}: {mastery_score,
+    unlocked_outcome_codes, key_competency_codes, evidence_ids,
+    created_at, last_updated}`.
 
-  - LanceDB (`LanceMasteryVectors`): per-learner mastery vectors (320-dim
-    per the BIEP v1 spec — 5 NCCA Key Competencies × 8 subjects ×
-    4 levels × 2 languages). Backed by `bge-m3` embeddings.
+  - Firestore/Vertex AI Vector Search (`FirestoreMasteryVectors`):
+    per-learner mastery vectors (320-dim — 5 NCCA Key Competencies x
+    8 subjects x 4 levels x 2 languages), via the same dual-backed
+    `VectorTarget` the CocoIndex embedding layer uses (Phase 2).
 
-  - FalkorDB (`FalkorSkillGraph`): the skill-prerequisite graph.
+  - Firestore (`FirestoreSkillGraph`): the skill-prerequisite graph.
     Nodes: Skill (per learning outcome). Edges: PREREQUISITE_OF,
     ASSESSED_BY_ARTEFACT, UNLOCKS, CONTRIBUTES_TO_COMPETENCY.
+
+Replaces Convex + LanceDB + FalkorDB outright — none of the three was
+ever actually deployed (each backend's own prior docstring described an
+in-memory-only fallback with the real deployment "deferred"), so this is
+a clean swap to a single Google-native substrate, not a migration.
 
 The `MasteryLedger` facade unifies all 3 + the markdown memory layer
 (gemini_hackathon/memory/MarkdownMemoryService — W8) into a single
@@ -26,27 +35,26 @@ Driven by:
     vector to populate the certificate
 """
 
+from gemini_hackathon.ledger.backends.firestore_graph import FirestoreSkillGraph
+from gemini_hackathon.ledger.backends.firestore_ledger import FirestoreLedger
+from gemini_hackathon.ledger.backends.firestore_vectors import FirestoreMasteryVectors
+from gemini_hackathon.ledger.mastery_ledger import MasteryLedger
 from gemini_hackathon.ledger.types import (
+    AchievementRecord,
     MasteryRecord,
     MasteryUpdate,
-    AchievementRecord,
-    SkillGraphNode,
     SkillGraphEdge,
+    SkillGraphNode,
 )
-from gemini_hackathon.ledger.backends.convex_ledger import ConvexLedger
-from gemini_hackathon.ledger.backends.lance_vectors import LanceMasteryVectors
-from gemini_hackathon.ledger.backends.falkor_graph import FalkorSkillGraph
-from gemini_hackathon.ledger.mastery_ledger import MasteryLedger
-
 
 __all__ = [
+    "AchievementRecord",
+    "FirestoreLedger",
+    "FirestoreMasteryVectors",
+    "FirestoreSkillGraph",
+    "MasteryLedger",
     "MasteryRecord",
     "MasteryUpdate",
-    "AchievementRecord",
-    "SkillGraphNode",
     "SkillGraphEdge",
-    "ConvexLedger",
-    "LanceMasteryVectors",
-    "FalkorSkillGraph",
-    "MasteryLedger",
+    "SkillGraphNode",
 ]

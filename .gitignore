@@ -73,6 +73,22 @@ junit.xml
 data/*.duckdb
 data/*.duckdb.*
 
+# --- corpus_downloader local fallback (Phase 3) -------------------------------
+# `dlt_pipelines/corpus_downloader.py` writes fetched government-site pages
+# to GCS in the deployed path; when GCP_PROJECT_ID is unset it falls back to
+# `./data/<Jurisdiction>/<subject>/<hash>.{html,pdf}` for offline dev. That
+# fetched corpus is reproducible (re-run the downloader) and can be large —
+# don't commit it. The 5 curated NCCA policy PDFs + committed LC sample
+# corpus under data/ireland/ are unaffected (not matched by this pattern).
+data/Ireland/
+data/England/
+data/Scotland/
+data/Wales/
+data/Northern Ireland/
+data/Isle of Man/
+data/Jersey/
+data/Guernsey/
+
 # --- marimo + notebooks ------------------------------------------------------
 notebooks/__marimo__/
 notebooks/.marimo/

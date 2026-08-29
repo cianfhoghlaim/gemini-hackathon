@@ -71,7 +71,6 @@ def write_to_named_destination(name: str, table_name: str, dataframe: Any) -> in
     Returns the number of rows written. Returns -1 if the destination
     is unreachable.
     """
-    from dlt_pipelines._shared import get_named_destination  # noqa: PLC0415
 
     if name == "duckdb_local":
         conn = get_ducklake_client()
@@ -87,6 +86,10 @@ def write_to_named_destination(name: str, table_name: str, dataframe: Any) -> in
         conn.register("df_temp", dataframe)
         n = conn.execute(f"CREATE OR REPLACE TABLE {table_name} AS SELECT * FROM df_temp").fetchone()
         return int(n[0]) if n else 0
+    if name == "bigquery_biep":
+        from orchestration.storage.bigquery_client import write_to_bigquery  # noqa: PLC0415
+
+        return write_to_bigquery(table_name, dataframe)
     raise ValueError(f"write_to_named_destination: unknown destination {name!r}")
 
 

@@ -10,7 +10,7 @@ Total: 8 × 5 × 7 = 280 cells (the headline demo artefact).
 Persists to:
   - DuckDB table `gemini_hackathon.per_topic_assets` (280 rows)
   - JSONL file at ./data/gemini_hackathon/cert/per_topic_assets.jsonl
-  - Convex table `perTopicAssets` (280 rows)
+  - Firestore collection `perTopicAssets` (280 rows)
 """
 
 from __future__ import annotations

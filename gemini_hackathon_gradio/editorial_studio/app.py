@@ -55,7 +55,7 @@ def build_workflow_canvas():
       4. extract_marking      — BAML → MarkingScheme, MarkAllocation
       5. search_official      — RAG over the 5 NCCA PDFs (W2)
       6. generate_certificate — Flux background + PIL compositing (W14)
-      7. save_to_provenance   — LanceDB + Convex (W9)
+      7. save_to_provenance   — Firestore + the mastery-vector store (W9)
 
     Each node becomes an MCP tool when the workflow is launched
     (`gr.mcp.start(workflow.app)` per Workstream 12).
@@ -125,7 +125,7 @@ def build_workflow_canvas():
         """Stage 7 — save the certificate to the skill-progression ledger (W9)."""
         return (
             f"[save_to_provenance] {certificate_path} learner={learner_id} "
-            f"-> Convex + LanceDB mastery vector + FalkorDB skill graph"
+            f"-> Firestore + mastery-vector store + Firestore skill graph"
         )
 
     return gr.Workflow(
@@ -209,7 +209,7 @@ compose the certificate end-to-end.""",
                         "extract_exam_paper → extract_marking → "
                         "search_official (RAG over 5 NCCA PDFs) → "
                         "generate_certificate (Flux + PIL) → "
-                        "save_to_provenance (Convex + LanceDB + FalkorDB)\n"
+                        "save_to_provenance (Firestore + mastery-vector store + skill graph)\n"
                         "```"
                     )
 

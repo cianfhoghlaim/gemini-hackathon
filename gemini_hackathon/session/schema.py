@@ -8,8 +8,9 @@ The session binds a user to:
   - the active palette (auto-resolved from the subnation — the agent uses
     it as a voice)
 
-The session is durable: in production it lives in Convex `userSessions`
-+ BetterAuth's JWT, in dev it lives in localStorage (anonymous mode).
+The session is durable: in production it lives in Firestore
+`users/{uid}` + Firebase Auth's ID token, in dev it lives in localStorage
+(anonymous mode).
 
 The five active subnations (Ireland + England default, NI/Scotland/Wales
 available) + the three "future expansion pack" subnations (Jersey,
@@ -148,9 +149,9 @@ SUBJECT_CATALOGUE: tuple[Subject, ...] = (
 class Session:
     """The user's active session.
 
-    Durable: in production it lives in `Convex.userSessions`; in dev it lives
-    in localStorage. The session is the load-bearing piece for per-route
-    content scoping.
+    Durable: in production it lives in Firestore `users/{uid}`; in dev it
+    lives in localStorage. The session is the load-bearing piece for
+    per-route content scoping.
     """
 
     session_id: str

@@ -7,7 +7,7 @@ Per the user's "BAML vs VLM comparison + per-subject asset schema":
   - comparison.py       — Orchestrator: runs both, applies rubric, persists results
   - rubric.py           — Jaccard + LO coverage + schema-conformance + LLM-judge
   - per_topic_schema.py — CurriculumUnit.learning_outcomes[i] -> CurriculumConcept -> AssetRequest
-  - storage.py          — Writes to DuckDB + Convex
+  - storage.py          — Writes to DuckDB + Firestore
 
 The 8 active NCCA LC subjects × 4 extraction methods (BAML, VLM Gemini,
 VLM Gemma-4-E4B-it, VLM PaliGemma2) = 32 comparison cells.

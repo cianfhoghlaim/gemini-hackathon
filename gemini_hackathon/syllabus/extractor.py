@@ -50,7 +50,7 @@ class ExtractedSyllabus:
     raw_response: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert to a dict for Convex / DuckDB persistence."""
+        """Convert to a dict for Firestore / DuckDB persistence."""
         return {
             "subject": self.subject,
             "language": self.language,

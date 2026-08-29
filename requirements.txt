@@ -20,30 +20,34 @@ huggingface_hub>=0.30
 # FastMCP for the per-subject MCP servers
 fastmcp>=0.4
 
-# Data ingestion (DLT + MotherDuck + DuckDB + DuckLake)
-dlt>=1.0,<2.0
+# Data ingestion (DLT + DuckDB — the offline dev default)
+dlt[bigquery]>=1.0,<2.0
 duckdb>=1.0
-ducklake>=0.10
-motherduck>=0.10
 ibis-framework[duckdb]>=9.0
 
 # LLM routing + extraction (BAML + LiteLLM)
 baml-py>=0.223.0
 litellm>=1.50
 
-# Vector + graph storage (LanceDB + FalkorDB + NetworkX for skill graph)
-lancedb>=0.10
-falkordb>=1.0
+# GCP-first data + AI substrate (Phases 1-6 of the GCP-first refactor)
+google-cloud-storage>=2.18
+google-cloud-firestore>=2.19
+google-cloud-aiplatform>=1.70
+google-cloud-documentai>=2.30
+google-cloud-workflows>=1.16
+google-cloud-scheduler>=2.13
+google-cloud-pubsub>=2.23
+google-cloud-trace>=1.13
+google-cloud-logging>=3.11
+
+# Vector + graph — Firestore FindNearest is the default VectorTarget
 networkx>=3.0
+numpy>=1.26
 
-# Knowledge graph + temporal memory (Graphiti + Cognee)
-graphiti-core>=0.20
-cognee>=0.2
-
-# Observability (Langfuse + structlog + MLflow)
-langfuse>=3.0
+# Observability (structlog always-on; Langfuse/MLflow are optional
+# cianfhoghlaim-parity exporters — see pyproject.toml's
+# `cianfhoghlaim-parity` dependency group)
 structlog>=24.0
-mlflow>=2.20
 
 # Agent memory (Letta)
 letta>=0.50

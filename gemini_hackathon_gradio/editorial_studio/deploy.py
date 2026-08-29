@@ -3,8 +3,8 @@
 The editorial studio runs as a single Cloud Run service per Workstream 12.
 The deployment follows the monstertix pattern (`monstertix/main.py`):
 the gemini_hackathon FastAPI app + the Gradio frontend + the ADK 2
-agent runners + the Convex ledger + the LanceDB mastery vectors + the
-FalkorDB skill graph — all on a single container.
+agent runners + the Firestore ledger + the mastery-vector store + the
+Firestore skill graph — all on a single container.
 
 Public surface:
   - `https://<service>.run.app/` — the Gradio editorial canvas
@@ -31,14 +31,18 @@ from typing import Any
 _log = logging.getLogger(__name__)
 
 
-# Cloud Run env vars (the 6 vars every container needs)
+# Cloud Run env vars (the 6 vars every container needs — Phase 6 of the
+# GCP-first refactor replaced the 3 self-hosted backend URLs (MILVUS_URL/
+# LANCE_DB_URI, FALKORDB_URL, CONVEX_DEPLOYMENT_URL) with GCP_PROJECT_ID +
+# VECTOR_BACKEND, since Firestore/Vertex AI Vector Search need no
+# per-service URL — just a project ID and ADC).
 CLOUD_RUN_REQUIRED_VARS: tuple[str, ...] = (
     "GEMINI_API_KEY",            # or GOOGLE_GENAI_USE_VERTEXAI=True
     "HF_TOKEN",                  # HF Inference Providers fallback
     "UNSLOTH_BASE_URL",          # Unsloth Studio (Gemma 4 26B-A4B)
-    "MILVUS_URL",                 # or LANCE_DB_URI for the mastery vectors
-    "FALKORDB_URL",               # the skill graph
-    "CONVEX_DEPLOYMENT_URL",     # the UI-facing achievement ledger
+    "GCP_PROJECT_ID",            # Firestore + Vertex AI Vector Search + Document AI
+    "VECTOR_BACKEND",            # "firestore" (default) or "vertex"
+    "EMBED_BACKEND",             # "vertex" (default) or "sentence_transformers"
 )
 
 

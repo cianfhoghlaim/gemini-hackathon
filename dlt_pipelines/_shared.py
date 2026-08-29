@@ -47,17 +47,39 @@ REPO_ROOT: Path = Path(__file__).resolve().parent.parent
 #: Lives at the repo root, parallel to `dlt_pipelines/` and `gemini_hackathon/`.
 DUCKDB_PATH: Path = REPO_ROOT / "gemini_hackathon.duckdb"
 
-#: The canonical parent of all 134 leaving-certificate subject PDFs.
-#: The user spec'd `/Users/cianmacdeisigh/dev/cianchosaint/leaving_certificate/`
-#: but the actual canonical mirror on this workstation is at
-#: `/Users/cianmacandeisigh/dev/biiep-hackathon-2026-08-31/leaving_certificate/`.
-#: Override with `LC_SUBJECTS_PATH_OVERRIDE` env var.
-LC_SUBJECTS_PATH: Path = Path(
-    os.environ.get(
-        "LC_SUBJECTS_PATH",
-        "/Users/cianmacandeisigh/dev/biiep-hackathon-2026-08-31/leaving_certificate",
-    )
+#: The GCS URI holding the canonical LC subject PDF corpus (Phase 1 — the
+#: GCP-first data substrate). This is the deployed-path default; Cloud Run
+#: Jobs and the ingestion pipeline read from here.
+#: Override with `LC_SUBJECTS_GCS_URI`.
+LC_SUBJECTS_GCS_URI: str = os.environ.get(
+    "LC_SUBJECTS_GCS_URI",
+    f"gs://{os.environ.get('GCP_PROJECT_ID', 'gemini-hackathon-prod')}-biep-raw/ireland/leaving_cert",
 )
+
+#: The local-filesystem fallback for offline dev (no GCP creds required).
+#: Resolution order (see `resolve_lc_subjects_path()`):
+#:   1. `LC_SUBJECTS_PATH` env var, if set (explicit override)
+#:   2. `<repo_root>/data/ireland/leaving_certificate/` (committed sample)
+#:   3. GCS via `LC_SUBJECTS_GCS_URI` (requires `gcsfs` + ADC)
+#: There is deliberately no hardcoded absolute path to another developer's
+#: home directory here anymore — that broke on every machine but the one
+#: it was written on.
+LC_SUBJECTS_PATH: Path = Path(
+    os.environ.get("LC_SUBJECTS_PATH", "./data/ireland/leaving_certificate")
+)
+
+
+def resolve_lc_subjects_path() -> Path | str:
+    """Resolve the LC subject PDF corpus location.
+
+    Returns a local `Path` if a local copy exists (dev / CI / smoke-test
+    fallback), else the `gs://` URI (the deployed-path default). Callers
+    that need local bytes (e.g. `pypdfium2`) should check
+    `isinstance(result, Path)` and fetch-to-tmp via `gcsfs` otherwise.
+    """
+    if LC_SUBJECTS_PATH.exists() and any(LC_SUBJECTS_PATH.iterdir()) if LC_SUBJECTS_PATH.exists() else False:
+        return LC_SUBJECTS_PATH
+    return LC_SUBJECTS_GCS_URI
 
 
 # ---------------------------------------------------------------------------
@@ -66,6 +88,11 @@ LC_SUBJECTS_PATH: Path = Path(
 
 #: The 8 British Isles jurisdictions + 5 safeguarding bodies (13 sources).
 #: Mirrors `gemini_hackathon.theming.JURISDICTION_SOURCES` + `SAFEGUARDING_SOURCES`.
+#:
+#: `gov.je/education` + `gov.gg/education` added (Phase 3 of the GCP-first
+#: refactor) — completes the 8-jurisdiction British Isles set (Ireland,
+#: England x3 boards, Scotland, Wales, Northern Ireland, Isle of Man,
+#: Jersey, Guernsey).
 JURISDICTION_BOARDS: dict[str, str] = {
     "ncca.ie": "Ireland",
     "aqa.org.uk": "England",
@@ -75,6 +102,8 @@ JURISDICTION_BOARDS: dict[str, str] = {
     "wjec.co.uk": "Wales",
     "ccea.org.uk": "Northern Ireland",
     "gov.im/education": "Isle of Man",
+    "gov.je/education": "Jersey",
+    "gov.gg/education": "Guernsey",
 }
 
 #: The 5 safeguarding bodies.
@@ -316,15 +345,48 @@ def get_duckdb_destination(database_path: Path | None = None) -> duckdb:
 # Named destinations factory (lifted from cianfhoghlaim/dlt_sources/common/named_destinations.py)
 # ---------------------------------------------------------------------------
 
-#: The 3 canonical destinations for the gemini-hackathon.
+#: The canonical destinations for the gemini-hackathon.
+#:
+#: `duckdb_local` is the offline dev default (no GCP creds required — the
+#: smoke tests and `scripts/backend_smoke.py` depend on this staying
+#: reachable with zero configuration). `bigquery_biep` is the deployed-path
+#: default (Phase 1 of the GCP-first refactor); `dlt`'s `bigquery`
+#: destination handles credentials via ADC or `GOOGLE_APPLICATION_CREDENTIALS`.
+#: `ducklake_gemini_hackathon` / `motherduck_gemini_hackathon` are kept for
+#: local cianfhoghlaim-parity dev only — neither is used by the deployed
+#: Cloud Run path.
 NAMED_DESTINATIONS: dict[str, str] = {
     # Local DuckDB (the dev default — used by every DLT resource in this repo)
     "duckdb_local": "duckdb:///./data/gemini_hackathon.duckdb",
-    # DuckLake (the canonical catalog; requires MOTHERDUCK_TOKEN + DuckLake setup)
+    # BigQuery (the deployed-path default — Phase 1 GCP-first data substrate)
+    "bigquery_biep": f"bigquery://{os.environ.get('GCP_PROJECT_ID', '')}/biep",
+    # DuckLake (local cianfhoghlaim-parity dev only; requires DuckLake setup)
     "ducklake_gemini_hackathon": "ducklake:///./data/gemini_hackathon.ducklake",
-    # MotherDuck (the cloud-managed DuckDB + catalog; optional)
+    # MotherDuck (local cianfhoghlaim-parity dev only; requires MOTHERDUCK_TOKEN)
     "motherduck_gemini_hackathon": "md:gemini_hackathon",
 }
+
+#: The 3 GCS bucket names (Phase 1 — provisioned by `cloud/terraform/cloud_run.tf`).
+#: `raw` holds fetched PDFs/HTML, `derived` holds OCR/extraction output,
+#: `assets` holds generated certificates + comparison images.
+GCS_BUCKETS: dict[str, str] = {
+    "raw": f"{os.environ.get('GCP_PROJECT_ID', 'gemini-hackathon-prod')}-biep-raw",
+    "derived": f"{os.environ.get('GCP_PROJECT_ID', 'gemini-hackathon-prod')}-biep-derived",
+    "assets": f"{os.environ.get('GCP_PROJECT_ID', 'gemini-hackathon-prod')}-biep-assets",
+}
+
+
+def gcs_uri(bucket: str, *parts: str) -> str:
+    """Build a `gs://` URI for one of the 3 canonical buckets.
+
+    Args:
+        bucket: one of `GCS_BUCKETS` keys (`"raw"` / `"derived"` / `"assets"`).
+        parts: path components, joined with `/`.
+
+    Raises:
+        KeyError: when `bucket` is not a known bucket key.
+    """
+    return f"gs://{GCS_BUCKETS[bucket]}/" + "/".join(p.strip("/") for p in parts)
 
 
 def get_named_destination(name: str) -> str:
@@ -360,11 +422,16 @@ __all__ = [
     "DEFAULT_RETRY_ATTEMPTS",
     "DEFAULT_RETRY_BACKOFF_SECONDS",
     "DUCKDB_PATH",
+    # GCS (Phase 1 — GCP-first data substrate)
+    "GCS_BUCKETS",
+    "gcs_uri",
     # Registries
     "JURISDICTION_BOARDS",
     "LC_LANGUAGE_DIRS",
+    "LC_SUBJECTS_GCS_URI",
     "LC_SUBJECTS_PATH",
     "LC_SUBJECT_DIRS",
+    "resolve_lc_subjects_path",
     # Named destinations factory
     "NAMED_DESTINATIONS",
     "get_named_destination",

@@ -10,7 +10,7 @@ Total: 8 subjects × 4 methods = 32 comparison cells.
 Persists to:
   - DuckDB table `gemini_hackathon.syllabus_comparisons` (32 rows)
   - JSONL file at ./data/gemini_hackathon/syllabus/comparison_results.jsonl
-  - Convex table `syllabusExtractions` (32 rows — via storage.py → Convex)
+  - Firestore collection `syllabusExtractions` (32 rows — via storage.py)
 """
 
 from __future__ import annotations

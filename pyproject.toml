@@ -46,26 +46,37 @@ dependencies = [
     "huggingface_hub>=0.30",
     # FastMCP for the per-subject MCP servers
     "fastmcp>=0.4",
-    # Data ingestion (DLT + MotherDuck + DuckDB + DuckLake)
-    "dlt>=1.0,<2.0",
+    # Data ingestion (DLT + DuckDB — the offline dev default)
+    "dlt[bigquery]>=1.0,<2.0",
     "duckdb>=1.0",
-    "ducklake>=0.10",
-    "motherduck>=0.10",
     "ibis-framework[duckdb]>=9.0",
     # LLM routing + extraction (BAML + LiteLLM)
     "baml-py>=0.223.0",
     "litellm>=1.50",
-    # Vector + graph storage (LanceDB + FalkorDB + NetworkX for skill graph)
-    "lancedb>=0.10",
-    "falkordb>=1.0",
+    # GCP-first data + AI substrate (Phases 1-6 of the GCP-first refactor).
+    # `dlt[bigquery]` above brings google-cloud-bigquery transitively; listed
+    # extras here are the ones this repo imports directly.
+    "google-cloud-storage>=2.18",
+    "google-cloud-firestore>=2.19",
+    "google-cloud-aiplatform>=1.70",       # Vertex embeddings + Vector Search + Gemma on Model Garden
+    "google-cloud-documentai>=2.30",       # OCR ensemble path 1
+    "google-cloud-workflows>=1.16",
+    "google-cloud-scheduler>=2.13",
+    "google-cloud-pubsub>=2.23",
+    "google-cloud-trace>=1.13",
+    "google-cloud-logging>=3.11",
+    # Vector + graph — Firestore FindNearest is the default VectorTarget;
+    # LanceDB + FalkorDB kept as optional local cianfhoghlaim-parity backends
+    # (see `[dependency-groups] cianfhoghlaim-parity` below).
     "networkx>=3.0",
-    # Knowledge graph + temporal memory (Graphiti + Cognee)
-    "graphiti-core>=0.20",
-    "cognee>=0.2",
-    # Observability (Langfuse + structlog + MLflow)
-    "langfuse>=3.0",
+    # `numpy.typing.NDArray` is imported directly by several CocoIndex
+    # embedding chunk dataclasses (cross_subject_competency_embedding.py,
+    # junior_cycle_embedding.py) — was previously an undeclared transitive
+    # dependency.
+    "numpy>=1.26",
+    # Observability (structlog always-on; Langfuse/MLflow optional exporters
+    # gated behind env vars — see `gemini_hackathon/observability.py`)
     "structlog>=24.0",
-    "mlflow>=2.20",
     # Agent memory (Letta)
     "letta>=0.50",
     # Web scraping + PDF
@@ -126,6 +137,24 @@ docs = [
 ]
 lint = [
     "ruff>=0.6",
+]
+# Optional local cianfhoghlaim-parity stack. NOT installed by default (the
+# GCP-first refactor replaced these with Firestore / Vertex AI Vector
+# Search / BigQuery / Document AI as the deployed-path default — see
+# `docs/ARCHITECTURE.md` section 7). Install with
+# `uv sync --group cianfhoghlaim-parity` to run the self-hosted lakehouse
+# stack locally (`bonneagar/stacks/lakehouse`) instead.
+# NOTE: `ducklake>=0.10` is unresolvable as of 2026-08 (PyPI only ships up
+# to 0.1.1) — pinned to the highest real release.
+cianfhoghlaim-parity = [
+    "ducklake<=0.1.1",
+    "motherduck>=0.10",
+    "lancedb>=0.10",
+    "falkordb>=1.0",
+    "graphiti-core>=0.20",
+    "cognee>=0.2",
+    "langfuse>=3.0",
+    "mlflow>=2.20",
 ]
 
 # ---------------------------------------------------------------------------

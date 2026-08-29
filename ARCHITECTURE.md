@@ -165,20 +165,32 @@ Output: `CertificateRecord` with PNG (~80 KB) + PDF (~700 B) + provenance
 + skill-progression summary. **Every claim cites a NCCA PDF page.** The
 UNOFFICIAL banner is always present (per the user's spec).
 
-## 7. The skill-progression ledger (W9)
+## 7. The skill-progression ledger (W9, Google-native as of the GCP-first refactor)
 
-4 backends unified by `MasteryLedger` facade:
+4 backends unified by `MasteryLedger` facade — Convex was never deployed
+(the original backend's own docstring called it a dev-only stub) and is
+replaced outright, not migrated:
 
 ```
-Convex           UI-facing achievement rows (per-learner + per-outcome)
-LanceDB          320-dim per-learner mastery vectors (5 Key Competencies ×
-                  8 subjects × 4 levels × 2 languages)
-FalkorDB         skill-prerequisite graph (skill → unlocks → assessed_by_artefact)
-MarkdownMemory   per-user long-term memory (W8 — from monstertix)
+Firestore         UI-facing achievement rows (per-learner + per-outcome)
+                   — replaces ConvexLedger
+VectorTarget       320-dim -> 1536-d per-learner mastery vectors (5 Key
+                   Competencies x 8 subjects x 4 levels x 2 languages),
+                   dual-backed: Firestore FindNearest (default) or
+                   Vertex AI Vector Search (VECTOR_BACKEND env var) —
+                   replaces LanceDB
+Firestore graph    skill-prerequisite graph (skill -> unlocks ->
+                   assessed_by_artefact) as a `skillEdges` collection —
+                   replaces FalkorDB
+MarkdownMemory     per-user long-term memory (W8 — from monstertix),
+                   persisted to Cloud Storage in production
 ```
 
 `MasteryLedger.update_mastery(MasteryUpdate)` writes atomically to all 4.
 `MasteryLedger.get_learner_state(learner_id)` reads all 4.
+
+See `gemini_hackathon/ledger/backends/firestore_ledger.py` and
+`gemini_hackathon/ledger/backends/firestore_graph.py`.
 
 ## 8. The 5 editorial studios (W3) + the 5 HF Spaces (W13)
 

@@ -36,9 +36,10 @@ from .._common import (
     apply_education_theme,
     render_anam_bonneagar_footer,
     set_lang,
+)
+from .._common import (
     translate as t,
 )
-
 
 _log = logging.getLogger("anam_education.app")
 set_lang("en")
@@ -56,17 +57,16 @@ def build_app():
             "`pip install gradio>=5.28.0,<6.0`"
         )
 
-    The 7 features are wired as Gradio tabs. Each tab delegates to the
-    per-feature module (lifted in W12):
-
-      - Curriculum Map        -> gemini_hackathon.dlt_pipelines.ireland (W5)
-      - Chemistry Visual      -> gemini_hackathon_gradio.anam_education.chemistry_visual
-      - Exit Card             -> gemini_hackathon_gradio.anam_education.exit_card
-      - Gaelscribhneoir       -> gemini_hackathon_gradio.anam_education.gaelscribhneoir
-      - Bilingual EN/GA       -> gemini_hackathon_gradio.anam_education.bilingual_switcher
-      - Certificate           -> gemini_hackathon_gradio.certificate (W14)
-      - Skill Progression     -> gemini_hackathon_gradio.anam_education.skill_progression
-    """
+    # The 7 features are wired as Gradio tabs. Each tab delegates to the
+    # per-feature module (lifted in W12):
+    #
+    #   - Curriculum Map        -> gemini_hackathon.dlt_pipelines.ireland (W5)
+    #   - Chemistry Visual      -> gemini_hackathon_gradio.anam_education.chemistry_visual
+    #   - Exit Card             -> gemini_hackathon_gradio.anam_education.exit_card
+    #   - Gaelscribhneoir       -> gemini_hackathon_gradio.anam_education.gaelscribhneoir
+    #   - Bilingual EN/GA       -> gemini_hackathon_gradio.anam_education.bilingual_switcher
+    #   - Certificate           -> gemini_hackathon_gradio.certificate (W14)
+    #   - Skill Progression     -> gemini_hackathon_gradio.anam_education.skill_progression
     with gr.Blocks(
         theme=apply_education_theme(), css=GRADIO_CSS, title="Anam Oideachais"
     ) as demo:
@@ -125,8 +125,8 @@ system, on one canvas. Each tab maps to one of the 5 stage coordinators
 
             with gr.Tab("Skill Progression", elem_classes="stage-ollscoil"):
                 gr.Markdown(
-                    "_Per-learner mastery ledger (W9): Convex (UI) + "
-                    "LanceDB (mastery vectors) + FalkorDB (skill-prerequisite graph)._"
+                    "_Per-learner mastery ledger (W9): Firestore (UI) + "
+                    "the mastery-vector store + the Firestore skill-prerequisite graph._"
                 )
 
         render_anam_bonneagar_footer(

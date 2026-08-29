@@ -1,0 +1,64 @@
+# Cloud Workflows definition: ingest-corpus -> embed-index.
+#
+# Phase 7 of the GCP-first refactor. Chains the 2 Cloud Run Jobs defined
+# in `cloud/terraform/cloud_run_jobs.tf`:
+#   1. ingest-corpus  — fetch the British Isles catalog (Phase 3) to GCS/BigQuery
+#   2. embed-index    — run the 114+8 CocoIndex Apps (Phase 4) against the
+#                       freshly-ingested corpus
+#
+# Cloud Scheduler triggers `ingest-corpus` directly (nightly, per
+# `google_cloud_scheduler_job.nightly_ingest`); this Workflow is the
+# path that also runs `embed-index` afterwards, so a fresh corpus fetch
+# always produces fresh embeddings without a human re-triggering step 2.
+#
+# Deploy:
+#   gcloud workflows deploy biep-pipeline \
+#       --source=cloud/workflows/biep_pipeline.yaml \
+#       --project=$GCP_PROJECT_ID --location=$REGION
+#
+# Trigger manually:
+#   gcloud workflows execute biep-pipeline --project=$GCP_PROJECT_ID
+#
+# Trigger from Cloud Scheduler (replaces the direct ingest-corpus-only
+# trigger once this Workflow is deployed — update
+# `google_cloud_scheduler_job.nightly_ingest`'s `http_target.uri` to
+# point at the Workflow's execution endpoint instead of the Job directly):
+#   https://workflowexecutions.googleapis.com/v1/projects/$GCP_PROJECT_ID/
+#     locations/$REGION/workflows/biep-pipeline/executions
+
+main:
+  params: [args]
+  steps:
+    - init:
+        assign:
+          - project_id: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+          - region: ${default(map.get(args, "region"), "europe-west1")}
+
+    - run_ingest_corpus:
+        call: googleapis.run.v1.namespaces.jobs.run
+        args:
+          name: ${"namespaces/" + project_id + "/jobs/ingest-corpus"}
+          location: ${region}
+        result: ingest_result
+
+    - check_ingest_status:
+        switch:
+          - condition: ${ingest_result.metadata.status.conditions[0].type != "Completed"}
+            next: ingest_failed
+        next: run_embed_index
+
+    - ingest_failed:
+        raise:
+          message: "ingest-corpus job did not complete successfully — aborting before embed-index"
+
+    - run_embed_index:
+        call: googleapis.run.v1.namespaces.jobs.run
+        args:
+          name: ${"namespaces/" + project_id + "/jobs/embed-index"}
+          location: ${region}
+        result: embed_result
+
+    - finish:
+        return:
+          ingest_status: ${ingest_result.metadata.status.conditions[0].type}
+          embed_status: ${embed_result.metadata.status.conditions[0].type}

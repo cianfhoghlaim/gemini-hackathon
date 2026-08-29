@@ -1,11 +1,12 @@
 """Tests for the gemini_hackathon.ocr PDF text extraction helper.
 
-The `extract_pdf_text` function renders each PDF page and OCRs it via
-the in-process capability router. It needs a PDF rendering library
-(pypdfium2 preferred, pymupdf fallback) and a live backend to actually
-return text. When the backend is down (the common case in this env) the
-function raises CapabilityUnavailableError; the test verifies that
-contract.
+Phase 5 of the GCP-first refactor: `extract_pdf_text` now dispatches to
+Document AI / Gemini Vision / pypdfium2's text layer (see
+`gemini_hackathon/ocr.py`'s module docstring) instead of a self-hosted
+llama-swap container. Without `GCP_PROJECT_ID` set, the function raises
+`CapabilityUnavailableError`; the live end-to-end test is opt-in (gated on
+`RUN_LIVE_GCP_TESTS=1` in addition to `GCP_PROJECT_ID`) so a bare `pytest`
+run never makes a billed Vertex AI call.
 
 For the page-rendering helper, a minimal test using the existing
 `data/syllabi/sample_lc_maths_2024.pdf` (or a freshly generated one)
@@ -14,10 +15,7 @@ proves the pipeline doesn't crash on an input file.
 
 from __future__ import annotations
 
-import json
 import os
-import sys
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -62,51 +60,64 @@ def test_render_pdf_pages_respects_max_pages(tmp_pdf: Path):
 
 
 def test_auto_capability_returns_gaelic_for_irish_path():
-    from gemini_hackathon.ocr import auto_capability, Capability
+    from gemini_hackathon.ocr import Capability, auto_capability
     assert auto_capability("/tmp/lc_maths_gaeilge_2024.pdf") == Capability.GAELIC
     assert auto_capability("/tmp/cymraeg_syllabus.pdf") == Capability.GAELIC
     assert auto_capability("/tmp/lc_maths_2024.pdf") == Capability.ENGLISH
 
 
-def test_extract_pdf_text_raises_when_backend_unreachable(tmp_pdf: Path):
-    """When llama-swap is down, the function must raise a typed error."""
+def test_extract_pdf_text_raises_when_gcp_project_unset(tmp_pdf: Path, monkeypatch):
+    """Without GCP_PROJECT_ID, the Gemini Vision backend must raise a typed error."""
+    monkeypatch.delenv("GCP_PROJECT_ID", raising=False)
+    pytest.importorskip("vertexai")
     from gemini_hackathon.ocr import (
-        extract_pdf_text, CapabilityUnavailableError, Capability,
+        Capability,
+        CapabilityUnavailableError,
+        extract_pdf_text,
     )
-    # Point at a port we know is closed.
-    with pytest.raises((CapabilityUnavailableError, Exception)) as excinfo:
+    with pytest.raises(CapabilityUnavailableError):
         extract_pdf_text(
             str(tmp_pdf),
-            base_url="http://127.0.0.1:1/v1",  # unreachable
+            capability=Capability.ENGLISH,
             timeout_seconds=1.0,
             max_pages=1,
         )
-    # Either the router raises CapabilityUnavailableError OR pypdfium2/pymupdf is
-    # missing (so the test still documents the contract).
-    assert "extract_pdf_text" in excinfo.value.__class__.__module__ or True
 
 
-def test_extract_pdf_text_real_when_llama_swap_live(tmp_pdf: Path):
-    """End-to-end OCR through a live llama-swap: opt-in skip if not live.
-
-    Probes llama-swap first; skips if not reachable. Otherwise verifies
-    that extract_pdf_text returns real text (non-empty) within the
-    configured timeout, with a model and backend attached.
+def test_extract_pdf_text_via_pypdfium2_textlayer_needs_no_gcp(tmp_pdf: Path, monkeypatch):
+    """The TESSERACT_FALLBACK capability reads the embedded text layer
+    directly — no GCP credentials required at all, so this is the one
+    `extract_pdf_text` path that always runs in CI.
     """
-    from gemini_hackathon.ocr import (
-        extract_pdf_text, is_backend_available, Capability,
-    )
-    base_url = os.environ.get("LLAMA_SWAP_BASE_URL", "http://127.0.0.1:8080/v1")
-    if not is_backend_available(base_url, timeout=1.0):
-        pytest.skip(f"llama-swap not reachable at {base_url}")
+    monkeypatch.delenv("GCP_PROJECT_ID", raising=False)
+    from gemini_hackathon.ocr import Capability, extract_pdf_text
 
     result = extract_pdf_text(
         str(tmp_pdf),
-        base_url=base_url,
+        capability=Capability.TESSERACT_FALLBACK,
+        max_pages=2,
+    )
+    assert result["backend"] == "pypdfium2_textlayer"
+    assert result["page_count"] >= 1
+
+
+@pytest.mark.skipif(
+    not (os.environ.get("GCP_PROJECT_ID") and os.environ.get("RUN_LIVE_GCP_TESTS") == "1"),
+    reason="opt-in: set GCP_PROJECT_ID + RUN_LIVE_GCP_TESTS=1 to run a real (billed) Vertex AI call",
+)
+def test_extract_pdf_text_real_via_live_gemini_vision(tmp_pdf: Path):
+    """End-to-end OCR through a real Vertex AI Gemini call. Opt-in only —
+    see the skipif reason; this makes a billed API call.
+    """
+    from gemini_hackathon.ocr import Capability, extract_pdf_text
+
+    result = extract_pdf_text(
+        str(tmp_pdf),
+        capability=Capability.ENGLISH,
         timeout_seconds=60.0,
-        max_pages=2,  # just first 2 pages
+        max_pages=2,
     )
     assert result["page_count"] >= 1
     assert len(result["text"]) > 50
     assert result["model"]
-    assert result["backend"] in {"llama_swap"}
+    assert result["backend"] == "gemini_vision"

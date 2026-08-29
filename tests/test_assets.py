@@ -210,7 +210,7 @@ def test_control_to_prompt_includes_palette_and_text():
 
 def test_assessment_event_descriptor_round_trip():
     """The descriptor enum matches NCCA CBA vocabulary."""
-    # The substrate is currently defined in the Convex schema only.
+    # The substrate is currently defined in the Firestore schema only.
     # Validate that the legal values are present.
     legal = {
         "exceptional", "above_expectations",

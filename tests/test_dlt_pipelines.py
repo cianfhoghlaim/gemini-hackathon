@@ -29,7 +29,7 @@ import pytest
 # uses Python 3.11+ syntax). This ensures the test module is always
 # importable, so pytest can collect the other tests.
 try:
-    from dlt_pipelines._shared import (  # noqa: PLC0415 — lazy for env compat
+    from dlt_pipelines._shared import (
         DUCKDB_PATH,
         JURISDICTION_BOARDS,
         OFFICIAL_DOC_COLUMNS,
@@ -37,8 +37,8 @@ try:
         REPO_ROOT,
         SAFEGUARDING_BODIES,
         SAFEGUARDING_POLICY_COLUMNS,
-        sha256_file,
         safe_stat,
+        sha256_file,
         with_retry,
     )
     _DLT_SHARED_AVAILABLE = True
@@ -87,8 +87,11 @@ def test_official_doc_fetcher_creates_official_documents_table(tmp_path: Path) -
     Asserts:
 
     * The :data:`OFFICIAL_DOC_COLUMNS` tuple has all 12 canonical columns.
-    * The :func:`official_documents_source` returns a list with one
-      resource per jurisdiction.
+    * The :func:`official_documents_source` returns a `DltSource` with one
+      resource per jurisdiction (10 since Phase 3 of the GCP-first
+      refactor added Jersey + Guernsey — was 8; the source is a
+      `@dlt.source`-decorated object, not a plain `list`, which this test
+      previously asserted incorrectly).
     * Each row produced by the remote resources has the canonical
       column shape (no missing required keys).
     """
@@ -117,10 +120,9 @@ def test_official_doc_fetcher_creates_official_documents_table(tmp_path: Path) -
     assert set(OFFICIAL_DOC_COLUMNS) == expected
     assert set(OFFICIAL_DOC_COLUMN_HINTS.keys()) == expected
 
-    # The 8-resource source.
-    resources = official_documents_source()
-    assert isinstance(resources, list)
-    assert len(resources) == 8
+    # The 10-resource source (a DltSource, not a plain list).
+    source = official_documents_source()
+    assert len(source.resources) == 10
 
     # The england_aqa resource yields the KNOWN_OFFICIAL_URLS rows.
     rows = list(england_aqa_documents())
@@ -176,8 +178,10 @@ def test_safeguarding_fetcher_creates_safeguarding_policies_table(
 
     * The :data:`SAFEGUARDING_POLICY_COLUMNS` tuple has all 10
       canonical columns.
-    * The :func:`safeguarding_policies_source` returns a list with
-      one resource per safeguarding body.
+    * The :func:`safeguarding_policies_source` returns a `DltSource` with
+      one resource per safeguarding body (a `@dlt.source`-decorated
+      object, not a plain `list`, which this test previously asserted
+      incorrectly).
     * The ie_safeguarding resource yields at least one row per
       published policy.
     """
@@ -202,9 +206,8 @@ def test_safeguarding_fetcher_creates_safeguarding_policies_table(
     }
     assert set(SAFEGUARDING_POLICY_COLUMNS) == expected
 
-    resources = safeguarding_policies_source()
-    assert isinstance(resources, list)
-    assert len(resources) == 5
+    source = safeguarding_policies_source()
+    assert len(source.resources) == 5
 
     # The Ireland safeguarding resource yields at least one row.
     rows = list(ireland_safeguarding())
@@ -339,12 +342,20 @@ def test_shared_helpers_with_retry_propagates_after_budget() -> None:
     not _DLT_SHARED_AVAILABLE,
     reason="dlt_pipelines._shared not importable (Python 3.11+ required)",
 )
-def test_jurisdiction_boards_has_8_entries() -> None:
-    """The 8 canonical British Isles jurisdictions are in :data:`JURISDICTION_BOARDS`."""
-    assert len(JURISDICTION_BOARDS) == 8
+def test_jurisdiction_boards_has_10_entries() -> None:
+    """The 10 canonical British Isles jurisdiction/board source keys are in
+    :data:`JURISDICTION_BOARDS` — Ireland + 3 England boards (AQA/OCR/
+    Pearson) + Scotland + Wales + Northern Ireland + Isle of Man + Jersey
+    + Guernsey. Was 8 before Phase 3 of the GCP-first refactor added
+    Jersey (`gov.je/education`) and Guernsey (`gov.gg/education`), which
+    previously had zero entries anywhere in this module.
+    """
+    assert len(JURISDICTION_BOARDS) == 10
     assert "ncca.ie" in JURISDICTION_BOARDS
     assert "aqa.org.uk" in JURISDICTION_BOARDS
     assert "ccea.org.uk" in JURISDICTION_BOARDS
+    assert "gov.je/education" in JURISDICTION_BOARDS
+    assert "gov.gg/education" in JURISDICTION_BOARDS
 
 
 @pytest.mark.skipif(

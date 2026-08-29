@@ -27,10 +27,11 @@ Run with:
 or
     python -m gemini_hackathon.backend --port 8000
 
-This is intentionally stdlib-only (no Hono + no FastAPI). When the
-project graduates to a real backend (Hono + oRPC + Convex actions),
-this file is replaced — the CopilotKit proxy at
-``web/app/routes/api/copilotkit.ts`` keeps the same URL shape.
+This is intentionally stdlib-only (no Hono + no FastAPI). The production
+backend is Cloud Functions for Firebase Gen2 (`functions/src/*.ts` —
+`chatStream`, `themesApi`, `duckdbAsset`, `stitchSync`; see
+FIREBASE_MIGRATION_SUMMARY.md), which this module's routes mirror the
+shape of; `web/src/routes/api/*.ts` proxies to them.
 """
 
 from __future__ import annotations

@@ -83,6 +83,11 @@ OFFICIAL_DOC_COLUMN_HINTS: dict[str, dict[str, str]] = {
 # ---------------------------------------------------------------------------
 
 #: Per-source display name (mirrors `gemini_hackathon.theming.themes/*.json`).
+#:
+#: `gov.je/education` + `gov.gg/education` added (Phase 3 of the GCP-first
+#: refactor — full-8-subnation coverage; these two had ZERO entries in this
+#: module before, unlike the other 5 non-Ireland jurisdictions which at
+#: least had thin placeholder rows).
 JURISDICTION_SOURCE_NAMES: dict[str, str] = {
     "ncca.ie": "NCCA — National Council for Curriculum and Assessment",
     "aqa.org.uk": "AQA — Assessment and Qualifications Alliance",
@@ -92,6 +97,8 @@ JURISDICTION_SOURCE_NAMES: dict[str, str] = {
     "wjec.co.uk": "WJEC — Welsh Joint Education Committee",
     "ccea.org.uk": "CCEA — Council for the Curriculum, Examinations & Assessment",
     "gov.im/education": "Isle of Man Department of Education, Sport and Culture",
+    "gov.je/education": "States of Jersey — Education Department",
+    "gov.gg/education": "States of Guernsey — Education Services (Committee for Education, Sport & Culture)",
 }
 
 #: Per-source canonical curriculum level.
@@ -104,6 +111,13 @@ JURISDICTION_LEVELS: dict[str, str] = {
     "wjec.co.uk": "A-Level",
     "ccea.org.uk": "A-Level",
     "gov.im/education": "GCSE",
+    # Jersey + Guernsey deliver secondary education via UK awarding bodies
+    # (GCSE/A-Level, mostly AQA/Edexcel/WJEC-badged) rather than publishing
+    # their own qualification specs — the crown-dependency curriculum
+    # pages are policy/framework documents, not per-subject syllabus PDFs.
+    # `level` reflects that: the local Key Stage framework, not an exam board level.
+    "gov.je/education": "Key_Stage_4",
+    "gov.gg/education": "GCSE",
 }
 
 #: Per-resource short name (the DLT resource.name + table_name).
@@ -116,6 +130,8 @@ RESOURCE_NAMES: dict[str, str] = {
     "wjec.co.uk": "wales_wjec",
     "ccea.org.uk": "northern_ireland_ccea",
     "gov.im/education": "isle_of_man",
+    "gov.je/education": "jersey",
+    "gov.gg/education": "guernsey",
 }
 
 #: Ireland NCCA LC subject directories + canonical level for each.
@@ -211,33 +227,68 @@ KNOWN_OFFICIAL_URLS: dict[str, list[dict[str, str]]] = {
             ),
         },
     ],
+    # SQA "A to Z of National Qualification subjects" (verified live 2026-08-29
+    # at https://www.sqa.org.uk/sqa/45625.html — replaces 3 guessed/broken
+    # URLs from the prior placeholder set).
     "sqa.org.uk": [
         {
             "subject": "mathematics",
             "language": "en",
-            "official_url": ("https://www.sqa.org.uk/sqa/56950.html"),
+            "official_url": "https://www.sqa.org.uk/sqa/45750.html",
         },
         {
             "subject": "english",
             "language": "en",
-            "official_url": ("https://www.sqa.org.uk/sqa/56955.html"),
+            "official_url": "https://www.sqa.org.uk/sqa/45672.html",
         },
         {
-            "subject": "gaeilge",
+            "subject": "chemistry",
             "language": "en",
-            "official_url": ("https://www.sqa.org.uk/sqa/64766.html"),
+            "official_url": "https://www.sqa.org.uk/sqa/45720.html",
+        },
+        {
+            "subject": "biology",
+            "language": "en",
+            "official_url": "https://www.sqa.org.uk/sqa/45723.html",
+        },
+        {
+            "subject": "physics",
+            "language": "en",
+            "official_url": "https://www.sqa.org.uk/sqa/45729.html",
+        },
+        {
+            "subject": "geography",
+            "language": "en",
+            "official_url": "https://www.sqa.org.uk/sqa/45627.html",
+        },
+        {
+            "subject": "history",
+            "language": "en",
+            "official_url": "https://www.sqa.org.uk/sqa/45628.html",
+        },
+        {
+            "subject": "computer_science",
+            "language": "en",
+            "official_url": "https://www.sqa.org.uk/sqa/48477.html",
+        },
+        {
+            # Scottish Gaelic (native-speaker stream) — the SQA subject page,
+            # not to be confused with Irish `gaeilge`.
+            "subject": "gaidhlig",
+            "language": "gd",
+            "official_url": "https://www.sqa.org.uk/sqa/45675.html",
         },
     ],
     "wjec.co.uk": [
         {
             "subject": "mathematics",
             "language": "en",
-            "official_url": ("https://www.wjec.co.uk/qualifications/mathematics/a-level/"),
+            "official_url": "https://www.wjec.co.uk/qualifications/mathematics/a-level/",
         },
         {
             "subject": "geography",
             "language": "en",
-            "official_url": ("https://www.wjec.co.uk/qualifications/geography/a-level/"),
+            "official_url": "https://www.wjec.co.uk/qualifications/geography/a-level/",
         },
         {
             "subject": "welsh",
@@ -246,36 +297,115 @@ KNOWN_OFFICIAL_URLS: dict[str, list[dict[str, str]]] = {
                 "https://www.wjec.co.uk/qualifications/welsh-second-language/a-level/"
             ),
         },
+        {
+            # The qualifications index (verified live 2026-08-29) — a
+            # discovery seed for `corpus_downloader.py` to crawl further
+            # subject pages from, since WJEC does not publish one flat
+            # subject-list page the way SQA/CCEA do.
+            "subject": "_index",
+            "language": "en",
+            "official_url": "https://www.wjec.co.uk/qualifications/",
+        },
     ],
+    # CCEA GCE (A-Level) entries kept from the original placeholder set +
+    # the verified live GCSE subjects index (2026-08-29) with 3 confirmed
+    # subject slugs, extending coverage from A-Level-only to GCSE too.
     "ccea.org.uk": [
         {
             "subject": "mathematics",
             "language": "en",
-            "official_url": ("https://ccea.org.uk/qualifications/gce/as-a-level-mathematics"),
+            "official_url": "https://ccea.org.uk/qualifications/gce/as-a-level-mathematics",
         },
         {
             "subject": "chemistry",
             "language": "en",
-            "official_url": ("https://ccea.org.uk/qualifications/gce/as-a-level-chemistry"),
+            "official_url": "https://ccea.org.uk/qualifications/gce/as-a-level-chemistry",
         },
         {
             "subject": "gaeilge",
             "language": "ga",
-            "official_url": ("https://ccea.org.uk/qualifications/gce/as-a-level-irish"),
+            "official_url": "https://ccea.org.uk/qualifications/gce/as-a-level-irish",
+        },
+        {
+            "subject": "biology",
+            "language": "en",
+            "official_url": "https://ccea.org.uk/key-stage-4/gcse/subjects/gcse-biology-2017",
+        },
+        {
+            "subject": "art_and_design",
+            "language": "en",
+            "official_url": "https://ccea.org.uk/key-stage-4/gcse/subjects/gcse-art-and-design-2017",
+        },
+        {
+            # Discovery seed: the full GCSE subjects index (verified live).
+            "subject": "_index",
+            "language": "en",
+            "official_url": "https://ccea.org.uk/key-stage-4/gcse/subjects",
         },
     ],
+    # Isle of Man — replaces the previously-guessed (404) `/education/
+    # curriculum/secondary-curriculum/` path with the verified live DESC
+    # (Department of Education, Sport & Culture) curriculum + secondary
+    # pages (2026-08-29). DESC delivers secondary qualifications through
+    # UK awarding bodies rather than publishing its own subject specs, so
+    # these are curriculum/framework pages, not per-subject syllabus PDFs
+    # — an honest reflection of what this jurisdiction actually publishes.
     "gov.im/education": [
         {
-            "subject": "english",
+            "subject": "_curriculum",
             "language": "en",
-            "official_url": ("https://www.gov.im/education/curriculum/secondary-curriculum/"),
+            "official_url": "https://www.gov.im/education/education/curriculum/",
         },
         {
-            "subject": "mathematics",
+            "subject": "_key_stages",
+            "language": "en",
+            "official_url": "https://www.gov.im/education/education/key-stages/",
+        },
+        {
+            "subject": "_secondary",
             "language": "en",
             "official_url": (
-                "https://www.gov.im/education/curriculum/secondary-curriculum/mathematics/"
+                "https://www.gov.im/education/education/secondary-education/"
+                "moving-to-secondary-school/"
             ),
+        },
+    ],
+    # Jersey — NEW (Phase 3 of the GCP-first refactor; had zero entries
+    # before). Verified live 2026-08-29. Jersey delivers GCSEs/A-Levels via
+    # UK awarding bodies against a local Key Stage 3/4 curriculum framework
+    # — again, framework pages rather than per-subject specs.
+    "gov.je/education": [
+        {
+            "subject": "_key_stage_4",
+            "language": "en",
+            "official_url": "https://www.gov.je/Education/Schools/ChildLearning/Pages/KeyStage4.aspx",
+        },
+        {
+            "subject": "_key_stage_3",
+            "language": "en",
+            "official_url": "https://www.gov.je/Education/Schools/ChildLearning/Pages/Keystage3.aspx",
+        },
+        {
+            "subject": "_exams_assessment",
+            "language": "en",
+            "official_url": "https://www.gov.je/Education/Schools/ChildLearning/Pages/ExamsAssessment.aspx",
+        },
+    ],
+    # Guernsey — NEW (Phase 3; had zero entries before). Verified live
+    # 2026-08-29. Guernsey's own "Qualifications" page is thin (it mostly
+    # links out to the UK Ofqual comparison guide) — genuinely reflects
+    # that the Bailiwick does not publish its own curriculum specs; flagged
+    # here rather than papered over.
+    "gov.gg/education": [
+        {
+            "subject": "_qualifications",
+            "language": "en",
+            "official_url": "https://www.gov.gg/qualifications",
+        },
+        {
+            "subject": "_education_index",
+            "language": "en",
+            "official_url": "https://www.gov.gg/education",
         },
     ],
 }
@@ -490,7 +620,7 @@ def _make_remote_resource(source_key: str) -> Any:
     return remote_resource
 
 
-# Build the 7 non-Ireland resources eagerly so they're introspectable.
+# Build the 9 non-Ireland resources eagerly so they're introspectable.
 england_aqa_documents = _make_remote_resource("aqa.org.uk")
 england_ocr_documents = _make_remote_resource("ocr.org.uk")
 england_pearson_documents = _make_remote_resource("qualifications.pearson.com")
@@ -498,6 +628,8 @@ scotland_sqa_documents = _make_remote_resource("sqa.org.uk")
 wales_wjec_documents = _make_remote_resource("wjec.co.uk")
 northern_ireland_ccea_documents = _make_remote_resource("ccea.org.uk")
 isle_of_man_documents = _make_remote_resource("gov.im/education")
+jersey_documents = _make_remote_resource("gov.je/education")
+guernsey_documents = _make_remote_resource("gov.gg/education")
 
 
 # ---------------------------------------------------------------------------
@@ -507,7 +639,10 @@ isle_of_man_documents = _make_remote_resource("gov.im/education")
 
 @dlt.source(name="official_documents")
 def official_documents_source() -> list[Any]:
-    """The `@dlt.source` aggregating all 8 jurisdictional resources.
+    """The `@dlt.source` aggregating all 10 jurisdictional resources — the
+    full British Isles: Ireland + England (x3 boards) + Scotland + Wales +
+    Northern Ireland + Isle of Man + Jersey + Guernsey (Phase 3 of the
+    GCP-first refactor added the last 2).
 
     Returns a list so `dlt.pipeline.run(source)` iterates every resource.
     """
@@ -520,6 +655,8 @@ def official_documents_source() -> list[Any]:
         wales_wjec_documents,
         northern_ireland_ccea_documents,
         isle_of_man_documents,
+        jersey_documents,
+        guernsey_documents,
     ]
 
 
@@ -585,9 +722,11 @@ __all__ = [
     "england_aqa_documents",
     "england_ocr_documents",
     "england_pearson_documents",
-    # The 8 @dlt.resources
+    "guernsey_documents",
+    # The 10 @dlt.resources
     "ireland_ncca_documents",
     "isle_of_man_documents",
+    "jersey_documents",
     "main",
     "northern_ireland_ccea_documents",
     # The aggregating @dlt.source
