@@ -198,7 +198,31 @@ def _text_llm_entries() -> dict[str, ModelRegistryEntry]:
             capabilities=("chat", "function_calling", "json_mode", "long_context"),
         ),
         # ── Tier 1 alternate: the same model, served from AI Studio ────────
-        "gemini-3.5-flash-aistudio": ModelRegistryEntry(
+        # Phase 5b — gemini-3.5-pro for the model comparison harness.
+        # Higher quality than Flash; same Vertex AI Agent Garden backend,
+        # higher pricing ($1.25 input / $5.00 output per M tokens).
+        "gemini-3.5-pro": ModelRegistryEntry(
+            key="gemini-3.5-pro",
+            family="text_llm",
+            role="agent_garden_pro",
+            display_name="Gemini 3.5 Pro (Agent Garden, eval-tier)",
+            unsloth_id=None,
+            mlx_id=None,
+            upstream_id="gemini-3.5-pro",
+            backend="vertex",
+            available=True,
+            litellm_alias="vertex_ai/gemini-3.5-pro",
+            profile="dev",
+            env_var="GOOGLE_CLOUD_PROJECT",
+            notes=(
+                "Dev-profile only. Phase 5 model comparison harness. "
+                "Same Vertex AI backend as gemini-3.5-flash; higher cost "
+                "($1.25 input / $5.00 output per M tokens). Used to "
+                "establish a quality baseline for the 5-model eval."
+            ),
+            capabilities=("chat", "function_calling", "json_mode", "long_context"),
+        ),
+                "gemini-3.5-flash-aistudio": ModelRegistryEntry(
             key="gemini-3.5-flash-aistudio",
             family="text_llm",
             role="aistudio",
@@ -258,6 +282,31 @@ def _text_llm_entries() -> dict[str, ModelRegistryEntry]:
             ),
             capabilities=("chat", "function_calling"),
         ),
+        # Phase 5b — gemma-2-9b for the model comparison harness.
+        # Dev-profile Unsloth Studio model (smaller + cheaper than the
+        # 26B variant); establishes a second local-model data point.
+        "gemma-2-9b": ModelRegistryEntry(
+            key="gemma-2-9b",
+            family="text_llm",
+            role="local_fallback",
+            display_name="Gemma 2 9B (Unsloth Studio, eval-tier)",
+            unsloth_id="unsloth/gemma-2-9b",
+            mlx_id=None,
+            upstream_id="google/gemma-2-9b",
+            backend="unsloth_studio",
+            available=True,
+            litellm_alias="openai/unsloth/gemma-2-9b",
+            profile="dev",
+            env_var="UNSLOTH_BASE_URL",
+            notes=(
+                "Dev-profile only. Phase 5 model comparison harness. "
+                "Unsloth Studio GGUF (4-bit); ~$0/hr at the dev "
+                "Unsloth Studio process. Smaller than gemma-4-26B-A4B; "
+                "useful for fast iteration on the comparison harness."
+            ),
+            capabilities=("chat",),
+        ),
+
         # ── Dev profile only. Never surfaced publicly. ─────────────────────
         "minimax-m3": ModelRegistryEntry(
             key="minimax-m3",
