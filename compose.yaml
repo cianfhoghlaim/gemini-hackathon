@@ -1,0 +1,278 @@
+# ============================================================================
+# compose.yaml — single Compose spec for all 3 deployment targets (Phase 2).
+#
+# Targets:
+#   LOCAL DEV      : docker compose up --build
+#   DEV CLOUD RUN  : gcloud run compose up compose.yaml \
+#                    --project=$DEV_PROJECT --region=europe-west1 --max-instances=10
+#   PROD CLOUD RUN : terraform apply (managed via cloud/terraform/envs/prod/)
+#
+# Services (8 total — Phase 0 consolidation of docker-compose.yml + .local.yaml):
+#   - gemini-hackathon : the application (builds from Dockerfile, target: runtime)
+#   - llama-swap       : shared OCR/VLM OpenAI-compatible gateway (:8080)
+#   - duckdb           : a named-volume mount point for the .duckdb file
+#   - langfuse-postgres  : PostgreSQL backend for Langfuse
+#   - langfuse-clickhouse : ClickHouse backend for Langfuse traces
+#   - langfuse-redis     : Redis cache for Langfuse
+#   - langfuse-web       : Langfuse v3 UI + API on :3000
+#   - langfuse-worker    : background jobs (queue + cron)
+#   - mlflow             : MLflow v2.20 server on :5000 (sqlite backend)
+#
+# x-google-cloudrun: extensions (per
+# https://docs.cloud.google.com/run/docs/deploy-run-compose):
+#   - cpu + memory on every container
+#   - max-instances on the gemini-hackathon service (Cloud Run default is 1)
+#   - depends_on: the gcloud run deploy of one service waits for the others
+#   - All observability env vars from the canonical Stackdriver 6-env-var set
+#   - Secret Manager references for LANGFUSE_* + GEMINI_API_KEY + UNSLOTH_API_KEY
+#
+# Usage:
+#   docker compose up --build                 # local dev
+#   docker compose down -v                    # wipe the volumes
+# ============================================================================
+
+name: gemini-hackathon
+
+x-google-cloudrun: &google-cloudrun-extensions
+  # The Cloud Run Compose deploy reads these extensions and applies them
+  # to every service. Per the docs, x-google-cloudrun must be at the top
+  # level OR per-service; we use it at the top level to avoid repetition.
+  labels:
+    app: gemini-hackathon
+    component: compose-stack
+  annotations:
+    run.googleapis.com/launch-stage: BETA
+
+services:
+  # ==========================================================================
+  # gemini-hackathon — the ADK FastAPI application
+  # ==========================================================================
+  gemini-hackathon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: gemini-hackathon:dev
+    container_name: gemini-hackathon-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # ---- Tier 2 (Unsloth Studio on the host) ----
+      UNSLOTH_BASE_URL: ${UNSLOTH_BASE_URL:-http://host.docker.internal:8888/v1}
+      UNSLOTH_API_KEY: ${UNSLOTH_API_KEY}
+      # ---- Tier 1 (Gemini 3.5: Vertex default, AI Studio toggle) ----
+      GEMINI_BACKEND: ${GEMINI_BACKEND:-vertex}
+      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT}
+      GOOGLE_CLOUD_LOCATION: ${GOOGLE_CLOUD_LOCATION:-europe-west1}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      # ---- OCR/VLM (shared llama-swap) ----
+      LLAMA_SWAP_BASE_URL: ${LLAMA_SWAP_BASE_URL:-http://llama-swap:8080/v1}
+      LLAMASWAP_API_KEY: ${LLAMASWAP_API_KEY:-not-required}
+      # ---- Data plane ----
+      DUCKDB_PATH: /app/data/gemini.duckdb
+      MOTHERDUCK_TOKEN: ${MOTHERDUCK_TOKEN}
+      # ---- Image gen ----
+      INVOKEAI_BASE_URL: ${INVOKEAI_BASE_URL:-http://invokeai:9090/v1}
+      COMFYUI_BASE_URL: ${COMFYUI_BASE_URL:-http://comfyui:8188}
+      # ---- Langfuse (optional dual-export from prod Cloud Run) ----
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-https://cloud.langfuse.com}
+      # ---- Profile gating ----
+      MODEL_PROFILE: ${MODEL_PROFILE:-hackathon}
+      # ---- Phase 0: canonical Stackdriver AI Agent ADK 6-env-var set ----
+      # (https://docs.cloud.google.com/stackdriver/docs/instrumentation/ai-agent-adk)
+      OTEL_SERVICE_NAME: gemini-hackathon-adk
+      OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED: 'true'
+      OTEL_SEMCONV_STABILITY_OPT_IN: gen_ai_latest_experimental
+      OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT: EVENT_ONLY
+      ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS: 'false'
+      GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY: 'true'
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: https://telemetry.googleapis.com/v1/traces
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=gemini-hackathon,deployment.environment=hackathon
+    volumes:
+      - duckdb-data:/app/data
+      - gemini-themes:/app/themes
+      - gemini-cache:/app/.cache
+      - ./gemini_hackathon:/app/gemini_hackathon:ro
+      - ./baml_extracts:/app/baml_extracts:ro
+      - ./dlt_pipelines:/app/dlt_pipelines:ro
+    ports:
+      - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      llama-swap:
+        condition: service_started
+    networks:
+      - gh-net
+    # ---- x-google-cloudrun (per-service overrides) ----
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  # ==========================================================================
+  # llama-swap — OCR / VLM OpenAI-compatible gateway
+  # ==========================================================================
+  llama-swap:
+    image: ghcr.io/mostlygeek/llama-swap:cpu
+    container_name: gemini-hackathon-llama-swap
+    restart: unless-stopped
+    volumes:
+      - ../cianfhoghlaim/bonneagar/stacks/llama-swap/config.yaml:/app/config.yaml:ro
+      - ${LLAMA_MODELS_DIR:-../cianfhoghlaim/stedding/models/llama}:/models:ro
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/v1/models || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    networks:
+      - gh-net
+
+  # ==========================================================================
+  # duckdb — a named-volume mount point for the .duckdb file
+  # ==========================================================================
+  duckdb:
+    image: alpine:3.20
+    container_name: gemini-hackathon-duckdb
+    command: ["sh", "-c", "echo 'DuckDB volume mount point — do not delete.' && tail -f /dev/null"]
+    volumes:
+      - duckdb-data:/data
+    networks:
+      - gh-net
+
+  # ==========================================================================
+  # Langfuse v3 — self-hosted dev observability stack (per user direction:
+  # keep the docker-compose stack for local dev; prod uses the GCP-native
+  # Stackdriver AI Agent ADK instrumentation per Phase 0).
+  # ==========================================================================
+  langfuse-postgres:
+    image: postgres:16
+    container_name: gemini-hackathon-langfuse-postgres
+    environment:
+      POSTGRES_USER: langfuse
+      POSTGRES_PASSWORD: langfuse_dev_password
+      POSTGRES_DB: langfuse
+    volumes:
+      - langfuse-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U langfuse"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gh-net
+
+  langfuse-clickhouse:
+    image: clickhouse/clickhouse-server:24
+    container_name: gemini-hackathon-langfuse-clickhouse
+    environment:
+      CLICKHOUSE_DB: langfuse
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: clickhouse_dev_password
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - langfuse-clickhouse-data:/var/lib/clickhouse
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    networks:
+      - gh-net
+
+  langfuse-redis:
+    image: redis:7-alpine
+    container_name: gemini-hackathon-langfuse-redis
+    networks:
+      - gh-net
+
+  langfuse-web:
+    image: langfuse/langfuse:3
+    container_name: gemini-hackathon-langfuse-web
+    depends_on:
+      langfuse-postgres:
+        condition: service_healthy
+      langfuse-clickhouse:
+        condition: service_started
+      langfuse-redis:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql://langfuse:langfuse_dev_password@langfuse-postgres:5432/langfuse
+      CLICKHOUSE_URL: clickhouse://clickhouse:clickhouse_dev_password@langfuse-clickhouse:8123/langfuse
+      REDIS_URL: redis://langfuse-redis:6379
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: dev-secret-change-me-in-production
+      SALT: dev-salt-change-me-in-production
+      TELEMETRY_ENABLED: "false"
+      LANGFUSE_INIT_ORG_ID: seed-org
+      LANGFUSE_INIT_PROJECT_ID: seed-project
+      LANGFUSE_INIT_USER_EMAIL: admin@langfuse.local
+      LANGFUSE_INIT_USER_PASSWORD: langfuse
+      LANGFUSE_INIT_USER_NAME: Admin
+    ports:
+      - "3000:3000"
+    networks:
+      - gh-net
+
+  langfuse-worker:
+    image: langfuse/langfuse-worker:3
+    container_name: gemini-hackathon-langfuse-worker
+    depends_on:
+      langfuse-web:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql://langfuse:langfuse_dev_password@langfuse-postgres:5432/langfuse
+      CLICKHOUSE_URL: clickhouse://clickhouse:clickhouse_dev_password@langfuse-clickhouse:8123/langfuse
+      REDIS_URL: redis://langfuse-redis:6379
+      SALT: dev-salt-change-me-in-production
+    networks:
+      - gh-net
+
+  # ==========================================================================
+  # MLflow v2.20 — self-hosted dev experiment tracking (per user direction)
+  # ==========================================================================
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.20.0
+    container_name: gemini-hackathon-mlflow
+    command: >
+      mlflow server
+        --host 0.0.0.0
+        --port 5000
+        --backend-store-uri sqlite:///mlflow/mlflow.db
+        --default-artifact-root /mlflow/artifacts
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+    volumes:
+      - mlflow-data:/mlflow
+    ports:
+      - "5000:5000"
+    networks:
+      - gh-net
+
+volumes:
+  duckdb-data:
+    name: gemini-hackathon-duckdb-data
+  gemini-themes:
+    name: gemini-hackathon-themes
+  gemini-cache:
+    name: gemini-hackathon-cache
+  langfuse-postgres-data:
+    name: gemini-hackathon-langfuse-postgres-data
+  langfuse-clickhouse-data:
+    name: gemini-hackathon-langfuse-clickhouse-data
+  mlflow-data:
+    name: gemini-hackathon-mlflow-data
+
+networks:
+  gh-net:
+    name: gemini-hackathon-net
+    driver: bridge

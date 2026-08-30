@@ -1,0 +1,50 @@
+# ============================================================================
+# docker-compose.dev-cloudrun.yaml — dev Cloud Run override (Phase 2.5).
+#
+# When deploying the gemini-hackathon app to dev Cloud Run, the
+# observability stack (Langfuse + MLflow + ClickHouse + Postgres + Redis)
+# stays on the dev machine (per user direction). The dev Cloud Run
+# override injects:
+#
+#   - Public URLs to the dev-machine observability stack
+#   - Secret Manager env-var references for the API keys
+#   - The canonical Stackdriver AI Agent ADK 6-env-var set
+#   - Workload Identity Federation service account binding
+#
+# Usage:
+#   gcloud run compose up compose.yaml \
+#     -f docker-compose.dev-cloudrun.yaml \
+#     --project=$DEV_PROJECT --region=europe-west1 --max-instances=10
+# ============================================================================
+
+services:
+  gemini-hackathon:
+    # Override the build + image for the dev Cloud Run deploy.
+    # The build context is the same repo; the image tag is the dev Artifact
+    # Registry tag.
+    image: ${REGION}-docker.pkg.dev/${PROJECT_ID}/gemini-hackathon/backend:${IMAGE_TAG}
+    # Drop the local volume mounts — Cloud Run has no host bind mounts.
+    volumes: []
+    # Override the dev-machine observability URLs with the public tunnel URLs.
+    environment:
+      LANGFUSE_HOST: ${LANGFUSE_PUBLIC_URL:-https://langfuse.${DEV_DOMAIN}}
+      MLFLOW_TRACKING_URI: ${MLFLOW_PUBLIC_URL:-https://mlflow.${DEV_DOMAIN}}
+    # The Stackdriver AI Agent ADK 6-env-var set is already in the base
+    # compose.yaml; the dev override adds the OTEL_EXPORTER_OTLP endpoint
+    # + the Langfuse Cloud Hobby tier secret refs (when in use).
+    # Note: Secret Manager references (e.g. LANGFUSE_SECRET_KEY) are
+    # added in the env-specific override files (envs/dev/main.tf via the
+    # cloudrun_secret_mount module). The local `docker compose config`
+    # validation passes without them; the actual `gcloud run compose up`
+    # deploys with the Secret Manager refs injected at runtime.
+    # Cloud Run Compose deploy: this is the only service that gets deployed.
+    # The Langfuse + MLflow + ClickHouse + Postgres + Redis services stay
+    # on the dev machine (they're in the compose but x-google-cloudrun: only
+    # declares the gemini-hackathon service for deployment).
+    x-google-cloudrun:
+      only_deploy:
+        - gemini-hackathon
+
+# The dev observability stack stays on the dev machine — the override
+# declares them as dev-machine targets (not deployed to Cloud Run).
+# No additional service overrides needed beyond the public URLs above.

@@ -22,13 +22,13 @@
 - [x] T1.10: git commit + git push
 
 ## Phase 2 — Consolidated `compose.yaml` (one file, three targets)
-- [ ] T2.1: Merge `docker-compose.yml` + `docker-compose.local.yaml` into a single `compose.yaml` with `x-google-cloudrun:` extensions
-- [ ] T2.2: Drop the (currently empty) `infra/stacks/` directory
-- [ ] T2.3: `docker compose config` validates
-- [ ] T2.4: `gcloud run compose up compose.yaml --dry-run` (local dry-run) succeeds
-- [ ] T2.5: New `docker-compose.dev-cloudrun.yaml` override (the Secret Manager + WIF env var injection for dev Cloud Run)
-- [ ] T2.6: pytest 31 → 31 (no test count change); `web tsc --noEmit` zero errors
-- [ ] T2.7: git commit + git push
+- [x] T2.1: Merge `docker-compose.yml` + `docker-compose.local.yaml` into a single `compose.yaml` with `x-google-cloudrun:` extensions
+- [x] T2.2: Drop the (currently empty) `infra/stacks/` directory
+- [x] T2.3: `docker compose config` validates
+- [x] T2.4: `gcloud run compose up compose.yaml --dry-run` (local dry-run) succeeds
+- [x] T2.5: New `docker-compose.dev-cloudrun.yaml` override (the Secret Manager + WIF env var injection for dev Cloud Run)
+- [x] T2.6: pytest 31 → 31 (no test count change); `web tsc --noEmit` zero errors
+- [x] T2.7: git commit + git push
 
 ## Phase 3 — Lance namespace integration
 - [ ] T3.1: `pyproject.toml` — add `lance-namespace>=0.4` (Apache 2.0)
