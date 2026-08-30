@@ -126,6 +126,42 @@ resource "google_cloud_run_v2_service" "adk" {
         value = "(default)"
       }
 
+      # Observability — Langfuse (LLM cost + prompt mgmt) + MLflow
+      # (experiment tracking) + Cloud Logging. All three are env-gated
+      # and degrade to structlog-only when their env vars are absent.
+      # The secret values come from Infisical via the per-portal
+      # Locket sidecar; LANGFUSE_HOST defaults to the cloud instance.
+      env {
+        name = "LANGFUSE_PUBLIC_KEY"
+        value_from {
+          secret_key_ref {
+            name = "gemini-hackathon-adk-langfuse"
+            key  = "latest"
+          }
+        }
+      }
+      env {
+        name = "LANGFUSE_SECRET_KEY"
+        value_from {
+          secret_key_ref {
+            name = "gemini-hackathon-adk-langfuse"
+            key  = "latest"
+          }
+        }
+      }
+      env {
+        name  = "LANGFUSE_HOST"
+        value = "https://cloud.langfuse.com"
+      }
+      env {
+        name  = "MLFLOW_TRACKING_URI"
+        value = "http://mlflow.cloud-ops.svc.cluster.local:5000"
+      }
+      env {
+        name  = "GCP_PROJECT_ID"
+        value = var.project_id
+      }
+
       ports {
         container_port = 8080
       }

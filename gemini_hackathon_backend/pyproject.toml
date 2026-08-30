@@ -21,6 +21,11 @@ dependencies = [
     # Config
     "python-dotenv",
     "pydantic",
+    # Observability — Langfuse + MLflow are env-gated and degrade to structlog-only
+    # when their env vars are unset (see gemini_hackathon_backend/observability.py).
+    "structlog>=24.0",
+    "langfuse>=2.40,<4.0",
+    "mlflow>=2.20,<3.0",
 ]
 
 [build-system]

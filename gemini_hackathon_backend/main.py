@@ -22,6 +22,11 @@ from __future__ import annotations
 
 import logging
 
+from gemini_hackathon_backend.observability import (
+    init_backend_observability,
+    lifespan_observability,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -58,15 +63,24 @@ def build_app():
 
         @app.get("/healthz")
         async def _healthz():  # noqa: D401
-            return {"status": "stub", "google_adk_available": False}
+            init_state = init_backend_observability()
+            return {"status": "stub", "google_adk_available": False, "observability": init_state}
 
         return app
 
-    app = FastAPI(title="gemini-hackathon-backend")
+    # Init observability at startup (env-gated: degrades to structlog-only when
+    # LANGFUSE_PUBLIC_KEY / MLFLOW_TRACKING_URI / GCP_PROJECT_ID are unset).
+    init_state = init_backend_observability()
+    logger.info("main.observability_initialised", **init_state)
+
+    app = FastAPI(
+        title="gemini-hackathon-backend",
+        lifespan=lifespan_observability,
+    )
 
     @app.get("/healthz")
     async def _healthz():  # noqa: D401
-        return {"status": "ok"}
+        return {"status": "ok", "observability": init_state}
 
     # The NCCA panel agent: 3 server-side tools (cite_pdf, fetch_highlight,
     # list_ncca_pdfs) + the AGUIToolset for client-side tools (when a CopilotKit
@@ -80,11 +94,37 @@ def build_app():
         user_id="default_user",
         use_in_memory_services=True,
     )
+
+    # AG-UI request middleware — opens a Langfuse trace + structlog span
+    # for each POST to the AG-UI endpoint so every chat turn is observable.
+    from starlette.middleware.base import BaseHTTPMiddleware
+    from starlette.requests import Request
+
+    from gemini_hackathon_backend.observability import get_langfuse, trace_agui_run
+
+    class AguiTraceMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request: Request, call_next):  # type: ignore[no-untyped-def]
+            if request.method != "POST" or not get_langfuse():
+                return await call_next(request)
+            session_id = request.headers.get("x-thread-id") or request.headers.get("x-session-id")
+            user_id = request.headers.get("x-user-id")
+            with trace_agui_run(
+                agent="ncca_panel",
+                session_id=session_id,
+                user_id=user_id,
+                metadata={"path": request.url.path, "method": request.method},
+            ):
+                response = await call_next(request)
+                return response
+
     add_adk_fastapi_endpoint(
         app,
         adk_wrapper,
         path="/",
     )
+    # Insert the AG-UI middleware AFTER the AG-UI endpoint is registered so
+    # only AG-UI requests get traced (avoids wrapping /healthz noise).
+    app.add_middleware(AguiTraceMiddleware)
     return app
 
 

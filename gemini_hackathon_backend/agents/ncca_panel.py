@@ -34,6 +34,11 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from gemini_hackathon_backend.observability import (
+    log_mlflow_metric,
+    record_generation,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -135,6 +140,8 @@ def cite_pdf(pdf_id: str, page: int, snippet: str, tool_context) -> dict[str, An
     })
     tool_context.state["citations"] = citations
     tool_context.state["active_pdf"] = pdf_id
+    log_mlflow_metric("ncca_panel.cite_pdf.invocations", 1)
+    logger.info("tool.cite_pdf", pdf_id=pdf_id, page=page, session_citations=len(citations))
     return {
         "status": "success",
         "recorded": {
@@ -163,6 +170,8 @@ def fetch_highlight(pdf_id: str, page: int, tool_context) -> dict[str, Any]:
     pdf = _find_pdf(pdf_id)
     if pdf is None:
         return {"status": "error", "message": f"unknown pdf_id {pdf_id!r}"}
+    log_mlflow_metric("ncca_panel.fetch_highlight.invocations", 1)
+    logger.info("tool.fetch_highlight", pdf_id=pdf_id, page=page)
     return {
         "status": "success",
         "pdf_id": pdf_id,
@@ -182,6 +191,8 @@ def list_ncca_pdfs(tool_context) -> dict[str, Any]:
         dict with `count` + `pdfs` (list of {pdf_id, title, blurb} dicts).
     """
     tool_context.state["last_pdf_list_query_ts"] = "now"
+    log_mlflow_metric("ncca_panel.list_ncca_pdfs.invocations", 1)
+    logger.info("tool.list_ncca_pdfs", pdf_count=len(_NCCA_PDFS))
     return {"count": len(_NCCA_PDFS), "pdfs": _NCCA_PDFS}
 
 
