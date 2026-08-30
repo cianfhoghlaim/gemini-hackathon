@@ -20,6 +20,8 @@ import { SessionProvider } from "../components/session/SessionContext";
 import { AuthGate } from "../components/auth/AuthGate";
 import { firebaseApp } from "../lib/firebase.ts";
 import catalog from "../a2ui/catalog";
+import { citePdfRenderer } from "../a2ui/tool-renderers";
+import { setThemeColorTool } from "../a2ui/frontend-tools";
 import "../globals.css";
 import { CopilotKit, CopilotKitProvider } from "@copilotkit/react-core/v2";
 
@@ -47,7 +49,9 @@ export default function App(): React.ReactNode {
         agent="ncca_panel"
         publicLicenseKey={import.meta.env.VITE_COPILOTKIT_PUBLIC_LICENSE_KEY ?? ""}
         useSingleEndpoint={false}
-        a2ui={catalog}
+        a2ui={{ catalog }}
+        frontendTools={[setThemeColorTool]}
+        renderToolCalls={[citePdfRenderer]}
       >
         <SourcePaletteProvider>
           <SessionProvider>
