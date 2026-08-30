@@ -187,6 +187,28 @@ resource "google_cloud_run_v2_service" "adk" {
         value = "cloud-run"
       }
 
+      # Phase 1 — ADK-native OpenTelemetry pipeline (Cloud Trace +
+      # Cloud Logging under the GenAI semantic conventions) +
+      # OpenInference Langfuse instrumentor. Both are env-gated; when
+      # GCP_PROJECT_ID / LANGFUSE_PUBLIC_KEY are unset, the inits are
+      # no-ops.
+      env {
+        name  = "OTEL_SERVICE_NAME"
+        value = "gemini-hackathon-adk"
+      }
+      env {
+        name  = "OTEL_RESOURCE_ATTRIBUTES"
+        value = "service.namespace=gemini-hackathon,deployment.environment=hackathon"
+      }
+      env {
+        name  = "GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY"
+        value = "true"
+      }
+      env {
+        name  = "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT"
+        value = "NO_CONTENT"
+      }
+
       ports {
         container_port = 8080
       }

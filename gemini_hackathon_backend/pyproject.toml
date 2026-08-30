@@ -21,11 +21,18 @@ dependencies = [
     # Config
     "python-dotenv",
     "pydantic",
-    # Observability — Langfuse + MLflow are env-gated and degrade to structlog-only
-    # when their env vars are unset (see gemini_hackathon_backend/observability.py).
+    # Observability — Langfuse + MLflow + OpenInference + OTel GCP exporters.
+    # All env-gated; degrade to structlog-only when their env vars are unset
+    # (see gemini_hackathon_backend/observability.py).
     "structlog>=24.0",
     "langfuse>=2.40,<4.0",
     "mlflow>=2.20,<3.0",
+    # Phase 1: ADK-native OTel pipeline + OpenInference Langfuse instrumentor.
+    # Auto-streams every ADK span to Cloud Trace + Cloud Logging under the
+    # OpenTelemetry GenAI semantic conventions.
+    "openinference-instrumentation-google-adk>=0.1.0",
+    "opentelemetry-exporter-gcp-trace>=1.9.0",
+    "opentelemetry-exporter-gcp-logging>=1.9.0",
 ]
 
 [build-system]
