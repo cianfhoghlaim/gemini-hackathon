@@ -7,8 +7,8 @@
  */
 
 import { useState } from "react";
-import { signInWithGoogle, signInAnonymouslyFallback } from "../../lib/auth";
-import { logStructured } from "../../lib/observability-browser";
+import { signInWithGoogle, signInAnonymouslyFallback } from "~/src/lib/auth.ts";
+import { logStructured } from "~/src/lib/observability-browser";
 
 export function SignInButton() {
   const [busy, setBusy] = useState(false);

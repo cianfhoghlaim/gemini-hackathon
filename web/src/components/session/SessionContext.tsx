@@ -24,8 +24,8 @@ import { onAuthStateChanged, type User } from "firebase/auth";
 import { doc, onSnapshot, type DocumentData } from "firebase/firestore";
 import type { ActiveSubnation, Role, Cycle, SubnationMeta } from "../../types/session";
 import { SUBNATIONS } from "../../types/session";
-import { firebaseAuth, firebaseDb } from "../../lib/firebase";
-import { logStructured } from "../../lib/observability-browser";
+import { firebaseAuth, firebaseDb } from "~/src/lib/firebase";
+import { logStructured } from "~/src/lib/observability-browser";
 
 interface SessionState {
   uid: string;

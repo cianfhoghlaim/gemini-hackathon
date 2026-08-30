@@ -10,7 +10,7 @@
  */
 
 import { createFileRoute } from "@tanstack/react-router";
-import { getIdToken } from "../../lib/auth";
+import { getIdToken } from "~/src/lib/auth.ts";
 
 const FUNCTIONS_BASE =
   import.meta.env.VITE_FIREBASE_FUNCTIONS_URL ??

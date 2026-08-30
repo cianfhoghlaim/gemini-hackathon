@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { subscribeCollection } from "../../lib/firestore";
+import { subscribeCollection } from "../../lib/firestore.ts";
 
 interface DocRow {
   id: string;

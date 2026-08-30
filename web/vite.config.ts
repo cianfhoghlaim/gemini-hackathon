@@ -8,13 +8,24 @@ export default defineConfig({
     alias: {
       "~": path.resolve(__dirname, "."),
     },
+    // Allow extensionless and `.ts`/`.tsx` imports — the pre-existing
+    // repo (per the TanStack Start -> react-router-dom migration) never
+    // used extensionful paths and Vite v7's defaults don't include `.ts`
+    // in `resolve.extensions` for Rollup.
+    extensions: [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".json"],
+  },
+  ssr: {
+    noExternal: true,
+  },
+  optimizeDeps: {
+    include: ["../lib/firebase", "../lib/observability-browser"],
+    esbuildOptions: {
+      loader: { ".ts": "ts", ".tsx": "tsx" },
+    },
   },
   server: {
     port: 3000,
     host: "0.0.0.0",
-    // No more proxy — the API routes delegate to Firebase Cloud Functions
-    // in production (see web/src/routes/api/{themes,copilotkit,duckdb}.ts).
-    // Locally we run them against the Functions emulator (`firebase emulators:start`).
   },
   build: {
     target: "es2022",

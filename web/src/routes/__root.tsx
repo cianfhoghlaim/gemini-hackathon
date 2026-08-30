@@ -1,81 +1,79 @@
 /**
  * Root layout for the gemini_hackathon public demo.
  *
- * Migrated from TanStack Start + Convex + CopilotKit to a Firebase-native
- * stack: Firebase Auth + Firestore + Cloud Functions for Firebase (Gen2) +
- * Firebase App Check + Firebase Performance.
+ * Migrated from TanStack Start + Convex + hand-rolled SSE to:
+ *   - Vite + react-router-dom (Phase T3 of the ADK + CopilotKit refactor)
+ *   - CopilotKit v2 + AG-UI bridge to the `gemini-hackathon-adk` Cloud Run
+ *     service (the AG-UI SSE endpoint at /)
+ *   - @copilotkit/a2ui-renderer for streaming JSONL → React panels
  *
- * Wraps every page with:
- *   - AuthGate: Firebase Auth + App Check attestation (the 3-layer security model)
- *   - SourcePaletteProvider: resolves the per-source palette (the visual layer)
- *   - SessionProvider: per-user identity (subnation + role + cycle) — the
- *     load-bearing piece for per-route content scoping, backed by Firestore
- *   - The Firestore realtime subscriptions that replace the Convex hooks
- *
- * Per the All Things Agentic Hackathon Fortified Enterprise Fleet track.
+ * Wraps every page with (outer → inner):
+ *   - AuthGate               Firebase Auth + App Check attestation
+ *   - CopilotKitProvider     the AG-UI runtime + A2UI renderer (new in T3)
+ *   - SourcePaletteProvider  resolves the per-source palette
+ *   - SessionProvider        per-user identity (subnation + role + cycle)
  */
 
-import { Outlet, Link, createRootRoute } from "@tanstack/react-router";
+import { Outlet, Link } from "react-router-dom";
 import { SourcePaletteProvider } from "../components/themes/SourcePaletteProvider";
 import { SessionProvider } from "../components/session/SessionContext";
 import { AuthGate } from "../components/auth/AuthGate";
-import { firebaseApp } from "../lib/firebase";
+import { firebaseApp } from "../lib/firebase.ts";
+import catalog from "../a2ui/catalog";
 import "../globals.css";
+import { CopilotKit, CopilotKitProvider } from "@copilotkit/react-core/v2";
 
 // Eager-init Firebase so the singleton app instance is ready before any
 // component (AuthGate, SessionProvider) calls getAuth/getFirestore.
 firebaseApp();
 
 const PROJECT_NAME = import.meta.env.VITE_FIREBASE_PROJECT_ID ?? "gemini-hackathon-prod";
+const ADK_RUNTIME_URL =
+  import.meta.env.VITE_ADK_RUNTIME_URL ?? "https://gemini-hackathon-adk-eeeeeeeeeeeeeeee.a.run.app";
 
-export const Route = createRootRoute({
-  component: RootComponent,
-});
-
-function RootComponent() {
+export default function App(): React.ReactNode {
+  // The CopilotKit provider is wrapped INSIDE AuthGate so unauthenticated
+  // users don't open an SSE stream to the ADK backend. The `useSingleEndpoint`
+  // flag is set to `false` because we use BOTH the v2 CopilotKit runtime
+  // (for AG-UI chat) AND the Firebase Functions layer (for design tokens
+  // + Stitch + DuckDB export) — they're separate runtimes, not one merged.
+  //
+  // The `a2ui={...}` prop wires our 6 NCCA components + the basic catalog
+  // (Text, Button, Row, Column, List, Card) — see a2ui/catalog.tsx.
   return (
-    <html lang="en-IE" data-palette-source="ncca.ie">
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>gemini_hackathon — One platform for the British Isles</title>
-        <meta
-          name="description"
-          content="A theming + agentic platform for students, parents, and teachers in the British Isles."
-        />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@400;700&display=swap"
-        />
-      </head>
-      <body>
-        <AuthGate>
-          <SourcePaletteProvider>
-            <SessionProvider>
-              <div className="min-h-screen flex flex-col bg-[var(--color-background)] text-[var(--color-text)] font-[var(--font-body)]">
-                <header className="border-b border-[var(--color-secondary)]/20 px-6 py-4 flex items-center justify-between">
-                  <Link to="/" className="text-2xl font-[var(--font-heading)] text-[var(--color-primary)]">
-                    gemini_hackathon
-                  </Link>
-                  <nav className="flex gap-4 text-sm">
-                    <Link to="/subjects" className="hover:text-[var(--color-accent)]">Subjects</Link>
-                    <Link to="/safeguarding" className="hover:text-[var(--color-accent)]">Safeguarding</Link>
-                    <Link to="/find-resources" className="hover:text-[var(--color-accent)]">Find resources</Link>
-                    <Link to="/agents" className="hover:text-[var(--color-accent)]">Agent</Link>
-                    <Link to="/archipelago" className="hover:text-[var(--color-accent)]">Archipelago</Link>
-                  </nav>
-                </header>
-                <main className="flex-1">
-                  <Outlet />
-                </main>
-                <footer className="border-t border-[var(--color-secondary)]/20 px-6 py-4 text-xs text-[var(--color-text)]/50 text-center">
-                  gemini_hackathon — Google ADK + Vertex AI (Gemini 3.5) + Gemma 4 via Unsloth Studio · Firebase Auth + Firestore + Cloud Functions · 8 subnations · one platform
-                </footer>
-              </div>
-            </SessionProvider>
-          </SourcePaletteProvider>
-        </AuthGate>
-      </body>
-    </html>
+    <AuthGate>
+      <CopilotKit
+        runtimeUrl={ADK_RUNTIME_URL}
+        agent="ncca_panel"
+        publicLicenseKey={import.meta.env.VITE_COPILOTKIT_PUBLIC_LICENSE_KEY ?? ""}
+        useSingleEndpoint={false}
+        a2ui={catalog}
+      >
+        <SourcePaletteProvider>
+          <SessionProvider>
+            <div className="min-h-screen flex flex-col bg-[var(--color-background)] text-[var(--color-text)] font-[var(--font-body)]">
+              <header className="border-b border-[var(--color-secondary)]/20 px-6 py-4 flex items-center justify-between">
+                <Link to="/" className="text-2xl font-[var(--font-heading)] text-[var(--color-primary)]">
+                  gemini_hackathon
+                </Link>
+                <nav className="flex gap-4 text-sm">
+                  <Link to="/subjects" className="hover:text-[var(--color-accent)]">Subjects</Link>
+                  <Link to="/safeguarding" className="hover:text-[var(--color-accent)]">Safeguarding</Link>
+                  <Link to="/find-resources" className="hover:text-[var(--color-accent)]">Find resources</Link>
+                  <Link to="/agents" className="hover:text-[var(--color-accent)]">Agent</Link>
+                  <Link to="/archipelago" className="hover:text-[var(--color-accent)]">Archipelago</Link>
+                </nav>
+              </header>
+              <main className="flex-1">
+                <Outlet />
+              </main>
+              <footer className="border-t border-[var(--color-secondary)]/20 px-6 py-4 text-xs text-[var(--color-text)]/50 text-center">
+                gemini_hackathon — Google ADK + Vertex AI (Gemini 3.5) + Gemma 4 via Unsloth Studio · Firebase Auth + Firestore + Cloud Functions · 8 subnations · one platform
+              </footer>
+            </div>
+          </SessionProvider>
+        </SourcePaletteProvider>
+      </CopilotKit>
+    </AuthGate>
   );
 }

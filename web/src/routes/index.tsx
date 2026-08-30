@@ -15,7 +15,7 @@ import { OnboardingPicker } from "../components/onboarding/OnboardingPicker";
 import { ArchipelagicRibbon } from "../components/session/ArchipelagicRibbon";
 import { ModelPolicyBadge } from "../components/ModelPolicyBadge";
 import { useEffect, useState } from "react";
-import { getSession, saveSession, defaultSession, type SessionState } from "../lib/session-helpers";
+import { getSession, saveSession, defaultSession, type SessionState } from "~/src/lib/session-helpers";
 import type { ActiveSubnation, Role, Cycle } from "../types/session";
 import { SUBNATIONS, DEFAULT_SUBNATIONS, EXPANSION_SUBNATIONS, AVAILABLE_SUBNATIONS, SUBJECT_CATALOGUE } from "../types/session";
 

@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { subscribeCertificateComparisons } from "../../lib/firestore";
+import { subscribeCertificateComparisons } from "../../lib/firestore.ts";
 
 interface ComparisonRow {
   id: string;

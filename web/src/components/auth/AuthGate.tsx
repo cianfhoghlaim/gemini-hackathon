@@ -11,9 +11,9 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { onAuthStateChanged, type User } from "firebase/auth";
-import { firebaseAuth } from "../lib/firebase";
+import { firebaseAuth } from "~/src/lib/firebase";
 import { SignInButton } from "./SignInButton";
-import { logStructured } from "../lib/observability-browser";
+import { logStructured } from "~/src/lib/observability-browser";
 
 interface AuthGateProps {
   children: ReactNode;
