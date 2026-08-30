@@ -10,19 +10,19 @@
 - [ ] T7: commit + push Phase 2a
 
 ## Phase 2b — pdf_to_markdown CocoIndex App (next phase)
-- [ ] T8: `cocoindex_flows/pdf/_shared.py` — memoised Docling converter + helper
-- [ ] T9: `cocoindex_flows/pdf/pdf_to_markdown_app.py` — `@coco.fn.as_async(runner=coco.GPU)` App
-- [ ] T10: `cocoindex_flows/pdf/benchmark.py` — pymupdf4llm vs docling vs pypdfium2 vs marker
-- [ ] T11: `orchestration/defs/3_model_lifecycle/bi_ep_pdf_assets.py` — Dagster asset
-- [ ] T12: commit + push Phase 2b
+- [x] T8: `cocoindex_flows/pdf/_shared.py` — memoised Docling converter + helper
+- [x] T9: `cocoindex_flows/pdf/pdf_to_markdown_app.py` — `@coco.fn.as_async(runner=coco.GPU)` App
+- [x] T10: `cocoindex_flows/pdf/benchmark.py` — pymupdf4llm vs docling vs pypdfium2 vs marker
+- [x] T11: `orchestration/defs/3_model_lifecycle/bi_ep_pdf_assets.py` — Dagster asset
+- [x] T12: commit + push Phase 2b
 
 ## Phase 2c — Quality gate + benchmark notebook
-- [ ] T13: All 13 PDFs converted; spot-check 2 by opening the .md
-- [ ] T14: `notebooks/03_pdf_processing_benchmark.ipynb` — interactive walkthrough
-- [ ] T15: commit + push Phase 2c
+- [x] T13: All 13 PDFs converted; spot-check 2 by opening the .md
+- [x] T14: `notebooks/03_pdf_processing_benchmark.ipynb` — interactive walkthrough
+- [x] T15: commit + push Phase 2c
 
 ## Phase 2 validation
-- [ ] T16: `openspec validate 2026-08-30-cocoindex-pdf-pipeline-v1 --strict` passes
-- [ ] T17: `pytest` — no new failures (7 pre-existing per KNOWN_ISSUES.md)
-- [ ] T18: web `tsc --noEmit` zero errors
-- [ ] T19: archive the OpenSpec change after deploy
+- [x] T16: `openspec validate 2026-08-30-cocoindex-pdf-pipeline-v1 --strict` passes
+- [x] T17: `pytest` — no new failures (7 pre-existing per KNOWN_ISSUES.md)
+- [x] T18: web `tsc --noEmit` zero errors
+- [x] T19: archive the OpenSpec change after deploy
