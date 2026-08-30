@@ -177,7 +177,10 @@ def test_run_comparison_summary_includes_public_roster(monkeypatch, tmp_path):
     assert "gemini-3.5-flash" in roster_keys
     assert "gemma-4-26b-a4b" in roster_keys
     # The public roster NEVER leaks dev-only entries.
-    assert "minimax-m3" not in roster_keys
+    # Note: minimax-m3 is now in the public profile (Tier 1 primary per
+    # the OpenSpec model-policy spec), so it IS expected in the roster.
+    assert "gemma-4-26b-a4b-dev" not in roster_keys
+    assert "gemini-3.5-flash-dev" not in roster_keys
 
 
 def test_run_comparison_dev_profile_includes_dev_only(monkeypatch, tmp_path):
@@ -217,5 +220,8 @@ def test_run_comparison_dev_profile_includes_dev_only(monkeypatch, tmp_path):
     keys = [r["model_key"] for r in result["rows"]]
     assert any(k in keys for k in ("minimax-m3", "gemma-4-26b-a4b-dev", "gemini-3.5-flash-dev"))
     # Public roster still lists ONLY the hackathon-profile keys (no dev).
+    # MiniMax-M3 is now in the hackathon profile (Tier 1 primary), so it
+    # appears in both the dev + hackathon rosters.
     public_keys = [e["key"] for e in result["summary"]["public_roster"]]
-    assert "minimax-m3" not in public_keys
+    assert "gemma-4-26b-a4b-dev" not in public_keys
+    assert "gemini-3.5-flash-dev" not in public_keys

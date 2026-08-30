@@ -188,21 +188,22 @@ PUBLIC_PROFILE: ModelProfile = "hackathon"
 """The profile every user-facing surface reads, regardless of MODEL_PROFILE."""
 
 HACKATHON_TIERS: tuple[tuple[ModelFamily, str], ...] = (
-    ("text_llm", "default"),    # Gemini 3.5 (Vertex or AI Studio)
-    ("text_llm", "fallback"),   # Gemma 4 26B-A4B via Unsloth Studio
+    ("text_llm", "default"),       # Tier 1: MiniMax-M3 via LiteLLM (OpenAI-compatible)
+    ("text_llm", "fallback"),      # Tier 2: Gemma 4 26B-A4B via Unsloth Studio (local)
+    ("text_llm", "agent_garden"),  # Tier 3: Gemini 3.5 via Vertex AI Agent Garden
 )
 
 DEV_TIERS: tuple[tuple[ModelFamily, str], ...] = (
     ("text_llm", "default"),
     ("text_llm", "fallback"),
-    ("text_llm", "dev_primary"),  # minimax-m3
+    ("text_llm", "agent_garden"),
 )
 
 TIER_RETRY_BUDGETS: dict[str, int] = {
     "default": 2,
     "aistudio": 2,
     "fallback": 1,
-    "dev_primary": 1,
+    "agent_garden": 1,
 }
 
 _PUBLIC_TIER_INDEX: dict[tuple[str, str], int] = {
@@ -211,6 +212,7 @@ _PUBLIC_TIER_INDEX: dict[tuple[str, str], int] = {
     # Tier 1 too — not a separate rung.
     ("text_llm", "aistudio"): 1,
     ("text_llm", "fallback"): 2,
+    ("text_llm", "agent_garden"): 3,
 }
 
 
@@ -531,6 +533,15 @@ def _build_litellm_params(entry: ModelRegistryEntry) -> dict[str, Any]:
             or "https://api.minimax.io/v1"
         )
         params["api_key"] = _require_key("MINIMAX_API_KEY", backend="minimax")
+    elif entry.backend == "agent_garden":
+        # Google Cloud Agent Garden — Vertex AI Model Garden publisher
+        # models (Gemma 3, Llama 3, etc.). Auth via Application Default
+        # Credentials; no API key. The model alias is already
+        # ``vertex_ai/<publisher>/<model>`` in the registry.
+        params["vertex_project"] = os.environ.get("GOOGLE_CLOUD_PROJECT", "").strip()
+        params["vertex_location"] = (
+            os.environ.get("GOOGLE_CLOUD_LOCATION", "").strip() or "us-central1"
+        )
     elif entry.backend == "invokeai":
         params["api_base"] = (
             os.environ.get("INVOKEAI_BASE_URL", "").strip()

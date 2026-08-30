@@ -101,6 +101,47 @@ client<llm> Vertex {
 }
 
 // ----------------------------------------------------------------------------
+// Tier 3: Google Cloud Agent Garden (Vertex AI Model Garden) — hosted
+// Gemma 4 26B for the All-Things-Agentic Hackathon's mandatory-tech
+// compliance. Auth via Vertex AI Model Garden publisher models.
+// ----------------------------------------------------------------------------
+
+client<llm> AgentGarden {
+  provider "vertex-ai"
+  options {
+    // `google/gemma-3-27b-it` is the Agent-Garden-hosted Gemma 3 27B
+    // instruct model (publisher = Google). The `google/` prefix tells
+    // LiteLLM to route to Vertex AI Model Garden.
+    model       env.AGENT_GARDEN_MODEL
+    credentials env.GOOGLE_APPLICATION_CREDENTIALS
+    project     env.GOOGLE_CLOUD_PROJECT
+    location    env.GOOGLE_CLOUD_LOCATION
+    temperature 0.2
+    top_p 0.95
+  }
+  retry_policy VertexRetry
+}
+
+// ----------------------------------------------------------------------------
+// Tier-1 routing alias — the canonical primary client (per the 3-tier
+// model policy in `docs/MODEL_POLICY.md`). Every BAML function in this
+// workspace should declare `client "Primary"` so the model policy lives
+// at the LiteLLM router level, not at the agent level.
+// ----------------------------------------------------------------------------
+
+client<llm> Primary {
+  provider "openai-generic"
+  options {
+    base_url env.MINIMAX_BASE_URL
+    api_key  env.MINIMAX_API_KEY
+    model    env.MINIMAX_MODEL
+    temperature 0.2
+    top_p 0.95
+  }
+  retry_policy MiniMaxRetry
+}
+
+// ----------------------------------------------------------------------------
 // Test client (used by baml-cli test -- deterministic, no network)
 // ----------------------------------------------------------------------------
 

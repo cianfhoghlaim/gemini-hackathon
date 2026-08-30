@@ -88,10 +88,14 @@ Backend = Literal[
     "invokeai",
     "comfyui",
     "minimax",
+    "agent_garden",
     "local",
 ]
 """Runtime backend for an entry. ``unsloth_studio`` is a *host* process on
-:8888 — it is never a Docker Compose service (see ``docs/MODEL_POLICY.md``)."""
+:8888 — it is never a Docker Compose service (see ``docs/MODEL_POLICY.md``).
+``agent_garden`` is the Google Cloud Agent Garden — Vertex AI Model Garden
+publisher models (Gemma 3, Llama 3, etc.) reached via the
+``vertex_ai/<publisher>/<model>`` LiteLLM alias."""
 
 
 PROFILES: tuple[ModelProfile, ...] = ("hackathon", "dev")
@@ -163,49 +167,33 @@ def _text_llm_entries() -> dict[str, ModelRegistryEntry]:
         # Google Cloud usage. `call_llm.resolve_gemini_backend()` swaps to the
         # `aistudio` entry below when GEMINI_BACKEND=aistudio, or when Vertex
         # credentials are absent but GEMINI_API_KEY is present.
-        # Dev-profile Tier 1. Same model as the hackathon entry but served
-        # from AI Studio (the typical dev credential pattern is a single
-        # GEMINI_API_KEY, not the Vertex ADC dance). Declared FIRST so
-        # it wins the first-match scan under the dev profile (the hackathon
-        # entry with the same role is filtered out by profile=hackathon).
-        "gemini-3.5-flash-dev": ModelRegistryEntry(
-            key="gemini-3.5-flash-dev",
-            family="text_llm",
-            role="default",
-            display_name="Gemini 3.5 Flash (dev Tier 1, AI Studio)",
-            unsloth_id=None,
-            mlx_id=None,
-            upstream_id="gemini-3.5-flash",
-            backend="aistudio",
-            available=True,
-            litellm_alias="gemini/gemini-3.5-flash",
-            profile="dev",
-            env_var="GEMINI_API_KEY",
-            notes=(
-                "Dev-profile Tier 1. Same weights as the hackathon Tier 1, "
-                "served from AI Studio because that's the dev-credential "
-                "pattern. doc_llm_model_for('text_llm', 'default', "
-                "profile='dev') returns this entry, not the hackathon one."
-            ),
-            capabilities=("chat", "function_calling", "json_mode"),
-        ),
+        # Dev-profile Tier 1. REMOVED in the Phase 4 3-tier refactor —
+        # both hackathon + dev profiles now use minimax-m3 as Tier 1
+        # (per the OpenSpec model-policy spec). The dev-only entry
+        # previously won the first-match scan for `role="default"`,
+        # `profile="dev"`; with minimax-m3 promoted to `profile="both"`,
+        # that role is now correctly resolved to the canonical primary.
+        # The AI Studio twin remains as `gemini-3.5-flash-aistudio`
+        # below (role=aistudio) for callers that pin it explicitly.
         "gemini-3.5-flash": ModelRegistryEntry(
             key="gemini-3.5-flash",
             family="text_llm",
-            role="default",
-            display_name="Gemini 3.5 Flash (hackathon primary)",
+            role="agent_garden",
+            display_name="Gemini 3.5 Flash (Agent Garden, final fallback)",
             unsloth_id=None,
             mlx_id=None,
             upstream_id="gemini-3.5-flash",
             backend="vertex",
             available=True,
             litellm_alias="vertex_ai/gemini-3.5-flash",
-            profile="hackathon",
+            profile="both",
             env_var="GOOGLE_CLOUD_PROJECT",
             notes=(
-                "Tier 1 of the hackathon profile. Served from Vertex AI using "
-                "GOOGLE_CLOUD_PROJECT + GOOGLE_CLOUD_LOCATION and Application "
-                "Default Credentials (no API key)."
+                "Tier 3 (final fallback) of both the hackathon + dev profiles. "
+                "Served from Vertex AI using GOOGLE_CLOUD_PROJECT + "
+                "GOOGLE_CLOUD_LOCATION and Application Default Credentials "
+                "(no API key). Reached when Tier 1 (MiniMax-M3) + Tier 2 "
+                "(Unsloth) both fail or time out."
             ),
             capabilities=("chat", "function_calling", "json_mode", "long_context"),
         ),
@@ -274,20 +262,23 @@ def _text_llm_entries() -> dict[str, ModelRegistryEntry]:
         "minimax-m3": ModelRegistryEntry(
             key="minimax-m3",
             family="text_llm",
-            role="dev_primary",
-            display_name="MiniMax M3 (dev profile primary)",
+            role="default",
+            display_name="MiniMax M3 (LiteLLM, Tier 1 primary)",
             unsloth_id=None,
             mlx_id=None,
             upstream_id="minimax-m3",
             backend="minimax",
             available=True,
             litellm_alias="minimax-m3",
-            profile="dev",
+            profile="both",
             env_var="MINIMAX_BASE_URL",
             notes=(
-                "Dev-only. Exists so the hackathon chain can be benchmarked "
-                "against the upstream cianfhoghlaim default. MUST NOT appear "
-                "in docs, the UI, or the submission — see public_model_roster()."
+                "Tier 1 (LiteLLM-routed primary) of both the hackathon + dev "
+                "profiles. Routed via LiteLLM's openai-generic provider against "
+                "MINIMAX_BASE_URL — defaults to https://api.minimax.io/v1. "
+                "Auth via MINIMAX_API_KEY. When this tier fails or times out, "
+                "the router falls through to Tier 2 (Unsloth) then Tier 3 "
+                "(Vertex/Agent Garden)."
             ),
             capabilities=("chat", "function_calling"),
         ),
