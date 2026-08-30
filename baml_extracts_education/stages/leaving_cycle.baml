@@ -310,6 +310,8 @@ function ExtractCurriculumSyllabus(
   pdf_text: string,
   subject: LCSubjectSlug,
   language: string,
+  prompt_overlay: string?,
+  prompt_behavior_version: int,
 ) -> LCSyllabusDocument {
   client BIEPV3Extract
   prompt #"
@@ -395,6 +397,8 @@ function ExtractExamPaperLayout(
   subject: LCSubjectSlug?,
   paper_code: string?,
   year: int?,
+  prompt_overlay: string?,
+  prompt_behavior_version: int,
 ) -> LCExamPaper {
   client BIEPV3Extract
   prompt #"
@@ -417,6 +421,8 @@ function ExtractMarkingSchemeGuideline(
   pdf_text: string,
   subject: LCSubjectSlug?,
   year: int?,
+  prompt_overlay: string?,
+  prompt_behavior_version: int,
 ) -> LCMarkingScheme {
   client BIEPV3Extract
   prompt #"
@@ -437,6 +443,8 @@ function ExtractCrossLinguisticConcept(
   pdf_text_ga: string?,
   subject: LCSubjectSlug?,
   concept_id: string?,
+  prompt_overlay: string?,
+  prompt_behavior_version: int,
 ) -> LCCrossLinguisticConcept[] {
   client BIEPV3Extract
   prompt #"
@@ -458,6 +466,8 @@ function ExtractCrossLinguisticConcept(
 function ExtractSyllabusDiagram(
   pdf_text: string,
   subject: LCSubjectSlug,
+  prompt_overlay: string?,
+  prompt_behavior_version: int,
 ) -> LCSyllabusDiagram {
   client BIEPV3Extract
   prompt #"

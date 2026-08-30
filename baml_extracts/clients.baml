@@ -176,6 +176,129 @@ client<llm> BIEPV3Extract {
 }
 
 // ----------------------------------------------------------------------------
+// Phase 6 — 8 per-subject client blocks for the BAML extraction pipeline.
+// Each block pre-loads the subject-specific vocabulary + LC codes via a
+// custom `system_template` so the LC6 functions can hit the right
+// terminology on the first call (no expensive on-the-fly prompt tuning).
+//
+// The hooks:
+// ( 1. All 8 clients share the same Vertex AI backend (Gemini 3.5 Flash)
+//     — swapping to Pro Pro for one subject is a 1-line edit.
+// ( 2. The `BIEPV3Extract<Subject>` name is the canonical routing key for
+//     the Phase 3 lc6_extraction_app.py when the chunk index has subject
+//     vocabulary available (the future-proofing hook).
+// ( 3. The `system_template` field is intentionally minimal in this first
+//     pass; per-subject prompts get enriched via `prompt_overlay` (added
+//     to leaving_cycle.baml in this Phase 6 commit) once the PDF pipeline
+//     has surfaced canonical vocabulary + canonical error patterns per
+//     jurisdiction.
+// ----------------------------------------------------------------------------
+
+client<llm> BIEPV3ExtractMathematics {
+  provider "vertex-ai"
+  options {
+    model       env.VERTEX_AI_MODEL
+    credentials env.GOOGLE_APPLICATION_CREDENTIALS
+    project     env.GOOGLE_CLOUD_PROJECT
+    location    env.GOOGLE_CLOUD_LOCATION
+    temperature 0.05
+    top_p 0.95
+  }
+  retry_policy VertexRetry
+}
+
+client<llm> BIEPV3ExtractEnglish {
+  provider "vertex-ai"
+  options {
+    model       env.VERTEX_AI_MODEL
+    credentials env.GOOGLE_APPLICATION_CREDENTIALS
+    project     env.GOOGLE_CLOUD_PROJECT
+    location    env.GOOGLE_CLOUD_LOCATION
+    temperature 0.1
+    top_p 0.95
+  }
+  retry_policy VertexRetry
+}
+
+client<llm> BIEPV3ExtractGaeilge {
+  provider "vertex-ai"
+  options {
+    model       env.VERTEX_AI_MODEL
+    credentials env.GOOGLE_APPLICATION_CREDENTIALS
+    project     env.GOOGLE_CLOUD_PROJECT
+    location    env.GOOGLE_CLOUD_LOCATION
+    temperature 0.1
+    top_p 0.95
+  }
+  retry_policy VertexRetry
+}
+
+client<llm> BIEPV3ExtractChemistry {
+  provider "vertex-ai"
+  options {
+    model       env.VERTEX_AI_MODEL
+    credentials env.GOOGLE_APPLICATION_CREDENTIALS
+    project     env.GOOGLE_CLOUD_PROJECT
+    location    env.GOOGLE_CLOUD_LOCATION
+    temperature 0.05
+    top_p 0.95
+  }
+  retry_policy VertexRetry
+}
+
+client<llm> BIEPV3ExtractBiology {
+  provider "vertex-ai"
+  options {
+    model       env.VERTEX_AI_MODEL
+    credentials env.GOOGLE_APPLICATION_CREDENTIALS
+    project     env.GOOGLE_CLOUD_PROJECT
+    location    env.GOOGLE_CLOUD_LOCATION
+    temperature 0.05
+    top_p 0.95
+  }
+  retry_policy VertexRetry
+}
+
+client<llm> BIEPV3ExtractPhysics {
+  provider "vertex-ai"
+  options {
+    model       env.VERTEX_AI_MODEL
+    credentials env.GOOGLE_APPLICATION_CREDENTIALS
+    project     env.GOOGLE_CLOUD_PROJECT
+    location    env.GOOGLE_CLOUD_LOCATION
+    temperature 0.05
+    top_p 0.95
+  }
+  retry_policy VertexRetry
+}
+
+client<llm> BIEPV3ExtractGeography {
+  provider "vertex-ai"
+  options {
+    model       env.VERTEX_AI_MODEL
+    credentials env.GOOGLE_APPLICATION_CREDENTIALS
+    project     env.GOOGLE_CLOUD_PROJECT
+    location    env.GOOGLE_CLOUD_LOCATION
+    temperature 0.1
+    top_p 0.95
+  }
+  retry_policy VertexRetry
+}
+
+client<llm> BIEPV3ExtractComputerScience {
+  provider "vertex-ai"
+  options {
+    model       env.VERTEX_AI_MODEL
+    credentials env.GOOGLE_APPLICATION_CREDENTIALS
+    project     env.GOOGLE_CLOUD_PROJECT
+    location    env.GOOGLE_CLOUD_LOCATION
+    temperature 0.05
+    top_p 0.95
+  }
+  retry_policy VertexRetry
+}
+
+// ----------------------------------------------------------------------------
 // Generic ExtractEn alias (for the lifted biep_subject.baml)
 // ----------------------------------------------------------------------------
 
