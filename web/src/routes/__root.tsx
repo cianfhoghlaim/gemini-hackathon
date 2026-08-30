@@ -17,6 +17,7 @@
 import { Outlet, Link } from "react-router-dom";
 import { SourcePaletteProvider } from "../components/themes/SourcePaletteProvider";
 import { SessionProvider } from "../components/session/SessionContext";
+import { SessionAgentContext } from "../components/session/SessionAgentContext";
 import { AuthGate } from "../components/auth/AuthGate";
 import { firebaseApp } from "../lib/firebase.ts";
 import catalog from "../a2ui/catalog";
@@ -55,6 +56,7 @@ export default function App(): React.ReactNode {
       >
         <SourcePaletteProvider>
           <SessionProvider>
+            <SessionAgentContext />
             <div className="min-h-screen flex flex-col bg-[var(--color-background)] text-[var(--color-text)] font-[var(--font-body)]">
               <header className="border-b border-[var(--color-secondary)]/20 px-6 py-4 flex items-center justify-between">
                 <Link to="/" className="text-2xl font-[var(--font-heading)] text-[var(--color-primary)]">

@@ -24,7 +24,7 @@
  * in src/routes/__root.tsx.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useAgent } from "@copilotkit/react-core/v2";
 import { useSession } from "../components/session/SessionContext";
 
@@ -34,17 +34,9 @@ export default function AgentChatPage(): React.ReactNode {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Seed the agent's state with the session-bound greeting once at mount.
-  useEffect(() => {
-    void agent.setState({
-      subnation: subnation.name,
-      subnationFlag: subnation.flag,
-      awardingBody: subnation.awardingBody,
-      awardingBodyShort: subnation.awardingBodyShort,
-      greeting: `Hi! I'm your assistant for ${subnation.flag} ${subnation.name}. I know the ${subnation.awardingBodyShort} syllabus and the active safeguarding policy. Ask me anything.`,
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subnation.name]);
+  // The session is already pushed into the agent via SessionAgentContext
+  // (mounted in __root.tsx) — subnation, role, cycle, subjects, and
+  // safeguarding source are all available via useAgentContext slots.
 
   async function send() {
     const input = inputRef.current;
