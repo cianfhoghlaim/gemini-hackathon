@@ -1,25 +1,32 @@
 # Model Policy — gemini_hackathon
 
 > **Status:** enforced project-wide (per
-> [`openspec/changes/2026-08-24-gemini-hackathon-public-v1/specs/model-policy/spec.md`](../../openspec/changes/2026-08-24-gemini-hackathon-public-v1/specs/model-policy/spec.md))
-> **Last updated:** 2026-08-25 (Phase 0 — dual-profile registry)
+[`openspec/changes/2026-08-24-gemini-hackathon-public-v1/specs/model-policy/spec.md`](../../openspec/changes/2026-08-24-gemini-hackathon-public-v1/specs/model-policy/spec.md))
+> **Last updated:** 2026-08-30 (Gemma + Gemini refocus — drop all Qwen, drop all third-party)
 
 ## TL;DR
 
-Two profiles, one surface. The **hackathon** profile is the only one docs,
+One Gemma+Gemini focus. The **hackathon** profile is the only one docs,
 the UI, the CLI, and the submission materials ever reference. The **dev**
-profile exists for the comparison harness and stays out of public view by
-construction (see `public_model_roster()`).
+profile exists for the Gemma 3 / Gemma 2 benchmark comparisons (Tier 3) and
+stays out of public view by construction (see `public_model_roster()`).
 
 | Tier | hackathon profile | dev profile (extra only) |
 |---|---|---|
-| 1 (primary) | `gemini-3.5-flash` — Vertex AI (default) or AI Studio | + the same model served via AI Studio |
-| 2 (fallback) | `unsloth/gemma-4-26B-A4B-it-GGUF` via Unsloth Studio :8888 | + a dev-only gemma copy |
-| 3 (extra) | — | `minimax-m3`, `qwen3.8-27b`, `deepseek-v4-flash`, `kimi-k2.6` |
+| 1 (primary) | `gemini-3.5-flash` (Vertex) → `gemini-3.5-flash-aistudio` (AI Studio fallback) | + `gemini-3.5-flash-lite`, `gemini-3.5-pro` (eval), `gemini-2.5-flash` (ADK-examples compat), `gemini-embedding-2-preview` |
+| 2 (fallback) | `gemma-4-26b-a4b` (Unsloth Studio) + `gemma-4-e4b` (light) | + `gemma-3-27b-it` (benchmark vs Gemma 4), `gemma-2-9b` (older baseline), `t5gemma-2-4b` (encoder-decoder) |
+| 2/3 (OCR/VLM) | `gemma-4-26b-a4b-vision`, `gemma-4-12b-vision`, `gemma-4-e4b-vision` (all llama-swap) | + `gemma-3-12b-vision` (benchmark), `gemma-3n-E4B-vision` (mobile) |
+| 2/3 (text-on-CPU) | — | `gemma-2-9b-text`, `gemma-3-1b-text`, `gemma-3-4b-text` (llama-swap GGUFs for the offline benchmark chain) |
+| Image gen | `diffusiongemma-26b-a4b` (Unsloth) — the 4-way Gradio comparator | + `flux2-dev` (InvokeAI/ComfyUI gradio workflow), `z-image-turbo` (llama-swap GGUF), `fibo` (ComfyUI provenance) |
 
 Hard-rejected: `@cf/*` (Cloudflare Workers AI) and any `qwen3-coder-*` prefix.
 These cannot be reached at the call boundary — `_assert_model_allowed` in
 `call_llm.py` raises `ModelExcludedError` before the request is dispatched.
+
+**Removed 2026-08-30** (the Gemma+Gemini refocus): `qwen3-vl-8b`, `qwen3-vl-4b`,
+`qwen3.8-27b`, `qwen-image-2512`, `qwen-image`, `paddleocr-vl-1.6`,
+`deepseek-v4-flash`, `kimi-k2.6`, `minimax-m3`, `sdxl`. All tombstoned in
+`model_registry.py` with `available=False` for backward compatibility.
 
 ---
 

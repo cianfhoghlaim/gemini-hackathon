@@ -164,24 +164,19 @@ class ModelRegistryEntry:
 def _text_llm_entries() -> dict[str, ModelRegistryEntry]:
     """The text LLM family: the hackathon 2-tier chain + dev-only extras."""
     return {
-        # ── Tier 1 (hackathon): Gemini 3.5 Flash on Vertex AI ──────────────
-        # Vertex is the default because the submission is judged partly on
-        # Google Cloud usage. `call_llm.resolve_gemini_backend()` swaps to the
-        # `aistudio` entry below when GEMINI_BACKEND=aistudio, or when Vertex
-        # credentials are absent but GEMINI_API_KEY is present.
-        # Dev-profile Tier 1. REMOVED in the Phase 4 3-tier refactor —
-        # both hackathon + dev profiles now use minimax-m3 as Tier 1
-        # (per the OpenSpec model-policy spec). The dev-only entry
-        # previously won the first-match scan for `role="default"`,
-        # `profile="dev"`; with minimax-m3 promoted to `profile="both"`,
-        # that role is now correctly resolved to the canonical primary.
-        # The AI Studio twin remains as `gemini-3.5-flash-aistudio`
-        # below (role=aistudio) for callers that pin it explicitly.
+        # ── Tier 1 PRIMARY (hackathon + dev): Gemini 3.5 Flash on Vertex AI ──
+        # Per the 2026-08-30 Gemma+Gemini refocus (this commit): promoted
+        # from `role="agent_garden"` (the Tier-3 final fallback) to
+        # `role="default"` (the Tier-1 primary). Vertex is the default
+        # because the submission is judged partly on Google Cloud usage.
+        # `call_llm.resolve_gemini_backend()` swaps to the `aistudio` entry
+        # below when GEMINI_BACKEND=aistudio, or when Vertex credentials
+        # are absent but GEMINI_API_KEY is present.
         "gemini-3.5-flash": ModelRegistryEntry(
             key="gemini-3.5-flash",
             family="text_llm",
-            role="agent_garden",
-            display_name="Gemini 3.5 Flash (Agent Garden, final fallback)",
+            role="default",
+            display_name="Gemini 3.5 Flash (Vertex, Tier 1 primary)",
             unsloth_id=None,
             mlx_id=None,
             upstream_id="gemini-3.5-flash",
@@ -191,40 +186,16 @@ def _text_llm_entries() -> dict[str, ModelRegistryEntry]:
             profile="both",
             env_var="GOOGLE_CLOUD_PROJECT",
             notes=(
-                "Tier 3 (final fallback) of both the hackathon + dev profiles. "
-                "Served from Vertex AI using GOOGLE_CLOUD_PROJECT + "
-                "GOOGLE_CLOUD_LOCATION and Application Default Credentials "
-                "(no API key). Reached when Tier 1 (MiniMax-M3) + Tier 2 "
-                "(Unsloth) both fail or time out."
+                "Tier 1 PRIMARY (hackathon + dev). Served from Vertex AI "
+                "using GOOGLE_CLOUD_PROJECT + GOOGLE_CLOUD_LOCATION and "
+                "Application Default Credentials (no API key). When "
+                "Vertex creds are missing but GEMINI_API_KEY is present, "
+                "the call_llm router auto-swaps to gemini-3.5-flash-aistudio."
             ),
             capabilities=("chat", "function_calling", "json_mode", "long_context"),
         ),
-        # ── Tier 1 alternate: the same model, served from AI Studio ────────
-        # Phase 5b — gemini-3.5-pro for the model comparison harness.
-        # Higher quality than Flash; same Vertex AI Agent Garden backend,
-        # higher pricing ($1.25 input / $5.00 output per M tokens).
-        "gemini-3.5-pro": ModelRegistryEntry(
-            key="gemini-3.5-pro",
-            family="text_llm",
-            role="agent_garden_pro",
-            display_name="Gemini 3.5 Pro (Agent Garden, eval-tier)",
-            unsloth_id=None,
-            mlx_id=None,
-            upstream_id="gemini-3.5-pro",
-            backend="vertex",
-            available=True,
-            litellm_alias="vertex_ai/gemini-3.5-pro",
-            profile="dev",
-            env_var="GOOGLE_CLOUD_PROJECT",
-            notes=(
-                "Dev-profile only. Phase 5 model comparison harness. "
-                "Same Vertex AI backend as gemini-3.5-flash; higher cost "
-                "($1.25 input / $5.00 output per M tokens). Used to "
-                "establish a quality baseline for the 5-model eval."
-            ),
-            capabilities=("chat", "function_calling", "json_mode", "long_context"),
-        ),
-                "gemini-3.5-flash-aistudio": ModelRegistryEntry(
+        # ── Tier 1 PRI: same model via AI Studio (auto-fallback) ──────────
+        "gemini-3.5-flash-aistudio": ModelRegistryEntry(
             key="gemini-3.5-flash-aistudio",
             family="text_llm",
             role="aistudio",
@@ -244,29 +215,96 @@ def _text_llm_entries() -> dict[str, ModelRegistryEntry]:
             ),
             capabilities=("chat", "function_calling", "json_mode"),
         ),
-        # ── Tier 2 (hackathon): Gemma 4 26B-A4B via Unsloth Studio ─────────
-        # Dev-profile gemma-4 (same model, dev-profile wiring).
-        "gemma-4-26b-a4b-dev": ModelRegistryEntry(
-            key="gemma-4-26b-a4b-dev",
+        # ── Tier 1 LITE: Gemini 3.5 Flash Lite (NEW per 2026-08-30 refocus) ─
+        # Low-cost high-volume extraction tier. Same family, same backend.
+        "gemini-3.5-flash-lite": ModelRegistryEntry(
+            key="gemini-3.5-flash-lite",
             family="text_llm",
-            role="fallback",
-            display_name="Gemma 4 26B-A4B (Unsloth Studio, dev Tier 2)",
-            unsloth_id="unsloth/gemma-4-26B-A4B-it-GGUF",
+            role="lite",
+            display_name="Gemini 3.5 Flash Lite (AI Studio)",
+            unsloth_id=None,
             mlx_id=None,
-            upstream_id="google/gemma-4-26B-A4B-it",
-            backend="unsloth_studio",
+            upstream_id="gemini-3.5-flash-lite",
+            backend="aistudio",
             available=True,
-            litellm_alias="openai/unsloth/gemma-4-26b-a4b",
-            profile="dev",
-            env_var="UNSLOTH_BASE_URL",
-            notes="Dev-profile Tier 2.",
-            capabilities=("chat", "function_calling"),
+            litellm_alias="gemini/gemini-3.5-flash-lite",
+            profile="hackathon",
+            env_var="GEMINI_API_KEY",
+            notes=(
+                "Tier 1 lite. Lower cost / higher throughput than flash; "
+                "preferred for the high-volume NCCE BAML extraction sweeps."
+            ),
+            capabilities=("chat", "json_mode"),
         ),
+        # ── Tier 1 EVAL (dev only): Gemini 3.5 Pro ─────────────────────────
+        # Phase 5b — for the model comparison harness. Higher quality than
+        # Flash; same Vertex AI backend, higher pricing ($1.25 / $5.00 per M).
+        "gemini-3.5-pro": ModelRegistryEntry(
+            key="gemini-3.5-pro",
+            family="text_llm",
+            role="pro",
+            display_name="Gemini 3.5 Pro (Vertex, eval-tier)",
+            unsloth_id=None,
+            mlx_id=None,
+            upstream_id="gemini-3.5-pro",
+            backend="vertex",
+            available=True,
+            litellm_alias="vertex_ai/gemini-3.5-pro",
+            profile="dev",
+            env_var="GOOGLE_CLOUD_PROJECT",
+            notes=(
+                "Dev-profile only. Phase 5 model comparison harness. "
+                "Same Vertex AI backend as gemini-3.5-flash; higher cost."
+            ),
+            capabilities=("chat", "function_calling", "json_mode", "long_context"),
+        ),
+        # ── Tier 1 ALT: Gemini 2.5 Flash (ADK-examples compat per docs/ideas) ─
+        "gemini-2.5-flash": ModelRegistryEntry(
+            key="gemini-2.5-flash",
+            family="text_llm",
+            role="alt",
+            display_name="Gemini 2.5 Flash (Vertex, ADK-examples compat)",
+            unsloth_id=None,
+            mlx_id=None,
+            upstream_id="gemini-2.5-flash",
+            backend="vertex",
+            available=True,
+            litellm_alias="vertex_ai/gemini-2.5-flash",
+            profile="both",
+            env_var="GOOGLE_CLOUD_PROJECT",
+            notes=(
+                "Compatibility tier for the docs/ideas/Agent Development Kit "
+                "examples that use MODEL_GEMINI_FLASH=gemini-2.5-flash."
+            ),
+            capabilities=("chat", "function_calling", "json_mode"),
+        ),
+        # ── Tier 1 EMBEDDING (NEW per 2026-08-30 refocus) ────────────────────
+        "gemini-embedding-2-preview": ModelRegistryEntry(
+            key="gemini-embedding-2-preview",
+            family="text_llm",
+            role="embedder",
+            display_name="Gemini Embedding 2 Preview (AI Studio)",
+            unsloth_id=None,
+            mlx_id=None,
+            upstream_id="gemini-embedding-2-preview",
+            backend="aistudio",
+            available=True,
+            litellm_alias="gemini/gemini-embedding-2-preview",
+            profile="hackathon",
+            env_var="GEMINI_API_KEY",
+            notes=(
+                "Tier 1 embeddings. Replaces the prior BGE-M3 default for "
+                "the BAML ExtractCrossLinguisticConcept text path. "
+                "Family=LiteLLM embedder role (separate from chat models)."
+            ),
+            capabilities=("embed",),
+        ),
+        # ── Tier 2 PRIMARY (hackathon): Gemma 4 26B-A4B via Unsloth Studio ──
         "gemma-4-26b-a4b": ModelRegistryEntry(
             key="gemma-4-26b-a4b",
             family="text_llm",
             role="fallback",
-            display_name="Gemma 4 26B-A4B (Unsloth Studio)",
+            display_name="Gemma 4 26B-A4B (Unsloth Studio, Tier 2 primary)",
             unsloth_id="unsloth/gemma-4-26B-A4B-it-GGUF",
             mlx_id=None,
             upstream_id="google/gemma-4-26B-A4B-it",
@@ -276,22 +314,59 @@ def _text_llm_entries() -> dict[str, ModelRegistryEntry]:
             profile="hackathon",
             env_var="UNSLOTH_BASE_URL",
             notes=(
-                "Tier 2 of the hackathon profile. Unsloth Studio is a HOST "
+                "Tier 2 of the hackathon profile (the +0.2 'Google AI "
+                "model integration' bonus). Unsloth Studio is a HOST "
                 "process on :8888 exposing an OpenAI-compatible /v1 surface; "
-                "it is not a container and it is not ollama. Same Gemma "
-                "family as Tier 1, so a Tier-1 -> Tier-2 failover keeps the "
-                "output register consistent."
+                "it is not a container and it is not ollama."
             ),
             capabilities=("chat", "function_calling"),
         ),
-        # Phase 5b — gemma-2-9b for the model comparison harness.
-        # Dev-profile Unsloth Studio model (smaller + cheaper than the
-        # 26B variant); establishes a second local-model data point.
+        # ── Tier 2 LIGHT (hackathon): Gemma 4 E4B ───────────────────────────
+        "gemma-4-e4b": ModelRegistryEntry(
+            key="gemma-4-e4b",
+            family="text_llm",
+            role="fallback_light",
+            display_name="Gemma 4 E4B (Unsloth Studio, Tier 2 light)",
+            unsloth_id="unsloth/gemma-4-E4B-it-GGUF",
+            mlx_id=None,
+            upstream_id="google/gemma-4-E4B-it",
+            backend="unsloth_studio",
+            available=True,
+            litellm_alias="openai/unsloth/gemma-4-e4b",
+            profile="hackathon",
+            env_var="UNSLOTH_BASE_URL",
+            notes=(
+                "Tier 2 light. ~3GB on disk; much faster cold-start than "
+                "the 26B-A4B. Used for low-latency Tier-2 reads."
+            ),
+            capabilities=("chat",),
+        ),
+        # ── Tier 2 BENCHMARK (dev): Gemma 3 27B (prior-gen vs Gemma 4) ─────
+        "gemma-3-27b-it": ModelRegistryEntry(
+            key="gemma-3-27b-it",
+            family="text_llm",
+            role="local_fallback",
+            display_name="Gemma 3 27B IT (Unsloth Studio, dev benchmark)",
+            unsloth_id="unsloth/gemma-3-27b-it-GGUF",
+            mlx_id=None,
+            upstream_id="google/gemma-3-27b-it",
+            backend="unsloth_studio",
+            available=True,
+            litellm_alias="openai/unsloth/gemma-3-27b-it",
+            profile="dev",
+            env_var="UNSLOTH_BASE_URL",
+            notes=(
+                "Dev-profile Gemma 3 prior-generation benchmark. Used in "
+                "the comparison harness to grade Gemma 4 improvements."
+            ),
+            capabilities=("chat",),
+        ),
+        # ── Tier 2 BENCHMARK (dev): Gemma 2 9B (older baseline) ────────────
         "gemma-2-9b": ModelRegistryEntry(
             key="gemma-2-9b",
             family="text_llm",
-            role="local_fallback",
-            display_name="Gemma 2 9B (Unsloth Studio, eval-tier)",
+            role="local_fallback_old",
+            display_name="Gemma 2 9B (Unsloth Studio, dev baseline)",
             unsloth_id="unsloth/gemma-2-9b",
             mlx_id=None,
             upstream_id="google/gemma-2-9b",
@@ -301,84 +376,31 @@ def _text_llm_entries() -> dict[str, ModelRegistryEntry]:
             profile="dev",
             env_var="UNSLOTH_BASE_URL",
             notes=(
-                "Dev-profile only. Phase 5 model comparison harness. "
-                "Unsloth Studio GGUF (4-bit); ~$0/hr at the dev "
-                "Unsloth Studio process. Smaller than gemma-4-26B-A4B; "
-                "useful for fast iteration on the comparison harness."
+                "Dev-profile Gemma 2 baseline for the comparison harness. "
+                "Smaller + cheaper than the Gemma 4 family; useful for fast "
+                "iteration on the dev harness."
             ),
             capabilities=("chat",),
         ),
-
-        # ── Dev profile only. Never surfaced publicly. ─────────────────────
-        "minimax-m3": ModelRegistryEntry(
-            key="minimax-m3",
+        # ── Tier 2 ENCODER-DECODER (dev): T5Gemma-2 4B ─────────────────────
+        "t5gemma-2-4b": ModelRegistryEntry(
+            key="t5gemma-2-4b",
             family="text_llm",
-            role="default",
-            display_name="MiniMax M3 (LiteLLM, Tier 1 primary)",
-            unsloth_id=None,
+            role="dev_encoder_decoder",
+            display_name="T5Gemma-2 4B (Unsloth Studio, encoder-decoder)",
+            unsloth_id="unsloth/t5gemma-2-4b-GGUF",
             mlx_id=None,
-            upstream_id="minimax-m3",
-            backend="minimax",
+            upstream_id="google/t5gemma-2-4b",
+            backend="unsloth_studio",
             available=True,
-            litellm_alias="minimax-m3",
-            profile="both",
-            env_var="MINIMAX_BASE_URL",
+            litellm_alias="openai/unsloth/t5gemma-2-4b",
+            profile="dev",
+            env_var="UNSLOTH_BASE_URL",
             notes=(
-                "Tier 1 (LiteLLM-routed primary) of both the hackathon + dev "
-                "profiles. Routed via LiteLLM's openai-generic provider against "
-                "MINIMAX_BASE_URL — defaults to https://api.minimax.io/v1. "
-                "Auth via MINIMAX_API_KEY. When this tier fails or times out, "
-                "the router falls through to Tier 2 (Unsloth) then Tier 3 "
-                "(Vertex/Agent Garden)."
+                "Dev-profile encoder-decoder variant per "
+                "docs/ideas/bilingual-datasets.md (Phase 0/5 of the "
+                "Gemini 3 + T5Gemma-2 architecture proposal)."
             ),
-            capabilities=("chat", "function_calling"),
-        ),
-        "qwen3.8-27b": ModelRegistryEntry(
-            key="qwen3.8-27b",
-            family="text_llm",
-            role="dev_strong",
-            display_name="Qwen 3.8 27B (Unsloth Studio)",
-            unsloth_id="unsloth/qwen3.8-27b-it-GGUF",
-            mlx_id=None,
-            upstream_id="Qwen/Qwen3-8-27B",
-            backend="unsloth_studio",
-            available=True,
-            litellm_alias="openai/unsloth/qwen3.8-27b",
-            profile="dev",
-            env_var="UNSLOTH_BASE_URL",
-            notes="Dev-only Qwen flagship for the comparison harness.",
-            capabilities=("chat",),
-        ),
-        "deepseek-v4-flash": ModelRegistryEntry(
-            key="deepseek-v4-flash",
-            family="text_llm",
-            role="dev_fast",
-            display_name="DeepSeek V4 Flash (Unsloth Studio)",
-            unsloth_id="unsloth/deepseek-v4-flash-GGUF",
-            mlx_id=None,
-            upstream_id="deepseek-ai/DeepSeek-V4-Flash",
-            backend="unsloth_studio",
-            available=True,
-            litellm_alias="openai/unsloth/deepseek-v4-flash",
-            profile="dev",
-            env_var="UNSLOTH_BASE_URL",
-            notes="Dev-only fast tier for the comparison harness.",
-            capabilities=("chat",),
-        ),
-        "kimi-k2.6": ModelRegistryEntry(
-            key="kimi-k2.6",
-            family="text_llm",
-            role="dev_alt",
-            display_name="Kimi K2.6 (Unsloth Studio)",
-            unsloth_id="unsloth/kimi-k2.6-GGUF",
-            mlx_id=None,
-            upstream_id="moonshotai/Kimi-K2.6",
-            backend="unsloth_studio",
-            available=True,
-            litellm_alias="openai/unsloth/kimi-k2.6",
-            profile="dev",
-            env_var="UNSLOTH_BASE_URL",
-            notes="Dev-only long-context comparison.",
             capabilities=("chat", "long_context"),
         ),
     }
@@ -390,39 +412,27 @@ def _text_llm_entries() -> dict[str, ModelRegistryEntry]:
 
 
 def _ocr_vision_entries() -> dict[str, ModelRegistryEntry]:
-    """The OCR / VLM family — the subset of upstream ``VISION_MODELS`` used here."""
+    """The OCR / VLM family — Gemma-only per the 2026-08-30 refocus."""
     return {
-        "qwen3-vl-8b": ModelRegistryEntry(
-            key="qwen3-vl-8b",
-            family="ocr_vision",
-            role="default",
-            display_name="Qwen 3-VL 8B (llama-swap OCR workhorse)",
-            unsloth_id=None,
-            mlx_id=None,
-            upstream_id="Qwen/Qwen3-VL-8B-Instruct",
-            backend="llama_swap",
-            available=True,
-            litellm_alias="openai/qwen3-vl-8b",
-            profile="hackathon",
-            env_var="LLAMA_SWAP_BASE_URL",
-            notes="Stage-1 OCR workhorse.",
-            capabilities=("ocr", "figure_caption", "multilingual"),
-        ),
         "gemma-4-26b-a4b-vision": ModelRegistryEntry(
             key="gemma-4-26b-a4b-vision",
             family="ocr_vision",
-            role="vision_strong",
-            display_name="Gemma 4 26B-A4B Vision (llama-swap)",
+            role="default",
+            display_name="Gemma 4 26B-A4B Vision (llama-swap, OCR primary)",
             unsloth_id=None,
             mlx_id=None,
             upstream_id="google/gemma-4-26B-A4B-it",
             backend="llama_swap",
             available=True,
-            litellm_alias="openai/gemma-4-26b-a4b",
+            litellm_alias="openai/gemma-4-26b-a4b-vision",
             profile="hackathon",
             env_var="LLAMA_SWAP_BASE_URL",
-            notes="Vision-language variant of the Tier-2 text model.",
-            capabilities=("ocr", "vision_qa", "figure_caption"),
+            notes=(
+                "OCR/VLM primary. Vision-language variant of the Tier-2 "
+                "text model. Replaces the previous qwen3-vl-8b workhorse "
+                "(per the 2026-08-30 Gemma+Gemini refocus)."
+            ),
+            capabilities=("ocr", "vision_qa", "figure_caption", "multilingual"),
         ),
         "gemma-4-12b-vision": ModelRegistryEntry(
             key="gemma-4-12b-vision",
@@ -431,10 +441,10 @@ def _ocr_vision_entries() -> dict[str, ModelRegistryEntry]:
             display_name="Gemma 4 12B Vision (llama-swap)",
             unsloth_id=None,
             mlx_id=None,
-            upstream_id="google/gemma-4-12B-it",
+            upstream_id="google/gemma-4-12b-it",
             backend="llama_swap",
             available=True,
-            litellm_alias="openai/gemma-4-12b",
+            litellm_alias="openai/gemma-4-12b-vision",
             profile="hackathon",
             env_var="LLAMA_SWAP_BASE_URL",
             notes="Mid-tier vision alternative; faster cold-start than the 26B.",
@@ -450,27 +460,53 @@ def _ocr_vision_entries() -> dict[str, ModelRegistryEntry]:
             upstream_id="google/gemma-4-E4B-it",
             backend="llama_swap",
             available=True,
-            litellm_alias="openai/gemma-4-e4b",
+            litellm_alias="openai/gemma-4-e4b-vision",
             profile="hackathon",
             env_var="LLAMA_SWAP_BASE_URL",
             notes="Lightweight Gemma 4 vision variant for low-latency reads.",
             capabilities=("ocr",),
         ),
-        "qwen3-vl-4b": ModelRegistryEntry(
-            key="qwen3-vl-4b",
+        "gemma-3-12b-vision": ModelRegistryEntry(
+            key="gemma-3-12b-vision",
             family="ocr_vision",
-            role="vision_fast",
-            display_name="Qwen 3-VL 4B (llama-swap)",
+            role="vision_prior_gen",
+            display_name="Gemma 3 12B Vision (llama-swap, dev benchmark)",
             unsloth_id=None,
             mlx_id=None,
-            upstream_id="Qwen/Qwen3-VL-4B-Instruct",
+            upstream_id="google/gemma-3-12b-it",
             backend="llama_swap",
             available=True,
-            litellm_alias="openai/qwen3-vl-4b",
+            litellm_alias="openai/gemma-3-12b-vision",
             profile="dev",
             env_var="LLAMA_SWAP_BASE_URL",
-            notes="Dev-only fast vision tier for the comparison harness.",
-            capabilities=("ocr",),
+            notes=(
+                "Dev-profile prior-generation benchmark. Used to grade "
+                "Gemma 4 vision improvements in the comparison harness."
+            ),
+            capabilities=("ocr", "vision_qa"),
+        ),
+        "gemma-3n-E4B-vision": ModelRegistryEntry(
+            key="gemma-3n-E4B-vision",
+            family="ocr_vision",
+            role="vision_mobile",
+            display_name="Gemma 3n E4B Vision (llama-swap, mobile-optimised)",
+            unsloth_id=None,
+            mlx_id=None,
+            upstream_id="google/gemma-3n-E4B-it",
+            backend="llama_swap",
+            available=False,    # gated: verify HF id before activating
+            litellm_alias="openai/gemma-3n-E4B-vision",
+            profile="hackathon",
+            env_var="LLAMA_SWAP_BASE_URL",
+            notes=(
+                "Mobile-optimised Gemma 3n (per docs/ideas/Irish Handwriting "
+                "App Development.md §4.2). NOTE: gated behind available=False "
+                "until the upstream google/gemma-3n-E4B-it repo + a community "
+                "q4_k_m GGUF quant is verified on HuggingFace. To activate, "
+                "set available=True + add the GGUF download to the llama-swap "
+                "download script."
+            ),
+            capabilities=("ocr", "vision_qa", "mobile_optimised"),
         ),
     }
 
@@ -694,48 +730,73 @@ def _image_gen_entries() -> dict[str, ModelRegistryEntry]:
             key="qwen-image-2512",
             family="image_gen",
             role="bilingual",
-            display_name="Qwen-Image 2512 (Unsloth Studio)",
-            unsloth_id="unsloth/Qwen-Image-2512-GGUF",
+            display_name="Qwen-Image 2512 (Unsloth Studio) — REMOVED 2026-08-30",
+            unsloth_id=None,    # was "unsloth/Qwen-Image-2512-GGUF"
             mlx_id=None,
             upstream_id="Qwen/Qwen-Image-2512",
             backend="unsloth_studio",
-            available=True,
-            litellm_alias="openai/unsloth/qwen-image-2512",
+            available=False,    # REMOVED in the 2026-08-30 Gemma+Gemini refocus
+            litellm_alias=None,
             profile="both",
-            env_var="UNSLOTH_BASE_URL",
-            notes="Bilingual EN/GA text rendering — preferred for Celtic assets.",
-            capabilities=("text_to_image", "bilingual_text"),
+            env_var=None,
+            notes=(
+                "REMOVED 2026-08-30 (the Gemma+Gemini focus drops all Qwen). "
+                "Kept as a tombstone entry (available=False, litellm_alias=None) "
+                "so old callers get None instead of an unknown-key error."
+            ),
+            capabilities=(),
         ),
         "qwen-image": ModelRegistryEntry(
             key="qwen-image",
             family="image_gen",
             role="legacy_bilingual",
-            display_name="Qwen-Image (InvokeAI)",
+            display_name="Qwen-Image (InvokeAI) — REMOVED 2026-08-30",
             unsloth_id=None,
             mlx_id=None,
             upstream_id="Qwen/Qwen-Image",
             backend="invokeai",
-            available=True,
-            litellm_alias="local/image/qwen-image",
+            available=False,    # REMOVED
+            litellm_alias=None,
             profile="both",
-            env_var="INVOKEAI_BASE_URL",
-            notes="Predecessor of qwen-image-2512, served via InvokeAI.",
-            capabilities=("text_to_image", "bilingual_text"),
+            env_var=None,
+            notes="Removed 2026-08-30; tombstone entry.",
+            capabilities=(),
         ),
         "sdxl": ModelRegistryEntry(
             key="sdxl",
             family="image_gen",
             role="legacy",
-            display_name="SDXL (InvokeAI)",
+            display_name="SDXL (InvokeAI) — REMOVED 2026-08-30",
             unsloth_id=None,
             mlx_id=None,
             upstream_id="stabilityai/stable-diffusion-xl-base-1.0",
             backend="invokeai",
-            available=True,
-            litellm_alias="local/image/sdxl",
+            available=False,    # REMOVED
+            litellm_alias=None,
             profile="both",
-            env_var="INVOKEAI_BASE_URL",
-            notes="Legacy fallback; slated for removal post-submission.",
+            env_var=None,
+            notes="Removed 2026-08-30; the speed tier is z-image-turbo now.",
+            capabilities=(),
+        ),
+        "z-image-turbo": ModelRegistryEntry(
+            key="z-image-turbo",
+            family="image_gen",
+            role="fast",
+            display_name="Z-Image-Turbo (llama-swap GGUF, 4-step iteration)",
+            unsloth_id=None,
+            mlx_id=None,
+            upstream_id="stabilityai/z-image-turbo",
+            backend="llama_swap",
+            available=True,
+            litellm_alias="openai/z-image-turbo",
+            profile="both",
+            env_var="LLAMA_SWAP_BASE_URL",
+            notes=(
+                "Fast 4-step image-gen tier served as a GGUF via "
+                "llama-swap. Added 2026-08-30 as part of the 4-way "
+                "Gradio comparison workflow (with diffusiongemma, "
+                "FLUX.2-dev + fibo)."
+            ),
             capabilities=("text_to_image",),
         ),
     }
@@ -965,14 +1026,25 @@ class PublicModelEntry:
 
 
 _PUBLIC_TIER_INDEX: dict[tuple[str, str], int] = {
+    # Tier 1 (Gemini API — Vertex / AI Studio)
     ("text_llm", "default"):     1,
     ("text_llm", "aistudio"):    1,
-    ("text_llm", "fallback"):    2,
-    ("text_llm", "dev_primary"): 3,
-    ("ocr_vision", "default"):         1,
-    ("ocr_vision", "vision_strong"):    1,
-    ("ocr_vision", "vision_medium"):    1,
-    ("ocr_vision", "vision_light"):     1,
+    ("text_llm", "lite"):        1,
+    ("text_llm", "pro"):         1,
+    ("text_llm", "alt"):         1,
+    ("text_llm", "embedder"):    1,
+    # Tier 2 (Unsloth Studio — Gemma 4 + Gemma 3/2 benchmarks + T5Gemma-2)
+    ("text_llm", "fallback"):          2,
+    ("text_llm", "fallback_light"):    2,
+    ("text_llm", "local_fallback"):    2,
+    ("text_llm", "local_fallback_old"): 2,
+    ("text_llm", "dev_encoder_decoder"): 2,
+    # Tier 2/3 (llama-swap — Gemma-only vision + text)
+    ("ocr_vision", "default"):         2,
+    ("ocr_vision", "vision_medium"):    2,
+    ("ocr_vision", "vision_light"):     2,
+    ("ocr_vision", "vision_prior_gen"): 3,
+    ("ocr_vision", "vision_mobile"):    2,
 }
 
 

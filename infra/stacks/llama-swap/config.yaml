@@ -1,0 +1,131 @@
+# =============================================================================
+# llama-swap configuration — Gemma-only OCR/VLM + image-gen
+# =============================================================================
+# Per the 2026-08-30 Gemma+Gemini refocus. The 8 GGUF entries below are the
+# canonical CPU-served set:
+#
+#   - 4 vision-strong Gemma 4 variants (the OCR/VLM primary set)
+#   - 1 Gemma 3 prior-gen vision variant (the dev benchmark)
+#   - 1 Gemma 3n mobile-optimised vision (gated; see notes)
+#   - 2 Gemma text-only Tier 3 benchmarks (the llama-swap CPU chain)
+#   - 1 z-image-turbo (the 4-way Gradio image comparator speed tier)
+#
+# Source of truth: gemini_hackathon/model_registry.py
+# GGUF weights live under downloaded_models/gguf/<model_dir>/ (set up via
+# `make llama-swap-download-models`).
+#
+# Single shared api_key: ${LLAMA_SWAP_API_KEY} (was LLAMASWAP_API_KEY).
+# See docs/GSM_README.md for the GSM contract.
+# =============================================================================
+
+models:
+  # ─── Gemma 4 OCR/VLM (vision_strong → vision_light) ───────────────────────
+  "gemma-4-26b-a4b-vision":
+    proxy: "http://localhost:8080"
+    cmd: >
+      /app/llama-server
+      -m /models/gguf/gemma-4-26b-a4b-vision/gemma-4-26b-a4b-it-q4_k_m.gguf
+      --mmproj /models/gguf/gemma-4-26b-a4b-vision/gemma-4-26b-a4b-it-mmproj-f16.gguf
+      --alias gemma-4-26b-a4b-vision
+      --port 8080
+      -ngl 0
+      -c 32768
+      --temp 0.0
+
+  "gemma-4-12b-vision":
+    proxy: "http://localhost:8081"
+    cmd: >
+      /app/llama-server
+      -m /models/gguf/gemma-4-12b-vision/gemma-4-12b-it-q4_k_m.gguf
+      --alias gemma-4-12b-vision
+      --port 8081
+      -ngl 0
+      -c 32768
+      --temp 0.0
+
+  "gemma-4-e4b-vision":
+    proxy: "http://localhost:8082"
+    cmd: >
+      /app/llama-server
+      -m /models/gguf/gemma-4-e4b-vision/gemma-4-e4b-it-q4_k_m.gguf
+      --alias gemma-4-e4b-vision
+      --port 8082
+      -ngl 0
+      -c 32768
+      --temp 0.0
+
+  # ─── Gemma 3 prior-gen vision (dev benchmark) ────────────────────────────
+  "gemma-3-12b-vision":
+    proxy: "http://localhost:8083"
+    cmd: >
+      /app/llama-server
+      -m /models/gguf/gemma-3-12b-vision/gemma-3-12b-it-q4_k_m.gguf
+      --alias gemma-3-12b-vision
+      --port 8083
+      -ngl 0
+      -c 32768
+      --temp 0.0
+
+  # ─── Gemma 3n mobile-optimised vision (gated) ────────────────────────────
+  # Per model_registry.gemma-3n-E4B-vision.notes — comment out + activate
+  # after verifying google/gemma-3n-E4B-it on HuggingFace + finding a
+  # community q4_k_m quant. Commented out so llama-swap doesn't fail to load
+  # the config when the GGUF doesn't exist on disk.
+  # "gemma-3n-E4B-vision":
+  #   proxy: "http://localhost:8084"
+  #   cmd: >
+  #     /app/llama-server
+  #     -m /models/gguf/gemma-3n-E4B-vision/gemma-3n-E4B-it-q4_k_m.gguf
+  #     --mmproj /models/gguf/gemma-3n-E4B-vision/gemma-3n-E4B-it-mmproj-f16.gguf
+  #     --alias gemma-3n-E4B-vision
+  #     --port 8084
+  #     -ngl 0
+  #     -c 32768
+  #     --temp 0.0
+
+  # ─── Gemma 2/3 text Tier 3 benchmarks (the llama-swap CPU chain) ──────────
+  "gemma-2-9b-text":
+    proxy: "http://localhost:8085"
+    cmd: >
+      /app/llama-server
+      -m /models/gguf/gemma-2-9b/gemma-2-9b-it-q4_k_m.gguf
+      --alias gemma-2-9b-text
+      --port 8085
+      -ngl 0
+      -c 32768
+      --temp 0.0
+
+  "gemma-3-1b-text":
+    proxy: "http://localhost:8086"
+    cmd: >
+      /app/llama-server
+      -m /models/gguf/gemma-3-1b/gemma-3-1b-it-q4_k_m.gguf
+      --alias gemma-3-1b-text
+      --port 8086
+      -ngl 0
+      -c 32768
+      --temp 0.0
+
+  # ─── Image gen (the 4-way Gradio comparator speed tier) ───────────────────
+  # z-image-turbo is a Stability AI diffusion model; the q4_k_m GGUF is served
+  # via llama-server's --image flag. Companion routes in the Gradio workflow:
+  #   - diffusiongemma-26b-a4b (Unsloth Studio :8888) — the Gemma-family route
+  #   - flux2-dev (InvokeAI / ComfyUI)               — the FLUX route
+  #   - fibo       (InvokeAI / ComfyUI)              — the Bria JSON-control route
+  "z-image-turbo":
+    proxy: "http://localhost:8087"
+    cmd: >
+      /app/llama-server
+      -m /models/gguf/z-image-turbo/z-image-turbo-q4_k_m.gguf
+      --alias z-image-turbo
+      --port 8087
+      -ngl 0
+      --temp 0.0
+
+# =============================================================================
+# Health endpoint + OpenAI-compatible proxy configuration
+# =============================================================================
+# CPU-only on Docker Desktop macOS (no GPU passthrough); 30s was too short for
+# larger Gemma 4 vision GGUFs to load and serve. Set generously.
+healthCheckTimeout: 300
+logLevel: info

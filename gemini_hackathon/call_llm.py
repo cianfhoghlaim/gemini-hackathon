@@ -188,31 +188,52 @@ PUBLIC_PROFILE: ModelProfile = "hackathon"
 """The profile every user-facing surface reads, regardless of MODEL_PROFILE."""
 
 HACKATHON_TIERS: tuple[tuple[ModelFamily, str], ...] = (
-    ("text_llm", "default"),       # Tier 1: MiniMax-M3 via LiteLLM (OpenAI-compatible)
-    ("text_llm", "fallback"),      # Tier 2: Gemma 4 26B-A4B via Unsloth Studio (local)
-    ("text_llm", "agent_garden"),  # Tier 3: Gemini 3.5 via Vertex AI Agent Garden
+    # Per the 2026-08-30 Gemma+Gemini refocus:
+    ("text_llm", "default"),       # Tier 1: gemini-3.5-flash via Vertex AI
+    ("text_llm", "aistudio"),      # Tier 1: gemini-3.5-flash via AI Studio (auto-fallback)
+    ("text_llm", "fallback"),      # Tier 2: gemma-4-26b-a4b via Unsloth Studio
+    ("text_llm", "fallback_light"), # Tier 2 light: gemma-4-e4b via Unsloth Studio
+    ("text_llm", "local_fallback"),# Tier 2 benchmark: gemma-3-27b-it via Unsloth Studio
+    ("text_llm", "local_fallback_old"), # Tier 2 baseline: gemma-2-9b via Unsloth Studio
 )
 
 DEV_TIERS: tuple[tuple[ModelFamily, str], ...] = (
+    # dev profile = same chain + the lite tier for the comparison harness
     ("text_llm", "default"),
+    ("text_llm", "aistudio"),
+    ("text_llm", "lite"),
     ("text_llm", "fallback"),
-    ("text_llm", "agent_garden"),
+    ("text_llm", "fallback_light"),
+    ("text_llm", "local_fallback"),
+    ("text_llm", "local_fallback_old"),
+    ("text_llm", "dev_encoder_decoder"),  # t5gemma-2-4b
 )
 
 TIER_RETRY_BUDGETS: dict[str, int] = {
     "default": 2,
     "aistudio": 2,
+    "lite": 2,
     "fallback": 1,
-    "agent_garden": 1,
+    "fallback_light": 1,
+    "local_fallback": 1,
+    "local_fallback_old": 1,
+    "dev_encoder_decoder": 1,
 }
 
 _PUBLIC_TIER_INDEX: dict[tuple[str, str], int] = {
+    # Tier 1 (Gemini API — Vertex / AI Studio)
     ("text_llm", "default"): 1,
-    # The AI Studio entry is the same model on a different backend, so it is
-    # Tier 1 too — not a separate rung.
     ("text_llm", "aistudio"): 1,
+    ("text_llm", "lite"): 1,
+    ("text_llm", "pro"): 1,
+    ("text_llm", "alt"): 1,
+    ("text_llm", "embedder"): 1,
+    # Tier 2 (Unsloth Studio — Gemma 4 + Gemma 3/2 benchmarks + T5Gemma-2)
     ("text_llm", "fallback"): 2,
-    ("text_llm", "agent_garden"): 3,
+    ("text_llm", "fallback_light"): 2,
+    ("text_llm", "local_fallback"): 2,
+    ("text_llm", "local_fallback_old"): 2,
+    ("text_llm", "dev_encoder_decoder"): 2,
 }
 
 

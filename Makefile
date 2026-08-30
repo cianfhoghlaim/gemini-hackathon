@@ -122,7 +122,8 @@ shell: ## drop into a uv-managed Python REPL (project on PYTHONPATH)
 # ============================================================================
 # Data plane — DLT pipelines + CocoIndex Apps + NCCE showcase
 # ============================================================================
-.PHONY: dlt-smoke-all cocoindex-update ncce-extract ncce-visualise compare-demo
+.PHONY: dlt-smoke-all cocoindex-update ncce-extract ncce-visualise compare-demo \
+        llama-swap-download-models
 dlt-smoke-all: ## run every DLT pipeline (offline-safe; writes to DuckDB)
 	$(PY) -m dlt_pipelines.official_doc_fetcher
 	$(PY) -m dlt_pipelines.safeguarding_fetcher
@@ -147,6 +148,9 @@ ncce-visualise: ## launch the 4-tab Gradio studio (Render / Equivalencies / Gene
 
 compare-demo: ## run the Gemini-vs-Gemma4 comparison harness (writes to DuckDB)
 	$(PY) scripts/compare_demo.py
+
+llama-swap-download-models: ## download the 7 active llama-swap GGUFs from HuggingFace (Gemma+Gemini refocus)
+	./scripts/llama_swap_download_models.sh
 
 # ============================================================================
 # Cloud — Cloud Run + Cloud Build + Hugging Face

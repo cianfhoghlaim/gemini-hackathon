@@ -19,6 +19,14 @@ env/
 ENV/
 .uv-cache/
 
+# --- downloaded GGUF weights (the llama-swap cache; populated by
+#     `make llama-swap-download-models`; ~36 GB total — NEVER commit) ----
+downloaded_models/gguf/*.gguf
+downloaded_models/gguf/*/*.gguf
+downloaded_models/unsloth/
+!downloaded_models/gguf/.gitkeep
+!downloaded_models/unsloth/.gitkeep
+
 # --- Distribution / build artefacts -----------------------------------------
 build/
 dist/

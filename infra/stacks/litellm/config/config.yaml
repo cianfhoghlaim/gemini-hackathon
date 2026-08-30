@@ -1,0 +1,339 @@
+# =============================================================================
+# LITELLM — Gemma+Gemini gateway config
+# =============================================================================
+# Per the 2026-08-30 Gemma+Gemini refocus:
+#   - 23 routes, all Gemma or Gemini (no Qwen, no third-party)
+#   - Tier 1: Gemini API (Vertex + AI Studio)
+#   - Tier 2: Gemma 4 family via Unsloth Studio (host :8888)
+#   - Tier 2/3: Gemma OCR/VLM via llama-swap (CPU GGUFs :8080-8086)
+#   - Tier 3: Gemma 3 + Gemma 2 benchmarks via llama-swap (for the dev profile)
+#   - Image gen: diffusiongemma + z-image-turbo
+#   - Embeddings: gemini-embedding-2-preview
+#
+# Source of truth for the route set: gemini_hackathon/model_registry.py
+# Source of truth for the tier chain: docs/MODEL_POLICY.md §14
+#
+# All api_base / api_key references are env-var indirection so the same
+# config works for local Docker (host.docker.internal) + Cloud Run
+# (private VPC) + laptop dev (127.0.0.1) without editing.
+# =============================================================================
+
+model_list:
+  # =========================================================================
+  # Tier 1 PRIMARY — Gemini API (Vertex AI default → AI Studio fallback)
+  # Per MODEL_POLICY.md §14: gemini-3.5-flash is Tier 1 of both profiles.
+  # =========================================================================
+
+  - model_name: gemini-3.5-flash
+    litellm_params:
+      model: vertex_ai/gemini-3.5-flash
+      vertex_project: os.environ["GOOGLE_CLOUD_PROJECT"]
+      vertex_location: os.environ["GOOGLE_CLOUD_LOCATION"]
+    model_info:
+      tier: 1
+      description: "Tier 1 PRIMARY (Vertex, ADC). Auto-falls back to AI Studio when Vertex creds missing."
+      capabilities: ["chat", "function_calling", "json_mode", "long_context"]
+
+  - model_name: gemini-3.5-flash-aistudio
+    litellm_params:
+      model: gemini/gemini-3.5-flash
+      api_key: os.environ["GEMINI_API_KEY"]
+    model_info:
+      tier: 1
+      description: "Tier 1 (AI Studio). Same weights as Vertex entry; selected when GEMINI_BACKEND=aistudio or Vertex creds absent."
+      capabilities: ["chat", "function_calling", "json_mode"]
+
+  - model_name: gemini-3.5-flash-lite
+    litellm_params:
+      model: gemini/gemini-3.5-flash-lite
+      api_key: os.environ["GEMINI_API_KEY"]
+    model_info:
+      tier: 1
+      description: "Tier 1 lite. Low-cost high-volume extraction (NCCE BAML sweeps)."
+      capabilities: ["chat", "json_mode"]
+
+  - model_name: gemini-3.5-pro
+    litellm_params:
+      model: vertex_ai/gemini-3.5-pro
+      vertex_project: os.environ["GOOGLE_CLOUD_PROJECT"]
+      vertex_location: os.environ["GOOGLE_CLOUD_LOCATION"]
+    model_info:
+      tier: 1
+      profile: dev
+      description: "Tier 1 EVAL (dev profile only). Phase 5 comparison harness."
+      capabilities: ["chat", "function_calling", "json_mode", "long_context"]
+
+  - model_name: gemini-2.5-flash
+    litellm_params:
+      model: vertex_ai/gemini-2.5-flash
+      vertex_project: os.environ["GOOGLE_CLOUD_PROJECT"]
+      vertex_location: os.environ["GOOGLE_CLOUD_LOCATION"]
+    model_info:
+      tier: 1
+      description: "Tier 1 ALT — compatibility tier for docs/ideas/Agent Development Kit examples that use gemini-2.5-flash."
+      capabilities: ["chat", "function_calling", "json_mode"]
+
+  - model_name: gemini-embedding-2-preview
+    litellm_params:
+      model: gemini/gemini-embedding-2-preview
+      api_key: os.environ["GEMINI_API_KEY"]
+    model_info:
+      tier: 1
+      description: "Tier 1 embeddings. Replaces the prior BGE-M3 default for the BAML ExtractCrossLinguisticConcept text path."
+      capabilities: ["embed"]
+
+  # =========================================================================
+  # Tier 2 — Gemma 4 family via Unsloth Studio (host process :8888)
+  # =========================================================================
+
+  - model_name: gemma-4-26b-a4b
+    litellm_params:
+      model: openai/unsloth/gemma-4-26B-A4B-it-GGUF
+      api_base: http://host.docker.internal:8888/v1
+      api_key: os.environ["UNSLOTH_API_KEY"]
+      timeout: 600
+    model_info:
+      tier: 2
+      description: "Tier 2 PRIMARY (the +0.2 Google AI model integration bonus)."
+      capabilities: ["chat", "function_calling"]
+
+  - model_name: gemma-4-e4b
+    litellm_params:
+      model: openai/unsloth/gemma-4-E4B-it-GGUF
+      api_base: http://host.docker.internal:8888/v1
+      api_key: os.environ["UNSLOTH_API_KEY"]
+      timeout: 300
+    model_info:
+      tier: 2
+      description: "Tier 2 LIGHT — ~3GB on disk; faster cold-start than the 26B."
+      capabilities: ["chat"]
+
+  - model_name: gemma-3-27b-it
+    litellm_params:
+      model: openai/unsloth/gemma-3-27b-it-GGUF
+      api_base: http://host.docker.internal:8888/v1
+      api_key: os.environ["UNSLOTH_API_KEY"]
+      timeout: 600
+    model_info:
+      tier: 2
+      profile: dev
+      description: "Tier 2 BENCHMARK (dev) — Gemma 3 prior-gen for Gemma 4 comparison."
+      capabilities: ["chat"]
+
+  - model_name: gemma-2-9b
+    litellm_params:
+      model: openai/unsloth/gemma-2-9b
+      api_base: http://host.docker.internal:8888/v1
+      api_key: os.environ["UNSLOTH_API_KEY"]
+      timeout: 300
+    model_info:
+      tier: 2
+      profile: dev
+      description: "Tier 2 BASELINE (dev) — Gemma 2 older baseline for the comparison harness."
+      capabilities: ["chat"]
+
+  - model_name: t5gemma-2-4b
+    litellm_params:
+      model: openai/unsloth/t5gemma-2-4b-GGUF
+      api_base: http://host.docker.internal:8888/v1
+      api_key: os.environ["UNSLOTH_API_KEY"]
+      timeout: 300
+    model_info:
+      tier: 2
+      profile: dev
+      description: "Tier 2 ENCODER-DECODER (dev) — per docs/ideas/bilingual-datasets.md."
+      capabilities: ["chat", "long_context"]
+
+  - model_name: diffusiongemma-26b-a4b
+    litellm_params:
+      model: openai/unsloth/diffusiongemma-26B-A4B-it-GGUF
+      api_base: http://host.docker.internal:8888/v1
+      api_key: os.environ["UNSLOTH_API_KEY"]
+      timeout: 600
+    model_info:
+      tier: image
+      description: "Image gen via Unsloth Studio (Gemma family). One of the 4 routes in the Gradio comparison workflow."
+      capabilities: ["text_to_image"]
+
+  # =========================================================================
+  # Tier 2/3 — Gemma OCR/VLM via llama-swap (CPU GGUFs :8080-8086)
+  # =========================================================================
+
+  - model_name: gemma-4-26b-a4b-vision
+    litellm_params:
+      model: openai/gemma-4-26b-a4b-vision
+      api_base: http://llama-swap:8080/v1
+      api_key: os.environ["LLAMA_SWAP_API_KEY"]
+      timeout: 600
+    model_info:
+      tier: 2
+      role: ocr_vision
+      description: "OCR/VLM primary — vision-language variant of the Tier-2 text model. Replaces the previous qwen3-vl-8b workhorse."
+      capabilities: ["ocr", "vision_qa", "figure_caption", "multilingual"]
+
+  - model_name: gemma-4-12b-vision
+    litellm_params:
+      model: openai/gemma-4-12b-vision
+      api_base: http://llama-swap:8081/v1
+      api_key: os.environ["LLAMA_SWAP_API_KEY"]
+      timeout: 300
+    model_info:
+      tier: 2
+      role: ocr_vision
+      description: "OCR/VLM mid-tier — faster cold-start than the 26B."
+      capabilities: ["ocr", "vision_qa"]
+
+  - model_name: gemma-4-e4b-vision
+    litellm_params:
+      model: openai/gemma-4-e4b-vision
+      api_base: http://llama-swap:8082/v1
+      api_key: os.environ["LLAMA_SWAP_API_KEY"]
+      timeout: 300
+    model_info:
+      tier: 2
+      role: ocr_vision
+      description: "OCR/VLM lightweight — low-latency reads."
+      capabilities: ["ocr"]
+
+  - model_name: gemma-3-12b-vision
+    litellm_params:
+      model: openai/gemma-3-12b-vision
+      api_base: http://llama-swap:8083/v1
+      api_key: os.environ["LLAMA_SWAP_API_KEY"]
+      timeout: 300
+    model_info:
+      tier: 3
+      role: ocr_vision
+      profile: dev
+      description: "OCR/VLM BENCHMARK (dev) — Gemma 3 prior-gen for Gemma 4 comparison."
+      capabilities: ["ocr", "vision_qa"]
+
+  - model_name: gemma-3n-E4B-vision
+    litellm_params:
+      model: openai/gemma-3n-E4B-vision
+      api_base: http://llama-swap:8084/v1
+      api_key: os.environ["LLAMA_SWAP_API_KEY"]
+      timeout: 300
+    model_info:
+      tier: 2
+      role: ocr_vision
+      enabled: false    # gated: see model_registry.gemma-3n-E4B-vision.notes
+      description: "OCR/VLM mobile-optimised — per docs/ideas/Irish Handwriting App Development.md §4.2. Activate after verifying HF id."
+      capabilities: ["ocr", "vision_qa", "mobile_optimised"]
+
+  # =========================================================================
+  # Tier 3 — Gemma 2/3 text benchmarks via llama-swap (CPU GGUFs :8085-8087)
+  # =========================================================================
+
+  - model_name: gemma-2-9b-text
+    litellm_params:
+      model: openai/gemma-2-9b-text
+      api_base: http://llama-swap:8085/v1
+      api_key: os.environ["LLAMA_SWAP_API_KEY"]
+      timeout: 300
+    model_info:
+      tier: 3
+      profile: dev
+      description: "Tier 3 text BASELINE (dev) — Gemma 2 9B text-only via llama-swap CPU GGUF."
+      capabilities: ["chat"]
+
+  - model_name: gemma-3-1b-text
+    litellm_params:
+      model: openai/gemma-3-1b-text
+      api_base: http://llama-swap:8086/v1
+      api_key: os.environ["LLAMA_SWAP_API_KEY"]
+      timeout: 300
+    model_info:
+      tier: 3
+      profile: dev
+      description: "Tier 3 text SMALL (dev) — Gemma 3 1B text-only via llama-swap CPU GGUF."
+      capabilities: ["chat"]
+
+  # =========================================================================
+  # Image gen — z-image-turbo via llama-swap GGUF (the 4-way gradio comparator)
+  # =========================================================================
+
+  - model_name: z-image-turbo
+    litellm_params:
+      model: openai/z-image-turbo
+      api_base: http://llama-swap:8087/v1
+      api_key: os.environ["LLAMA_SWAP_API_KEY"]
+      timeout: 600
+    model_info:
+      tier: image
+      description: "Image gen via llama-swap GGUF (the 4-step speed tier in the Gradio comparator)."
+      capabilities: ["text_to_image"]
+
+  # =========================================================================
+  # BAML-call aliases — the 4 documented in MODEL_POLICY.md
+  # =========================================================================
+
+  - model_name: ocr       # BAML ExtractCurriculumSyllabus default
+    litellm_params:
+      model: openai/gemma-4-26b-a4b-vision
+      api_base: http://llama-swap:8080/v1
+      api_key: os.environ["LLAMA_SWAP_API_KEY"]
+    model_info:
+      tier: 2
+      description: "Alias → gemma-4-26b-a4b-vision (the BAML OCR workhorse)."
+
+  - model_name: extract   # BAML ExtractCrossLinguisticConcept default
+    litellm_params:
+      model: vertex_ai/gemini-3.5-flash
+      vertex_project: os.environ["GOOGLE_CLOUD_PROJECT"]
+      vertex_location: os.environ["GOOGLE_CLOUD_LOCATION"]
+    model_info:
+      tier: 1
+      description: "Alias → gemini-3.5-flash (the BAML structured-extraction default)."
+
+  - model_name: default   # Any-call default
+    litellm_params:
+      model: vertex_ai/gemini-3.5-flash
+      vertex_project: os.environ["GOOGLE_CLOUD_PROJECT"]
+      vertex_location: os.environ["GOOGLE_CLOUD_LOCATION"]
+    model_info:
+      tier: 1
+      description: "Alias → gemini-3.5-flash (the catch-all default)."
+
+  - model_name: vision
+    litellm_params:
+      model: openai/gemma-4-26b-a4b-vision
+      api_base: http://llama-swap:8080/v1
+      api_key: os.environ["LLAMA_SWAP_API_KEY"]
+    model_info:
+      tier: 2
+      description: "Alias → gemma-4-26b-a4b-vision (any VLM call)."
+
+  - model_name: image
+    litellm_params:
+      model: openai/unsloth/diffusiongemma-26B-A4B-it-GGUF
+      api_base: http://host.docker.internal:8888/v1
+      api_key: os.environ["UNSLOTH_API_KEY"]
+    model_info:
+      tier: image
+      description: "Alias → diffusiongemma-26b-a4b (the Gradio image comparator default)."
+
+# =========================================================================
+# Fallback chain (per MODEL_POLICY.md §14)
+# Tier 1 (Vertex) → Tier 1 (AI Studio) → Tier 2 (Unsloth Gemma 4) →
+# Tier 2 light (Gemma 4 E4B) → Tier 3 (Gemma 3 + 2 benchmarks)
+# =========================================================================
+
+litellm_settings:
+  num_retries: 1
+  request_timeout: 600
+  fallbacks:
+    - gemini-3.5-flash
+    - gemini-3.5-flash-aistudio
+    - gemini-3.5-flash-lite
+    - gemma-4-26b-a4b
+    - gemma-4-e4b
+    - gemma-3-27b-it
+    - gemma-2-9b
+    - gemma-3-1b-text
+    - gemma-2-9b-text
+
+router_settings:
+  num_retries: 1
+  timeout: 600
+  enable_pre_call_checks: true

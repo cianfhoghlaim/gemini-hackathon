@@ -57,7 +57,7 @@ class SubjectAgentWiring:
     langfuse_trace_name: str
     cognee_dataset: str
     memory_namespace: str
-    litellm_routing_key: str = "minimax"
+    litellm_routing_key: str = "gemini-3.5-flash"
 
 
 def build_wire(
@@ -68,7 +68,7 @@ def build_wire(
     langfuse_trace_name: str,
     cognee_dataset: str,
     memory_namespace: str,
-    litellm_routing_key: str = "minimax",
+    litellm_routing_key: str = "gemini-3.5-flash",
 ) -> SubjectAgentWiring:
     """Build the canonical SubjectAgentWiring for a subject / stage.
 
