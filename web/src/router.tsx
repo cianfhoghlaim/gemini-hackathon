@@ -22,6 +22,7 @@ import SubjectDetailPage from "./routes/subjects.$slug";
 import SafeguardingPage from "./routes/safeguarding";
 import FindResourcesPage from "./routes/find-resources";
 import AgentChatPage from "./routes/agents";
+import DrillDownRoute from "./routes/drill-down";
 import ArchipelagoPage from "./routes/archipelago";
 import ComparePage from "./routes/compare";
 import EquivalencyPage from "./routes/equivalency";
@@ -37,6 +38,7 @@ export const router = createBrowserRouter([
       { path: "safeguarding", element: <SafeguardingPage /> },
       { path: "find-resources", element: <FindResourcesPage /> },
       { path: "agents", element: <AgentChatPage /> },
+      { path: "drill-down", element: <DrillDownRoute /> },
       { path: "archipelago", element: <ArchipelagoPage /> },
       { path: "compare", element: <ComparePage /> },
       { path: "equivalency", element: <EquivalencyPage /> },
