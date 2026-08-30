@@ -187,26 +187,39 @@ resource "google_cloud_run_v2_service" "adk" {
         value = "cloud-run"
       }
 
-      # Phase 1 — ADK-native OpenTelemetry pipeline (Cloud Trace +
-      # Cloud Logging under the GenAI semantic conventions) +
-      # OpenInference Langfuse instrumentor. Both are env-gated; when
-      # GCP_PROJECT_ID / LANGFUSE_PUBLIC_KEY are unset, the inits are
-      # no-ops.
+      # Phase 0 (GCP-first IaC refactor) — the canonical Stackdriver
+      # AI Agent ADK instrumentation 6-env-var set per
+      # https://docs.cloud.google.com/stackdriver/docs/instrumentation/ai-agent-adk
+      # (last updated 2026-08-26). The previous 4-var block targeted the
+      # legacy get_gcp_exporters path; the new 6-var block targets the
+      # OTLP path to the unified Telemetry API.
       env {
         name  = "OTEL_SERVICE_NAME"
         value = "gemini-hackathon-adk"
       }
       env {
-        name  = "OTEL_RESOURCE_ATTRIBUTES"
-        value = "service.namespace=gemini-hackathon,deployment.environment=hackathon"
+        name  = "OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED"
+        value = "true"
+      }
+      env {
+        name  = "OTEL_SEMCONV_STABILITY_OPT_IN"
+        value = "gen_ai_latest_experimental"
+      }
+      env {
+        name  = "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT"
+        value = "EVENT_ONLY"
+      }
+      env {
+        name  = "ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS"
+        value = "false"
       }
       env {
         name  = "GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY"
         value = "true"
       }
       env {
-        name  = "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT"
-        value = "NO_CONTENT"
+        name  = "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"
+        value = "https://telemetry.googleapis.com/v1/traces"
       }
 
       ports {
@@ -233,7 +246,12 @@ resource "google_cloud_run_v2_service" "adk" {
     }
 
     timeout = "${var.adk_timeout_seconds}s"
-    service_account = "gemini-hackathon-adk@${var.project_id}.iam.gserviceaccount.com"
+    # Phase 0 (GCP-first IaC refactor) — the service account is created by
+# the `iam_gcp_ai_agent_adk` module (4 Stackdriver roles). Wire the module
+# in envs/{dev,prod}/main.tf to provision the SA + bind the roles, then
+# use the module's `email` output here. For now, the inline service_account
+# stays as a hardcoded fallback until Phase 4 (envs/dev/) applies.
+service_account = "gemini-hackathon-adk@${var.project_id}.iam.gserviceaccount.com"
   }
 
   # AG-UI + CopilotKit browsers connect without auth — the per-participant

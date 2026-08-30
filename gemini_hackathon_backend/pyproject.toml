@@ -30,9 +30,19 @@ dependencies = [
     # Phase 1: ADK-native OTel pipeline + OpenInference Langfuse instrumentor.
     # Auto-streams every ADK span to Cloud Trace + Cloud Logging under the
     # OpenTelemetry GenAI semantic conventions.
+    # Phase 0 (GCP-first IaC refactor): canonical Stackdriver AI Agent
+    # ADK instrumentation package set per
+    # https://docs.cloud.google.com/stackdriver/docs/instrumentation/ai-agent-adk
+    # (last updated 2026-08-26).
     "openinference-instrumentation-google-adk>=0.1.0",
-    "opentelemetry-exporter-gcp-trace>=1.9.0",
+    "opentelemetry-instrumentation-google-genai>=0.4b0",
+    "opentelemetry-instrumentation-vertexai>=2.0b0",
+    "opentelemetry-instrumentation-sqlite3>=0.41b0",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.27",
     "opentelemetry-exporter-gcp-logging>=1.9.0",
+    # Legacy: kept for backward compat with the existing try_init_adk_otel
+    # path; can be dropped in Phase 7 once the OTLP path is verified.
+    "opentelemetry-exporter-gcp-trace>=1.9.0",
 ]
 
 [build-system]

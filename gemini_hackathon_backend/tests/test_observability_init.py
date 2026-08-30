@@ -147,7 +147,7 @@ def test_otlp_env_vars_set_when_adk_otel_active(
     )
     assert (
         os.environ.get("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT")
-        == "NO_CONTENT"
+        == "EVENT_ONLY"
     )
 
 

@@ -101,75 +101,125 @@ def try_init_openinference_langfuse() -> Any:
 
 
 def try_init_adk_otel() -> Any:
-    """Phase 1 — wire the ADK-native OpenTelemetry pipeline.
+    """Phase 1 — wire the ADK-native OpenTelemetry pipeline (canonical 2026 path).
 
-    Auto-streams every ADK LLM call, tool invocation, and agent run as
-    an OTel span to Cloud Trace + Cloud Logging, following the
-    OpenTelemetry GenAI semantic conventions. The Vertex AI Application
-    Monitoring dashboards auto-populate from these spans.
+    Per the Google Cloud Stackdriver AI Agent ADK instrumentation doc
+    (https://docs.cloud.google.com/stackdriver/docs/instrumentation/ai-agent-adk,
+    last updated 2026-08-26), the canonical 2026 path is:
 
-    Returns the otel hooks object on success, ``None`` when the env
-    vars are unset (``GCP_PROJECT_ID`` / ``GOOGLE_CLOUD_PROJECT``) or
-    when ``google-adk`` is not importable.
+      1. Set the 6 Stackdriver env vars (setdefault'd even when the
+         ``google-adk`` package isn't importable, so operators can verify
+         the contract via ``/healthz`` and downstream exporters pick up
+         the values when ``google-adk`` IS installed).
+      2. Export every ADK span to the **unified Telemetry (OTLP) API**
+         via ``opentelemetry-exporter-otlp-proto-grpc`` (NOT the legacy
+         ``get_gcp_exporters`` path that wrote to the legacy Cloud Trace
+         API).
+      3. The Application Monitoring dashboards in the Vertex AI Agent
+         Engine console auto-populate from these spans.
 
-    Per the ADK 2 docs at ``adk.dev/observability/logging/``:
-    ``get_gcp_exporters(enable_cloud_logging=True)`` + ``maybe_set_otel_providers``.
+    The 6 env vars (per the doc):
+        OTEL_SERVICE_NAME="gemini-hackathon-adk"
+        OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED="true"
+        OTEL_SEMCONV_STABILITY_OPT_IN="gen_ai_latest_experimental"
+        OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT="EVENT_ONLY"
+        ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS="false"
+        GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY="true"
+
+    Returns the OTel hooks object (BatchSpanProcessor + OTLPSpanExporter)
+    on success, ``None`` when ``GCP_PROJECT_ID`` is unset or the
+    ``opentelemetry`` package is not importable.
     """
     project_id = (
         os.environ.get("GCP_PROJECT_ID", "").strip()
         or os.environ.get("GOOGLE_CLOUD_PROJECT", "").strip()
     )
-    if not project_id:
-        logger.info(
-            "observability.adk_otel_skipped reason='GCP_PROJECT_ID unset'"
-        )
-        return None
-    # Set the OpenTelemetry resource attributes (service name + namespace).
-    # Done OUTSIDE the try block so the env vars are setdefault'd even
-    # when google.adk isn't importable — operators can verify the
-    # service name via /healthz and downstream exporters will pick it up
-    # when google.adk is installed.
+
+    # Setdefault the 6 Stackdriver env vars BEFORE the try block, so
+    # the values are visible to downstream code even when
+    # ``opentelemetry`` isn't importable (the dev path).
+    os.environ.setdefault("OTEL_SERVICE_NAME", "gemini-hackathon-adk")
     os.environ.setdefault(
-        "OTEL_SERVICE_NAME",
-        os.environ.get("OTEL_SERVICE_NAME", "gemini-hackathon-adk"),
+        "OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED", "true"
     )
+    os.environ.setdefault(
+        "OTEL_SEMCONV_STABILITY_OPT_IN", "gen_ai_latest_experimental"
+    )
+    # Per the Stackdriver doc: must be EVENT_ONLY (not 'true' which is
+    # invalid; not NO_CONTENT which misses the prompt/response content).
+    os.environ.setdefault(
+        "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "EVENT_ONLY"
+    )
+    os.environ.setdefault(
+        "ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS", "false"
+    )
+    os.environ.setdefault(
+        "GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY", "true"
+    )
+    # Standard OTel resource attributes (7th var — not in the Stackdriver
+    # doc's 6-var set but needed by the Resource API; setdefault'd here
+    # so the existing observability tests + downstream exporters pick it
+    # up consistently).
     os.environ.setdefault(
         "OTEL_RESOURCE_ATTRIBUTES",
         "service.namespace=gemini-hackathon,"
         f"service.version={os.environ.get('COMMIT_SHA', 'dev')},"
         "deployment.environment=hackathon",
     )
-    # Privacy: never log full prompts in Cloud Run (use GCS upload
-    # for full-prompt retention if needed).
-    os.environ.setdefault(
-        "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "NO_CONTENT"
-    )
+
+    if not project_id:
+        logger.info(
+            "observability.adk_otel_skipped reason='GCP_PROJECT_ID unset'"
+        )
+        return None
 
     try:
-        from google.adk.telemetry.google_cloud import (  # type: ignore[import-not-found]
-            get_gcp_exporters,
-            get_gcp_resource,
+        from opentelemetry import trace  # type: ignore[import-not-found]
+        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (  # type: ignore[import-not-found]
+            OTLPSpanExporter,
         )
-        from google.adk.telemetry.setup import (  # type: ignore[import-not-found]
-            maybe_set_otel_providers,
+        from opentelemetry.sdk.resources import Resource  # type: ignore[import-not-found]
+        from opentelemetry.sdk.trace import TracerProvider  # type: ignore[import-not-found]
+        from opentelemetry.sdk.trace.export import (  # type: ignore[import-not-found]
+            BatchSpanProcessor,
         )
 
-        otel_hooks = get_gcp_exporters(
-            enable_cloud_tracing=True,
-            enable_cloud_metrics=False,
-            enable_cloud_logging=True,
+        # Build the canonical Telemetry OTLP endpoint.
+        # Per the Stackdriver doc, the unified Telemetry (OTLP) API
+        # endpoint is ``https://telemetry.googleapis.com/v1/traces``.
+        # setdefault so the value is visible to downstream code.
+        os.environ.setdefault(
+            "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
+            "https://telemetry.googleapis.com/v1/traces",
         )
-        otel_resource = get_gcp_resource(project_id)
-        maybe_set_otel_providers(
-            otel_hooks_to_setup=[otel_hooks],
-            otel_resource=otel_resource,
+        otlp_endpoint = os.environ["OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"]
+
+        provider = TracerProvider(
+            resource=Resource.create(
+                {
+                    "service.name": os.environ["OTEL_SERVICE_NAME"],
+                    "service.namespace": "gemini-hackathon",
+                    "service.version": os.environ.get("COMMIT_SHA", "dev"),
+                    "deployment.environment": os.environ.get(
+                        "DEPLOYMENT_ENV", "hackathon"
+                    ),
+                }
+            )
         )
+        exporter = OTLPSpanExporter(endpoint=otlp_endpoint, insecure=False)
+        provider.add_span_processor(BatchSpanProcessor(exporter))
+        trace.set_tracer_provider(provider)
+
         logger.info(
             "observability.adk_otel_initialised",
             project_id=project_id,
             service_name=os.environ["OTEL_SERVICE_NAME"],
+            otlp_endpoint=otlp_endpoint,
         )
-        return otel_hooks
+        return {
+            "tracer_provider": provider,
+            "exporter": exporter,
+        }
     except ImportError as exc:
         logger.info(
             "observability.adk_otel_skipped reason=%s",

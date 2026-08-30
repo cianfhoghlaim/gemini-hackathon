@@ -51,7 +51,7 @@ def test_otlp_env_vars_setdefault_when_gcp_project_set(
     )
     assert (
         os.environ.get("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT")
-        == "NO_CONTENT"
+        == "EVENT_ONLY"
     )
 
 

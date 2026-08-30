@@ -83,8 +83,10 @@ locals {
     "cloudscheduler.googleapis.com",   # nightly corpus ingestion trigger
     "pubsub.googleapis.com",           # OCR completion fan-out (replaces OCR_WEBHOOK_URL)
     "run.googleapis.com",              # Cloud Run Jobs share this API
-    "cloudtrace.googleapis.com",       # observability
-    "logging.googleapis.com",          # observability
+    "cloudtrace.googleapis.com",       # observability (legacy, kept for compat)
+    "logging.googleapis.com",          # observability (Cloud Logging)
+    "monitoring.googleapis.com",       # observability (Cloud Monitoring)
+    "telemetry.googleapis.com",        # observability (unified Telemetry API - canonical 2026 path)
   ]
 }
 

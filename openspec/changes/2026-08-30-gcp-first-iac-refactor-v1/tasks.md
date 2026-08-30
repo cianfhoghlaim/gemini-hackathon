@@ -7,19 +7,19 @@
 - [ ] T0.4: git commit + git push origin main
 
 ## Phase 1 — ADK OTel env-var alignment (per the Stackdriver AI Agent ADK doc)
-- [ ] T1.1: `gemini_hackathon_backend/pyproject.toml` — add 4 new OTel deps
-- [ ] T1.2: `gemini_hackathon_backend/observability.py` — rewrite `try_init_adk_otel()` to use the OTLP path
+- [x] T1.1: `gemini_hackathon_backend/pyproject.toml` — add 4 new OTel deps
+- [x] T1.2: `gemini_hackathon_backend/observability.py` — rewrite `try_init_adk_otel()` to use the OTLP path
   - Replace `get_gcp_exporters` with `OTLPSpanExporter(endpoint="...telemetry.googleapis.com...")`
   - Setdefault the 6 Stackdriver env vars
   - Keep the OpenInference Langfuse dual-export as-is
-- [ ] T1.3: `cloud/terraform/cloud_run_adk.tf` — replace the 4 env vars with the full 6-var set
-- [ ] T1.4: New `cloud/terraform/modules/iam_gcp_ai_agent_adk/main.tf` — service account + 4 IAM roles
-- [ ] T1.5: `cloud_run_adk.tf` — bind the new service account to the existing ADK Cloud Run service
-- [ ] T1.6: `cloud_run_adk.tf` — add the 6th API `telemetry.googleapis.com` to `google_project_service.observability`
-- [ ] T1.7: `gemini_hackathon_backend/tests/test_observability_init.py` — update the 6-var assertions
-- [ ] T1.8: New `gemini_hackathon_backend/tests/test_stackdriver_envvars.py` — 4 tests verifying the 6 env vars are setdefault'd + the IAM role set is correct
-- [ ] T1.9: pytest 27 → 31; `web tsc --noEmit` zero errors
-- [ ] T1.10: git commit + git push
+- [x] T1.3: `cloud/terraform/cloud_run_adk.tf` — replace the 4 env vars with the full 6-var set
+- [x] T1.4: New `cloud/terraform/modules/iam_gcp_ai_agent_adk/main.tf` — service account + 4 IAM roles
+- [x] T1.5: `cloud_run_adk.tf` — bind the new service account to the existing ADK Cloud Run service
+- [x] T1.6: `cloud_run_adk.tf` — add the 6th API `telemetry.googleapis.com` to `google_project_service.observability`
+- [x] T1.7: `gemini_hackathon_backend/tests/test_observability_init.py` — update the 6-var assertions
+- [x] T1.8: New `gemini_hackathon_backend/tests/test_stackdriver_envvars.py` — 4 tests verifying the 6 env vars are setdefault'd + the IAM role set is correct
+- [x] T1.9: pytest 27 → 31; `web tsc --noEmit` zero errors
+- [x] T1.10: git commit + git push
 
 ## Phase 2 — Consolidated `compose.yaml` (one file, three targets)
 - [ ] T2.1: Merge `docker-compose.yml` + `docker-compose.local.yaml` into a single `compose.yaml` with `x-google-cloudrun:` extensions
