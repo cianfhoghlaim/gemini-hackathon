@@ -89,6 +89,12 @@ data/Isle of Man/
 data/Jersey/
 data/Guernsey/
 
+# Test artifacts (the T0 smoke test writes here; the journey orchestrator
+# writes here when the user triggers level 5 asset generation). Both are
+# reproducible outputs, not source.
+data/sourced_derived/
+data/journey_assets/
+
 # --- marimo + notebooks ------------------------------------------------------
 notebooks/__marimo__/
 notebooks/.marimo/

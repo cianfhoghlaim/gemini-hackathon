@@ -1,10 +1,12 @@
 /**
  * gemini-hackathon Cloud Functions for Firebase (Gen2) entry point.
  *
- * Replaces the 3 TanStack Start server routes:
+ * Hosts the 3 remaining server routes (the 4th — `/api/copilotkit/... →
+ * chatStream` — was retired in Phase T2 #6 when the new
+ * `gemini-hackathon-adk` Cloud Run service took over the AG-UI bridge;
+ * see `cloud/terraform/cloud_run_adk.tf`):
  *   - /api/themes        → themesApi        (reads themes/*.json from filesystem-equivalent
  *                                                     OR Firestore design_tokens)
- *   - /api/copilotkit/... → chatStream        (streams Gemini 3.5 Flash via Vertex AI)
  *   - /api/duckdb          → duckdbAsset      (signed URL to Firebase Storage)
  *   - /api/stitch          → stitchSync       (pushes DESIGN.md to Google Stitch)
  *
@@ -25,13 +27,12 @@ import { onDocumentCreated } from "firebase-functions/v2/auth";
 import * as logger from "firebase-functions/logger";
 
 import { themesApi } from "./themes.js";
-import { chatStream } from "./chat.js";
 import { duckdbAsset } from "./duckdb.js";
 import { stitchSync } from "./stitch.js";
 import { authOnCreate } from "./auth_oncreate.js";
 
 // ============================================================================
-// Public HTTPS endpoints (the 4 server routes)
+// Public HTTPS endpoints (the 3 remaining server routes)
 // ============================================================================
 
 // /api/themes → reads the 12 official-guidelines palette JSONs from
@@ -40,21 +41,6 @@ import { authOnCreate } from "./auth_oncreate.js";
 export const themesHandler = onRequest(
   { region: "europe-west1", cors: true, memory: "256MiB", cpu: 1 },
   themesApi,
-);
-
-// /api/copilotkit/** → streams Gemini 3.5 Flash responses via Server-Sent Events
-// (the streaming chat the CopilotKit runtime used to do — now done via Vertex AI
-// in Firebase with SSE for the React client).
-export const chatHandler = onRequest(
-  {
-    region: "europe-west1",
-    cors: true,
-    memory: "512MiB",
-    cpu: 1,
-    timeoutSeconds: 60,
-    // secrets: ["GOOGLE_CLOUD_API_KEY"],
-  },
-  chatStream,
 );
 
 // /api/duckdb → returns a signed URL to the latest `.duckdb` (now `.parquet`)
@@ -92,4 +78,4 @@ export const onUserCreate = onDocumentCreated(
 // This is configured globally via the Functions Framework + OpenTelemetry SDK.
 // The init code is in `./observability.ts` (see imports).
 
-logger.info("gemini_hackathon Cloud Functions: all 4 endpoints + auth trigger loaded");
+logger.info("gemini_hackathon Cloud Functions: all 3 endpoints + auth trigger loaded");

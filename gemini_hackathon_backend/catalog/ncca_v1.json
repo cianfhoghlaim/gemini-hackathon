@@ -1,0 +1,89 @@
+{
+  "version": "v0.9",
+  "catalog_id": "https://gemini-hackathon.cianfhoghlaim.ie/a2ui/catalogs/ncca-v1.json",
+  "description": "Custom catalog for the British Isles Journey's NCCA policy panel. Defines 6 renderers (5 NCCA surface types + 1 citation pill) the CopilotKit a2ui-renderer maps to React components.",
+  "components": {
+    "NccaPdfCard": {
+      "description": "An NCCA policy citation card — links to a PDF + short blurb.",
+      "props": {
+        "pdf_id": "string (one of: SC-L1-L2-Programme-Statement, key-competencies-in-senior-cycle_en, scr-advisory-report_en, the-potential-of-online-learning-environments_en, the-potential-of-technology-to-support-online-certification-and-reporting)",
+        "title": "string",
+        "blurb": "string"
+      }
+    },
+    "KeyCompetencyRow": {
+      "description": "One row in the Senior Cycle 5 Key Competencies list.",
+      "props": {
+        "number": "integer 1-5",
+        "name": "string",
+        "description": "string"
+      }
+    },
+    "ScProgrammeStatementBlock": {
+      "description": "SC-L1/L2 Programme Statement summary block — one strand, one principle.",
+      "props": {
+        "principle": "string",
+        "elaboration": "string",
+        "strand": "string (Subjects | Priority Learning | Wellbeing)"
+      }
+    },
+    "ScrAdvisoryHighlight": {
+      "description": "A highlight pulled from the SCR Advisory Report — chapter + recommendation + page.",
+      "props": {
+        "chapter": "string",
+        "recommendation": "string",
+        "page": "integer"
+      }
+    },
+    "OnlineLearningCallout": {
+      "description": "A callout panel from the Online Learning Environments / Online Certification PDFs.",
+      "props": {
+        "finding": "string",
+        "implication": "string",
+        "page": "integer"
+      }
+    },
+    "CitationPill": {
+      "description": "A clickable citation pill (deep-link to a PDF at a specific page anchor).",
+      "props": {
+        "pdf_id": "string (NCCA PDF identifier)",
+        "page": "integer",
+        "snippet": "string (≤ 200 chars)"
+      }
+    }
+  },
+  "examples": {
+    "overview_surface": [
+      {"type": "createSurface", "surfaceId": "ncca-overview", "catalogId": "https://gemini-hackathon.cianfhoghlaim.ie/a2ui/catalogs/ncca-v1.json"},
+      {"type": "updateComponents", "surfaceId": "ncca-overview", "components": [
+        {"id": "root", "component": "Column", "children": ["title", "pdf-list"]},
+        {"id": "title", "component": "Text", "text": "NCCA Senior Cycle policy corpus", "variant": "h1"},
+        {"id": "pdf-list", "component": "List", "children": ["pdf-card-template"], "direction": "vertical"},
+        {"id": "pdf-card-template", "component": "NccaPdfCard", "title": {"path": "title"}, "blurb": {"path": "blurb"}, "pdf_id": {"path": "pdf_id"}}
+      ]},
+      {"type": "updateDataModel", "surfaceId": "ncca-overview", "path": "/", "value": {"pdfs": [
+        {"pdf_id": "SC-L1-L2-Programme-Statement", "title": "Leaving Certificate Framework — L1 & L2 Programme Statement", "blurb": "The statutory programme statement for Senior Cycle Leaving Certificate (L1 & L2)."},
+        {"pdf_id": "key-competencies-in-senior-cycle_en", "title": "Key Competencies in Senior Cycle", "blurb": "The five Key Competencies designed to be developed across all Senior Cycle subjects."},
+        {"pdf_id": "scr-advisory-report_en", "title": "Senior Cycle Review — Advisory Report", "blurb": "6-year statutory review of Senior Cycle leading to recommendations on curriculum, assessment, and reporting."},
+        {"pdf_id": "the-potential-of-online-learning-environments_en", "title": "The Potential of Online Learning Environments", "blurb": "Explores how online learning environments can support Senior Cycle delivery and assessment."},
+        {"pdf_id": "the-potential-of-technology-to-support-online-certification-and-reporting", "title": "The Potential of Technology to Support Online Certification and Reporting", "blurb": "Investigates technology-enabled certification and reporting pathways for Senior Cycle outcomes."}
+      ]}}
+    ],
+    "kc_surface": [
+      {"type": "createSurface", "surfaceId": "kc-panel", "catalogId": "https://gemini-hackathon.cianfhoghlaim.ie/a2ui/catalogs/ncca-v1.json"},
+      {"type": "updateComponents", "surfaceId": "kc-panel", "components": [
+        {"id": "root", "component": "Column", "children": ["title", "kc-list"]},
+        {"id": "title", "component": "Text", "text": "5 Key Competencies for Senior Cycle", "variant": "h2"},
+        {"id": "kc-list", "component": "List", "children": ["kc-row-template"], "direction": "vertical"},
+        {"id": "kc-row-template", "component": "KeyCompetencyRow", "number": {"path": "number"}, "name": {"path": "name"}, "description": {"path": "description"}}
+      ]},
+      {"type": "updateDataModel", "surfaceId": "kc-panel", "path": "/", "value": {"competencies": [
+        {"number": 1, "name": "Communicating", "description": "Students develop their ability to communicate clearly, creatively, and confidently in a variety of modes and media."},
+        {"number": 2, "name": "Thinking, problem-solving & creating", "description": "Students engage in higher-order thinking, problem-solving, and creative design across disciplines."},
+        {"number": 3, "name": "Managing information & thinking", "description": "Students locate, evaluate, synthesise, and communicate information from a range of sources."},
+        {"number": 4, "name": "Working with others", "description": "Students collaborate effectively, recognise the contributions of others, and resolve disagreements constructively."},
+        {"number": 5, "name": "Personal effectiveness", "description": "Students develop self-awareness, resilience, and the capacity to make informed choices about their learning and lives."}
+      ]}}
+    ]
+  }
+}

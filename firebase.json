@@ -28,10 +28,6 @@
     ],
     "rewrites": [
       {
-        "source": "/api/copilotkit/**",
-        "function": "chatStream"
-      },
-      {
         "source": "/api/themes/**",
         "function": "themesApi"
       },
