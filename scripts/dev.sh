@@ -1,22 +1,20 @@
 #!/usr/bin/env bash
-# setup.sh — DEPRECATED wrapper around scripts/dev.sh.
+# scripts/dev.sh — one-shot local dev bootstrap for gemini_hackathon.
 #
-# Per the 2026-08-31-replace-mise-with-make-v1 openspec change, the
-# canonical bootstrap path is:
+# Mirrors the journey/scripts/setup.sh pattern. Idempotent. Safe to
+# re-run. Logs progress to stdout; exits non-zero on failure. Wraps
+# the canonical Google 5-step local dev recipe from docs/LOCAL_DEV.md:
 #
-#     make setup     # (or ./scripts/dev.sh)
+#   1. Install uv (the 2026 standard Python package manager)
+#   2. Sync dependencies (`make install`)
+#   3. Copy .env.example → .env
+#   4. Regenerate + test the BAML client (`make baml`)
+#   5. Run the 8-tick verify gate (`make verify`)
 #
-# This shim is kept for back-compat with any operator still calling
-# `./setup.sh`. It forwards every argument to scripts/dev.sh. Remove
-# after one release cycle.
-#
-# Usage (deprecated):
-#   ./setup.sh                 # full bootstrap + verify
-#   ./setup.sh --no-verify     # bootstrap only, skip the verify pass
-
-set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec "$SCRIPT_DIR/scripts/dev.sh" "$@"
+# Usage:
+#   ./scripts/dev.sh                 # full bootstrap + verify
+#   ./scripts/dev.sh --no-verify     # bootstrap only, skip the verify pass
+#   make setup                       # the Makefile alias
 
 set -euo pipefail
 
@@ -46,7 +44,7 @@ for arg in "$@"; do
     case "$arg" in
         --no-verify) VERIFY=0 ;;
         -h|--help)
-            sed -n '2,20p' "$0"
+            sed -n '2,25p' "$0"
             exit 0
             ;;
         *) fail "Unknown argument: $arg" ;;
@@ -58,10 +56,10 @@ done
 # ---------------------------------------------------------------------------
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+cd "$REPO_ROOT"
 
-banner "gemini-hackathon setup"
-log "Working directory: $SCRIPT_DIR"
+banner "gemini_hackathon — local dev bootstrap"
 
 # ---------------------------------------------------------------------------
 # 1. uv — the 2026 standard Python package manager
@@ -79,7 +77,7 @@ else
     elif command -v wget >/dev/null 2>&1; then
         wget -qO- https://astral.sh/uv/install.sh | sh
     else
-        fail "Neither curl nor wget available; please install uv manually: https://docs.astral.sh/uv/getting-started/installation/"
+        fail "Neither curl nor wget available; install uv manually: https://docs.astral.sh/uv/getting-started/installation/"
     fi
 
     # Source the env file the astral installer drops in ~/.local/bin
@@ -96,13 +94,13 @@ fi
 # 2. Sync dependencies (uv)
 # ---------------------------------------------------------------------------
 
-banner "[2/5] uv sync"
+banner "[2/5] uv sync (deps + dev + docs + lint groups)"
 
 if [[ ! -f "pyproject.toml" ]]; then
-    fail "pyproject.toml not found in $SCRIPT_DIR — are you in the project root?"
+    fail "pyproject.toml not found in $REPO_ROOT — are you in the project root?"
 fi
 
-uv sync --all-extras
+make install
 ok "Dependencies synced to .venv/"
 
 # ---------------------------------------------------------------------------
@@ -123,47 +121,28 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 4. BAML codegen (smoke test that baml_extracts/*.baml parse)
+# 4. BAML codegen + tests
 # ---------------------------------------------------------------------------
 
-banner "[4/5] BAML codegen"
+banner "[4/5] BAML codegen + tests"
 
-if uv run baml-cli --version >/dev/null 2>&1; then
-    if [[ -d "baml_extracts" ]]; then
-        # The baml_src -> baml_extracts symlink lets BAML's default baml_src
-        # lookup find the .baml files without needing --from.
-        log "Running baml-cli generate…"
-        if uv run baml-cli generate 2>&1 | tail -20; then
-            ok "BAML client generated"
-        else
-            warn "baml-cli generate exited non-zero — check baml_extracts/*.baml syntax"
-        fi
-    else
-        warn "baml_extracts/ directory missing — skipping codegen"
-    fi
+if make baml >/dev/null 2>&1; then
+    ok "BAML client generated + tests pass"
 else
-    warn "baml-cli not installed — skipping codegen (install with: uv add 'baml-py[testing]')"
+    warn "make baml exited non-zero — check baml_extracts/*.baml syntax"
 fi
 
 # ---------------------------------------------------------------------------
-# 5. Verify
+# 5. Verify (the 8-tick gate)
 # ---------------------------------------------------------------------------
 
 if [[ "$VERIFY" -eq 1 ]]; then
-    banner "[5/5] Verify"
+    banner "[5/5] Verify (the 8-tick gate)"
 
-    log "Loading theming module…"
-    if uv run python -m gemini_hackathon.theming 2>&1 | tail -30; then
-        ok "Theming module loaded"
+    if make verify; then
+        ok "All verify ticks green"
     else
-        warn "Theming module reported errors (see above)"
-    fi
-
-    log "Importing DLT pipeline…"
-    if uv run python -c "import dlt_pipelines.official_doc_fetcher; print('DLT pipeline OK')" 2>&1; then
-        ok "DLT pipeline importable"
-    else
-        warn "DLT pipeline import failed (may need cd dlt_pipelines/ first)"
+        warn "Some verify ticks failed — see docs/LOCAL_DEV.md §'What to do when something breaks'"
     fi
 else
     banner "[5/5] Verify (skipped — --no-verify)"
@@ -176,9 +155,15 @@ fi
 banner "Done"
 cat <<EOF
 ${C_GREEN}Next steps:${C_RESET}
-  1. Edit .env with real API keys (MINIMAX_API_KEY, FIRECRAWL_API_KEY, …)
-  2. Run the CLI:        ${C_BOLD}uv run gemini-hackathon${C_RESET}  (or  ${C_BOLD}uv run python -m gemini_hackathon.cli${C_RESET})
-  3. Launch notebooks:   ${C_BOLD}uv run marimo edit notebooks/${C_RESET}
-  4. Run the test suite: ${C_BOLD}uv run pytest tests/ -v${C_RESET}
-  5. Or use the Makefile: ${C_BOLD}make help${C_RESET}
+  1. Edit .env with real API keys (GEMINI_API_KEY, GOOGLE_CLOUD_PROJECT, …)
+  2. Bring up the lakehouse + observability stack:
+        ${C_BOLD}make dev${C_RESET}    # docker compose up --build
+  3. Run the data plane:
+        ${C_BOLD}make dlt-smoke-all && make cocoindex-update${C_RESET}
+  4. Launch the NCCE learning-graph Gradio studio:
+        ${C_BOLD}make ncce-visualise${C_RESET}
+  5. Or use the Python backend directly:
+        ${C_BOLD}make backend${C_RESET}
+
+  See ${C_BOLD}docs/LOCAL_DEV.md${C_RESET} for the full step-by-step recipe.
 EOF

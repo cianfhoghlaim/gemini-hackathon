@@ -6,10 +6,10 @@ agent) click through and judge.
 **TL;DR — 4 commands to verify everything that can be verified without network keys:**
 
 \`\`\`bash
-mise run smoke          # 11-step E2E (164 unit tests + 11 integration)
-mise run backend:test   # Boots Python backend, hits 3 endpoints, kills it
-mise run compare:demo   # Runs the Gemini-vs-Gemma harness, writes DuckDB row
-cd web && bun run dev    # Opens the web UI at http://localhost:3000
+make verify             # the 8-tick verify gate (imports + baml + lint + typecheck + dlt-smoke + cocoindex-smoke + gradio + dagster)
+make shell              # drop into a uv-managed Python REPL
+make compare-demo       # Runs the Gemini-vs-Gemma harness, writes DuckDB row
+make web                # Opens the web UI at http://localhost:3000
 \`\`\`
 
 ---
@@ -29,7 +29,7 @@ The 13 skipped tests require Python 3.11+ DLT (this box's \`.venv\` is 3.9). The
 ## 1. Run the canonical smoke test (30 s, no network)
 
 \`\`\`bash
-mise run smoke
+make verify
 \`\`\`
 
 What it asserts:
@@ -53,7 +53,7 @@ What it asserts:
 ## 2. Run the backend smoke (15 s, no network)
 
 \`\`\`bash
-mise run backend:test
+make backend
 \`\`\`
 
 Boots the Python backend on a free port, hits three endpoints with \`urllib\`, kills the process.
@@ -74,7 +74,7 @@ To exercise the real path:
 
 \`\`\`bash
 export GEMINI_API_KEY=sk-...
-mise run backend:test
+make backend
 \`\`\`
 
 Should now show a \`model=gemini-3.5-flash\` row with content.
@@ -82,7 +82,7 @@ Should now show a \`model=gemini-3.5-flash\` row with content.
 ## 3. Run the comparison harness (2 min, no network by default)
 
 \`\`\`bash
-mise run compare:demo
+make compare-demo
 \`\`\`
 
 Generates a 3-model comparison on the canonical sample PDF (\`data/syllabi/sample_lc_maths_2024.pdf\`), writes to a temp DuckDB, prints the leaderboard.
@@ -99,7 +99,7 @@ Expected output:
 Three rows is the **hackathon profile** — Gemini 3.5 (Vertex), Gemini 3.5 (AI Studio), Gemma 4. To see the dev profile (which adds minimax-m3 + the Unsloth Studio text set):
 
 \`\`\`bash
-MODEL_PROFILE=dev mise run compare:demo
+MODEL_PROFILE=dev make compare-demo
 \`\`\`
 
 Should now show 6+ rows.
@@ -152,10 +152,10 @@ The chat panel expects a running Python backend:
 
 \`\`\`bash
 # Terminal A
-mise run backend       # listens on 127.0.0.1:8000
+make backend           # listens on 127.0.0.1:8000
 
 # Terminal B (Vite proxies /api/copilotkit → 127.0.0.1:8000)
-cd web && bun run dev
+make web
 \`\`\`
 
 Now \`localhost:3000\` chat panel will proxy through to the Python backend, which routes via \`call_llm()\` and the model registry.
@@ -230,10 +230,10 @@ Based on what shipped and what I can't verify from here:
 ## Files of note
 
 - \`scripts/smoke_test.py\` — canonical 11-step E2E. Edit this when adding new feature surfaces.
-- \`scripts/compare_demo.py\` — harness demo; bound to \`mise run compare:demo\`.
+- \`scripts/compare_demo.py\` — harness demo; bound to \`make compare-demo\`.
 - \`scripts/backend_smoke.py\` — boots + probes the Python backend.
 - \`gemini_hackathon/backend.py\` — the stdlib HTTP server. Replace with Hono + oRPC + Convex actions when the production backend graduates.
-- \`mise.toml\` — every dev-deploy command is a mise task.
+- \`Makefile\` — every dev-deploy command is a `make <target>` invocation (run `make help` for the full list).
 - \`web/public/british_isles_jurisdictions.geojson\` — the 10-jurisdiction boundary file.
 
 ## Phase 8 — Local dev + dev Cloud Run deploy

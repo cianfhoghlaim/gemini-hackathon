@@ -1,9 +1,15 @@
-# INDEX — the 26 openspec changes for the gemini_hackathon All Things Agentic 2026 hackathon
+# INDEX — the 28 openspec changes for the gemini_hackathon All Things Agentic 2026 hackathon
+
+> **Note:** the original INDEX header reads "26 changes"; with the
+> 3 NEW 2026-08-31 Learning Graph era changes (this one + Change B +
+> Change C) **plus** the new `2026-08-31-replace-mise-with-make-v1` (Phase D — drops `mise.toml`, replaces with `Makefile` + `scripts/dev.sh` + `scripts/verify.sh` + `docs/LOCAL_DEV.md`), the working surface is **29 changes**. The header is
+> preserved verbatim for canonical-row parity with the generator; the
+> "Total" row below is the source of truth.
 
 Per the implementation plan (W16): one openspec change per workstream,
 plus the 2 deferred changes for the post-hackathon Phase 2 / expansion
-pack, plus the 4 NEW 2026-08-30 GCP-first changes, plus the 3 NEW
-2026-08-31 Learning Graph era changes.
+pack, plus the 4 NEW 2026-08-30 GCP-first changes, plus the 4 NEW
+2026-08-31 changes (3 Learning Graph era + 1 task-runner swap).
 
 Run `python scripts/generate_openspec_changes.py` to regenerate any
 of these (idempotent — preserves the W4 deferred-tuatha change + skips
@@ -54,13 +60,14 @@ changes whose files already exist).
 | `2026-08-30-cocoindex-pdf-pipeline-v1` | Phase 2 (PDF→Markdown) | closed | pdf_to_markdown App (Docling converter) + Dagster asset + MLflow benchmark |
 | `2026-08-30-gcp-first-iac-refactor-v1` | Phase 0 IaC | closed | Drops Komodo/Pangolin/Locket/Infisical for Cloud Run + Secret Manager + WIF + 11 Terraform modules |
 
-## The 3 NEW 2026-08-31 changes (Learning Graph era)
+## The 4 NEW 2026-08-31 changes (Learning Graph era + task-runner swap)
 
 | Change | Phase | Status | One-line |
 |---|---|---|---|
 | `2026-08-31-uk-ncce-learning-graph-showcase-v1` | Phase A | **active** | **The NCCE learning graph SHOWCASE** — lift 5 NCCE PDFs, build BAML `learning_graph.baml` (8 classes + 9 functions), 11 Dagster assets, 4-tab Gradio studio + HF Space |
-| `2026-08-31-learning-graph-equivalency-graph-v1` | Phase B | **active** | Cell-level cross-jurisdiction equivalencies — `ExtractCellEquivalencies` + 48 Dagster assets (7 jurisdictions × 6 subjects) + FalkorDB `:CellEquivalentEdge` graph |
+| `2026-08-31-learning-graph-equivalency-graph-v1` | Phase B | **active** | Cell-level cross-jurisdiction equivalencies — `ExtractCellEquivalencies` + 42 Dagster assets (7 jurisdictions × 6 subjects) + FalkorDB `:CellEquivalentEdge` graph |
 | `2026-08-31-pedagogy-overlay-renderer-v1` | Phase C | **active** | Dynamic extraction of 12 NCCE pedagogy principles + disk + Cognee cache + 6 Dagster assets + annotated SVG renderer |
+| `2026-08-31-replace-mise-with-make-v1` | Phase D | **active** | **Drops `mise.toml`** (357 LOC, 47 tasks). Replaces with `Makefile` (27 phony targets) + `scripts/dev.sh` + `scripts/verify.sh` (8-tick gate) + `docs/LOCAL_DEV.md` (5-step recipe). Aligns with `docs/cocoindex_examples/*` + `docs/adk-examples/*` shape. |
 
 ## Generation
 
@@ -96,5 +103,5 @@ consolidation).
 | W0–W14 refactor | 16 + 1 deferred-tuatha | closed |
 | Phase 2/expansion-pack deferred | 2 | deferred |
 | 2026-08-30 GCP-first era | 4 | closed |
-| 2026-08-31 Learning Graph era | 3 | **active** |
-| **Total** | **26** | |
+| 2026-08-31 Learning Graph era + task-runner swap | 4 | 1 complete + 3 active |
+| **Total** | **29** | 26 completed + 2 active + 1 complete (this) |

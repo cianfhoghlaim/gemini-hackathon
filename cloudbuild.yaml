@@ -10,6 +10,19 @@
 #       --substitutions=_REGION=europe-west1,_REPO=$GCP_PROJECT/gemini-hackathon
 
 steps:
+  # 0. Install uv + regenerate the BAML client. Ensures the image always
+  #    has the up-to-date baml_client/ generated from baml_extracts/*.baml.
+  - name: "gcr.io/cloud-builders/docker:latest"
+    id: "baml-generate"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        set -euo pipefail
+        pip install --quiet uv
+        uv sync --all-extras --frozen
+        uv run baml-cli generate
+
   # 1. Build the Python backend image (multi-stage; uv for dependency
   #    resolution, runtime image is distroless).
   - name: "gcr.io/cloud-builders/docker:latest"

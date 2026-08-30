@@ -16,6 +16,11 @@ env:
   PYTHONDONTWRITEBYTECODE: "1"
   PYTHONUNBUFFERED: "1"
 
+# The canonical task runner for this repo is the `Makefile` (the
+# `2026-08-31-replace-mise-with-make-v1` openspec change removed
+# `mise.toml`). The CI workflow runs the same targets that `make verify`
+# invokes locally — see scripts/verify.sh for the 8-tick gate.
+
 jobs:
   # ---------------------------------------------------------------------------
   # lint — Ruff (modern ruff = ruff check + ruff format)

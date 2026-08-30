@@ -12,7 +12,7 @@
 ```bash
 # 1. Read this file (AGENTS.md)
 # 2. Read the priority skills (below)
-# 3. Run the quality gates (mise run lint && mise run py:typecheck && mise run turbo typecheck)
+# 3. Run the quality gates (make verify)
 # 4. Commit only when the user explicitly asks (see Commit policy below)
 ```
 
@@ -27,8 +27,8 @@ this repo. Load them before doing any work in this repo.
 |--:|-------|------|----------------|
 | 1 | **CCC** (CocoIndex Code) | `.agents/skills/ccc/SKILL.md` | Semantic code search — finds code by meaning, not just text |
 | 2 | **openspec** | `.agents/skills/openspec/SKILL.md` | OpenSpec workflow + the 14 priority specs + the spec-delta format |
-| 3 | **mise** | `.agents/skills/mise/SKILL.md` | mise.toml task authoring + the canonical 9-namespace task catalogue |
-| 4 | **secrets-management** | `.agents/skills/secrets-management/SKILL.md` | Infisical + Locket + mise three-way contract |
+| 3 | **make** | (built-in) | The self-documenting `Makefile` — `make help` lists all 27 targets. Replaces the deprecated `mise.toml` |
+| 4 | **secrets-management** | `.agents/skills/secrets-management/SKILL.md` | Google Secret Manager + Workload Identity Federation (the GCP-first IaC refactor) |
 | 5 | **knowledge-sync-loop** | `.agents/skills/knowledge-sync-loop/SKILL.md` | The 6-layer pull-based sync architecture |
 
 If the agent can read only one skill, it should be **openspec** —
@@ -38,31 +38,15 @@ every change to this repo flows through `openspec/changes/<id>/`.
 
 ## Stack count
 
-This repo ships with **93 Docker Compose stacks** under
-`infra/stacks/` (89 wholesale-copied from Cianfhoghlaim + 4 NEW
-gemini_hackathon-specific stacks). The canonical 6-file
-GOLD_STANDARD pattern (per the upstream `stacks-sync` skill) is:
+This repo does **not** ship Docker Compose stacks (the4 IaC
+stacks that previously lived under `infra/stacks/` were deleted
+by the `2026-08-30-gcp-first-iac-refactor-v1` change — replaced by
+the GCP-native Cloud Run + Terraform + Cloud Build + Google Secret
+Manager + Workload Identity Federation substrate). The canonical
+local-dev path is `make dev` (single `docker-compose.yml` + a single
+`docker-compose.local.yaml`).
 
-```
-<stack>/
-├── compose.yaml      # the Docker Compose definition
-├── sidecar.yaml       # the Locket sidecar (per the 3-way contract)
-├── secrets.env       # the secret bindings (NOT committed)
-├── pangolin.yaml     # the Pangolin resource definition
-├── blueprint.yaml    # the Komodo blueprint
-└── .env.example      # the environment variable template
-```
-
-The 4 NEW gemini_hackathon stacks are:
-
-1. `infra/stacks/gemini_hackathon_backend/` — the Hono + oRPC
-   backend
-2. `infra/stacks/gemini_hackathon_frontend/` — the TanStack
-   Start frontend
-3. `infra/stacks/gemini_hackathon_observability/` — the
-   Langfuse + MLflow + Convex services
-4. `infra/stacks/gemini_hackathon_lakehouse/` — the DuckLake +
-   MotherDuck + LanceDB services
+For prod, see `cloud/terraform/envs/{dev,prod}/` (12 Terraform modules per `cloud/terraform/envs/dev/main.tf`).
 
 ---
 
@@ -75,9 +59,9 @@ defined in `.opencode/agents/` and have their own tools.
 | Subagent | Dispatch keywords | Routes to |
 |----------|-------------------|-----------|
 | `data-platform` | DLT, Dagster, BAML, DuckLake, MotherDuck, marimo notebooks, CocoIndex | `dlt_pipelines/`, `orchestration/`, `baml_src/gemini_hackathon/`, `notebooks/` |
-| `infrastructure` | Komodo, Pangolin, Locket, Infisical, Pulumi, Dagger | `infra/stacks/`, `bonneagar/` |
-| `agent-platform` | The 12-agent fleet, OpenClaw, Letta, RisingWave, Langfuse | `agents/`, `gemini_hackathon/fleet/` |
-| `frontend-apps` | TanStack Start, Convex, Hono, CopilotKit, AG-UI, Babylon.js | `web/`, `web/apps/*/` |
+| `infrastructure` | Cloud Run, Cloud Build, Terraform, Cloud SQL, Memorystore, BigQuery, Workload Identity Federation | `cloud/terraform/`, `cloudbuild.yaml`, `cloud/workflows/` |
+| `agent-platform` | The 12-agent fleet, OpenClaw, Vertex AI Memory Bank, Langfuse | `agents/`, `gemini_hackathon/fleet/` |
+| `frontend-apps` | TanStack Start, Firebase, Hono, CopilotKit, AG-UI | `web/`, `web/src/routes/*/` |
 | `research` | Firecrawl, arXiv papers, Hugging Face, sentence-transformers | `baml_extracts/`, `notebooks/` |
 
 The subagent is selected by matching the user's request to the
@@ -89,28 +73,36 @@ the results.
 
 ## Quality gates
 
-Before committing any change, run all three quality gates. The
-gates are defined in `mise.toml`.
+Before committing any change, run all four quality gates. The gates
+are defined in the `Makefile` (run `make help` for the full list).
 
 ```bash
-# 1. Lint (Python + TypeScript + BAML + Markdown + YAML)
-mise run lint
+# 1. Lint (Python + Markdown + YAML — ruff check + ruff format --check)
+make lint
 
-# 2. Python typecheck (mypy + pyright on the gemini_hackathon/ package)
-mise run py:typecheck
+# 2. Python typecheck (mypy on the gemini_hackathon/ package)
+make typecheck
 
-# 3. Turbo typecheck (TypeScript on web/ and backend/)
-mise run turbo typecheck
+# 3. Tests (pytest)
+make test
 
-# 4. OpenSpec validation
+# 4. The 8-tick verify gate (calls scripts/verify.sh)
+make verify
+
+# 5. OpenSpec validation
 openspec validate <change-id> --strict
-
-# 5. Tests
-mise run test
 ```
 
 If any gate fails, fix the failure before committing. Do **not**
-commit with failing gates.
+commit with failing gates. The CI workflow (`.github/workflows/ci.yml`)
+runs `make lint` + `make typecheck` + `make test` + `baml-cli test`
+on every push across the Python 3.11 + 3.12 matrix.
+
+> **Note**: there is no `mise.toml` and no `mise run` in this repo.
+> Per the `2026-08-31-replace-mise-with-make-v1` openspec change,
+> the canonical task runner is the `Makefile` (matches the example
+> projects in `docs/cocoindex_examples/*` + `docs/adk-examples/*`).
+> See `docs/GOOGLE_PROJECT_MANAGEMENT.md` for the rationale.
 
 ---
 
@@ -174,10 +166,13 @@ The current active change is
 
 - [`README.md`](README.md) — the main project README
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) — the architecture deep-dive
+- [`docs/LOCAL_DEV.md`](docs/LOCAL_DEV.md) — the 5-step local dev recipe
+- [`docs/GOOGLE_PROJECT_MANAGEMENT.md`](docs/GOOGLE_PROJECT_MANAGEMENT.md) — why we use Make + uv + Docker Compose + Cloud Build + GitHub Actions
 - [`docs/MODEL_POLICY.md`](docs/MODEL_POLICY.md) — the model policy
 - [`docs/THEMING.md`](docs/THEMING.md) — the theming guide
-- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — the deployment guide
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — the Cloud Run deployment guide
+- [`docs/DEV_DEPLOY.md`](docs/DEV_DEPLOY.md) — the local-dev + dev-deploy playbook
 - [`.agents/skills/openspec/SKILL.md`](.agents/skills/openspec/SKILL.md) —
   the OpenSpec skill (the canonical reference)
 - [`openspec/AGENTS.md`](openspec/AGENTS.md) — the OpenSpec workflow
-  + the 14 priority specs
+  + the 27 openspec changes

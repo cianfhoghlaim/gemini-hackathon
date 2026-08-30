@@ -48,20 +48,29 @@ uv run pytest tests/
 openspec validate 2026-08-24-gemini-hackathon-public-v1 --strict
 ```
 
-The one-shot setup script (`setup.sh`) automates the steps
-above:
+The one-shot bootstrap script (`scripts/dev.sh`) automates the steps
+above — wraps the canonical Google 5-step local dev recipe
+(see [`docs/LOCAL_DEV.md`](LOCAL_DEV.md) for the full walkthrough):
 
 ```bash
-./setup.sh
+./scripts/dev.sh
+# or equivalently: make setup
 ```
 
 The script:
 
 1. Installs `uv` if not already installed
-2. Creates the virtual environment
-3. Installs the dependencies + the dev dependencies
-4. Starts the local llama.cpp server (for the Tier 2 fallback)
-5. Prints the next-steps instructions
+2. Runs `make install` (= `uv sync --all-extras`)
+3. Copies `.env.example` → `.env` if missing
+4. Runs `make baml` (= `baml-cli generate` + `baml-cli test`)
+5. Runs `make verify` (the 8-tick verify gate)
+6. Prints the next-steps instructions
+
+See [`docs/LOCAL_DEV.md`](LOCAL_DEV.md) for the full step-by-step
+recipe (clone → env → docker compose → data plane → Dagster → Gradio)
+and [`docs/GOOGLE_PROJECT_MANAGEMENT.md`](GOOGLE_PROJECT_MANAGEMENT.md)
+for the rationale behind the `Makefile` + `uv` + `docker compose` +
+`cloudbuild.yaml` + GitHub Actions stack.
 
 ---
 

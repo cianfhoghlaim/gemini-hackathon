@@ -67,7 +67,7 @@ to disk + Cognee (Change C).
 
 | W | What |
 |---|---|
-| W0 | minimal unblock (re-pin mise, ignore .agents/, document dupe web/components, add KNOWN_ISSUES.md) |
+| W0 | minimal unblock (document dupe web/components, add KNOWN_ISSUES.md) |
 | W1 | dependency pin: `google-adk 2.7.1+`, `gradio 5.28+`, `huggingface_hub 0.30+`, `lancedb`, `falkordb`, `graphiti-core`, `cognee`, `fastmcp` |
 | W2 | **5 NCCA policy PDFs** as committed data — the certificate source of truth |
 | W3 | `gemini_hackathon_gradio/` — the 5 editorial studios + shared library |
@@ -133,7 +133,7 @@ background + competency strip + provenance footer + UNOFFICIAL banner.
 
 ```
 gemini_hackathon/
-├── pyproject.toml + requirements.txt + mise.toml
+├── pyproject.toml + requirements.txt + Makefile
 ├── gemini_hackathon/                       ← the Python package
 │   ├── agents/                             ← W7 — 5 stage coordinators + 5 pillars
 │   ├── assets/                             ← the image-gen router
@@ -205,7 +205,7 @@ gemini_hackathon/
 │   └── terraform/
 │       ├── cloud_run_adk.tf + cloud_run.tf + cloud_run_jobs.tf + cloud_run_journey.tf
 │       └── modules/                          ← 11 Terraform modules (per Phase 5 GCP-first IaC)
-├── cloudbuild.yaml + mise.toml + README.md
+├── cloudbuild.yaml + Makefile + README.md
 └── firestore.{json,rules,indexes.json}     ← Firebase-native schema + NCCE collections
 ```
 
@@ -336,32 +336,40 @@ All 9 subnations have a corresponding awarding-body palette in `themes/<key>_pal
 
 ## 11. Quick start (offline, no GCP keys required)
 
+The canonical Google project management pattern: a single self-documenting
+`Makefile` + `scripts/dev.sh` (one-shot bootstrap) + `scripts/verify.sh`
+(the 8-tick verify gate). Run `make help` for all 27 targets.
+
 ```bash
-# 1. Verify the Python package offline
-uv run python scripts/smoke_test.py
-# → 11/11 steps green
+# 1. Bootstrap (uv install + sync + .env + baml + verify)
+make setup            # = ./scripts/dev.sh
 
 # 2. Generate BAML clients + run BAML tests
-uv run baml-cli generate
-uv run baml-cli test
+make baml
 
-# 3. Boot the Python backend on a free port, hit /api/health, kill it
-uv run python scripts/backend_smoke.py
-# → /api/health + /api/themes + /api/models + /api/agents/find-resources all green
+# 3. Boot the Python backend on :8000 (FastAPI + ADK 2)
+make backend
 
-# 4. Run the Gemini-vs-Gemma4 comparison harness (writes to DuckDB)
-uv run python scripts/compare_demo.py
+# 4. Bring up the full lakehouse + observability stack (docker compose)
+make dev              # 6 services on :8080 + :3001 + :5050 + :5432 + :8181 + :9100
 
-# 5. Lift the 5 NCCE learning graph PDFs + extract them
-mise run data:ncce:download
-mise run data:ncce:extract
+# 5. Run the data plane (5 DLT pipelines → 8 CocoIndex Apps → 6 BAML extractions)
+make dlt-smoke-all    # writes ~31 OFFICIAL_DOC_COLUMNS rows to gemini_hackathon.duckdb
+make cocoindex-update # converts 13 PDFs to Markdown + 11 learning graphs
 
 # 6. Render the NCCE Y8 Python learning graph as SVG
-uv run python -m gemini_hackathon_gradio.an_learning_graph
+make ncce-visualise   # = uv run python -m gemini_hackathon_gradio.an_learning_graph
 
 # 7. Materialize the NCCE learning graph Dagster assets
-mise run dagster:materialize --assets uk_ncce_learning_graphs
+dg launch --assets uk_ncce_learning_graph_y8_python,uk_ncce_learning_graph_y7_scratch,uk_ncce_learning_graph_y6_variables,uk_ncce_pedagogy_principles,uk_ncce_curriculum_journey
+
+# 8. Verify everything
+make verify           # = ./scripts/verify.sh (the 8-tick gate)
 ```
+
+See [docs/LOCAL_DEV.md](docs/LOCAL_DEV.md) for the full step-by-step
+recipe (5 steps + the data cheatsheet + the "what to do when something
+breaks" section).
 
 ---
 
@@ -375,7 +383,7 @@ gcloud builds submit --config=cloudbuild.yaml
 gcloud run services deploy gemini-hackathon-adk \
   --source . --region europe-west1 \
   --service-account gemini-hackathon-adk@PROJECT.iam \
-  --set-env-vars=DEPLOYED_AGENT_ENGINE_ID=...,GH_MEMORY_DIR=...,LEARNING_GRAPH_FIRESTORE_COLLECTION=annotatedLearningGraphs
+  --set-env-vars=ADK_LOAD_SECRETS=1,DEPLOYED_AGENT_ENGINE_ID=...,GH_MEMORY_DIR=...,LEARNING_GRAPH_FIRESTORE_COLLECTION=annotatedLearningGraphs
 
 # Apply the prod Terraform
 cd cloud/terraform/envs/prod && terraform apply
@@ -383,17 +391,110 @@ cd cloud/terraform/envs/prod && terraform apply
 
 ---
 
+## 12.1 Google Cloud Secret Manager (GSM) — Phase 0 (2026-08-30)
+
+The dev demo uses **Google Cloud Secret Manager** (project
+`agentic-hackathon-august-26`) instead of the Infisical + Locket contract
+used by the parent `cianfhoghlaim` monorepo. The legacy cianfhoghlaim
+Infisical flow is unchanged; GSM is a gemini_hackathon-only contract.
+
+### Files added in this change
+
+| Path | Purpose |
+|---|---|
+| `secrets.yaml` | The committed catalogue: 15 `env_var → gsm_secret_id` mappings |
+| `gemini_hackathon/secrets_loader.py` | Python module — ADC + GSM SDK fetch with `.env` fallback |
+| `scripts/seed_gsm.py` | One-shot uploader — reads `.env`, creates/populates each GSM secret |
+| `scripts/audit_gsm.py` | Parity check — `secrets.yaml ↔ GSM API ↔ .env` |
+| `docs/GSM_README.md` | Operator guide |
+
+### Resolution contract
+
+| `ADK_LOAD_SECRETS` | `ADK_LOCAL_SECRETS` | Behaviour |
+|:--:|:--:|:--|
+| `0` / unset | n/a | Dormant — backward-compatible (default) |
+| `1` | `0` / unset | **GSM mode** — ADC + Secret Manager SDK |
+| `1` | `1` | **Local mode** — reads `.env` via python-dotenv |
+
+### One-time GSM bootstrap
+
+```bash
+gcloud config set project agentic-hackathon-august-26
+gcloud services enable secretmanager.googleapis.com aiplatform.googleapis.com
+gcloud auth application-default login
+uv run python scripts/seed_gsm.py     # pushes .env → GSM
+uv run python scripts/audit_gsm.py    # verifies catalogue ↔ GSM ↔ .env
+```
+
+For laptop dev without GSM creds, use:
+```bash
+ADK_LOAD_SECRETS=1 ADK_LOCAL_SECRETS=1 uv run python -m gemini_hackathon.backend
+```
+
+See `docs/GSM_README.md` for the full operator guide.
+
+---
+
+## 12.2 The 5-stack live demo substrate (2026-08-30)
+
+The dev demo runs against a 5-stack substrate on `bunchloch` (the M4 MacBook):
+
+| Stack | Port | Role in the demo | Source |
+|---|---|---|---|
+| **litellm** | 4000 | The 46-model OpenAI-compatible gateway (Kimi-K2.6 + GLM-5.1 + minimax-m3 + 22 local/unsloth/* GGUF routes + OpenCode Go fallback) | `bonneagar/stacks/litellm/` (cianfhoghlaim monorepo) |
+| **langfuse** | 3001 | LLM observability — traces every `litellm` call into ClickHouse; the unified dashboard for cost + latency + prompt management | `bonneagar/stacks/langfuse/` |
+| **mlflow** | 5000 | Experiment tracking — the BAML extraction runs, the cross-jurisdiction equivalency sweeps, the Gemini-vs-Gemma4 harness | `bonneagar/stacks/mlflow/` |
+| **llama-swap** | 8080 | GGUF model swapper — 12 vision + text GGUFs (qwen3-vl-8b, gemma-4-26B-A4B, internvl3-8b, paddleocr-vl-1.6) for the Tier-2 Gemma 4 route | `bonneagar/stacks/llama-swap/` |
+| **unsloth** | 8888 | Unsloth Studio host process — the OpenAI-compatible API at `/v1/chat/completions` + Anthropic-compatible `/v1/messages`; long-running daemon on `127.0.0.1:8888` | `bonneagar/stacks/unsloth/` |
+
+### Health verification
+
+```bash
+curl -s http://localhost:4000/health/liveliness                 # litellm
+curl -s http://127.0.0.1:3001/api/public/health                  # langfuse
+curl -s http://localhost:5000/api/2.0/mlflow/                    # mlflow
+curl -s http://localhost:8080/v1/models | jq '.data | length'    # llama-swap → 12
+curl -s http://localhost:8888/api/auth/status                    # unsloth
+```
+
+### PDF indexing pipeline routing
+
+The NCCE + NCCA + SEC PDF ingestion stack uses these 5 services in this order:
+
+```
+PDF on disk
+  ↓
+[Dagster asset] uk_ncce_learning_graphs / ncca_syllabus_pdf
+  ↓
+[CocoIndex App]  (Docling grid segmenter + BAAI/bge-m3 embedder)
+  ↓                                                                    ↘
+[BAML extract]   ExtractLearningGraphRow / ExtractCurriculumSyllabus   [OpenTelemetry OTLP]
+  ↓                                                                          ↓
+[DuckLake table] cianfhoghlaim.uk_ncce.learning_graph_row              [logfire-otel collector]
+                                                                              ↓
+[Gradio / Firestore]                                                          ↓
+                                                                       [Langfuse traces]
+                                                                       [MLflow runs]
+                                                                       [Gemma 4 (llama-swap)]
+                                                                       [Gemini 3.5 (litellm)]
+```
+
+---
+
 ## 13. Quality gates
 
 ```bash
-mise run lint                    # Python + TypeScript + BAML + Markdown + YAML
-mise run py:typecheck            # mypy + pyright
-mise run turbo typecheck         # TypeScript on web/ + backend/
+make lint                          # ruff check + ruff format --check (Python + Markdown + YAML)
+make typecheck                     # mypy gemini_hackathon/ (strict)
+make test                          # pytest tests/ -v
+make verify                        # the 8-tick verify gate (every CI gate in one script)
 openspec validate <change-id> --strict
-mise run dlt:smoke-all           # 9 jurisdictions (Ireland + England + NCCE + 6 Phase 2)
-mise run dagster:list-assets     # ~80 assets (11 NCCE + 48 equivalency + 6 pedagogy + ...)
-mise run baml:extract-learning-graphs  # the 9 BAML functions in learning_graph.baml
+make dlt-smoke-all                  # 9 jurisdictions (Ireland + England + NCCE + 6 Phase 2)
+dg list assets --module orchestration.defs   # ~80 assets (11 NCCE + 48 equivalency + 6 pedagogy + ...)
+uv run baml-cli test baml_extracts/learning_graph.baml  # the 10 BAML functions
 ```
+
+The CI workflow (`.github/workflows/ci.yml`) runs `make lint` + `make typecheck` + `make test` + `baml-cli test` on every push across the Python 3.11 + 3.12 matrix.
 
 ---
 
@@ -404,6 +505,7 @@ mise run baml:extract-learning-graphs  # the 9 BAML functions in learning_graph.
 - [openspec/changes/INDEX.md](openspec/changes/INDEX.md) — the 26 openspec changes
 - [docs/TUATHA_CONSOLIDATION_MAP.md](docs/TUATHA_CONSOLIDATION_MAP.md) — what was absorbed from `sruth/tuath` + `/dev/tuatha`
 - [docs/LEARNING_GRAPH_SHOWCASE.md](docs/LEARNING_GRAPH_SHOWCASE.md) — the NCCE showcase guide
+- [docs/GSM_README.md](docs/GSM_README.md) — the Google Cloud Secret Manager operator guide (Phase 0)
 - [`.agents/skills/openspec/SKILL.md`](.agents/skills/openspec/SKILL.md) — the OpenSpec skill
 - **Upstream cianfhoghlaim**:
   - [`2026-08-30-cieanfhoghlaim-biep-on-gcp-v1`](file:///Users/cianmacandeisigh/dev/cianfhoghlaim/openspec/changes/2026-08-30-cieanfhoghlaim-biep-on-gcp-v1/) — the BIEP-on-GCP umbrella
