@@ -9,19 +9,16 @@
  *   - The map is now an "onboarding" affordance, not a swap.
  */
 
-import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSession } from "../components/session/SessionContext";
 import { OnboardingPicker } from "../components/onboarding/OnboardingPicker";
 import { ArchipelagicRibbon } from "../components/session/ArchipelagicRibbon";
 import { ModelPolicyBadge } from "../components/ModelPolicyBadge";
 import { useEffect, useState } from "react";
-import { getSession, saveSession, defaultSession, type SessionState } from "~/src/lib/session-helpers";
+import { getSession, saveSession, defaultSession } from "~/src/lib/session-helpers";
+import type { SessionState } from "../components/session/SessionContext";
 import type { ActiveSubnation, Role, Cycle } from "../types/session";
 import { SUBNATIONS, DEFAULT_SUBNATIONS, EXPANSION_SUBNATIONS, AVAILABLE_SUBNATIONS, SUBJECT_CATALOGUE } from "../types/session";
-
-export const Route = createFileRoute("/")({
-  component: HomePage,
-});
+import { Link } from "react-router-dom";
 
 function HomePage() {
   const { session, setSession } = useSession();
@@ -30,7 +27,7 @@ function HomePage() {
   useEffect(() => {
     if (!session) {
       const existing = getSession();
-      if (existing) setSession(existing);
+      if (existing) setSession(existing as unknown as Partial<SessionState>);
     }
     setHydrated(true);
   }, [session, setSession]);
@@ -123,8 +120,7 @@ function SubnationHome({ session }: { session: SessionState }) {
             {cycleSubjects.map((s) => (
               <Link
                 key={`${s.sourceKey}-${s.cycle}-${s.name}`}
-                to="/find-resources"
-                search={{ subject: s.name }}
+                to={`/find-resources?subject=${encodeURIComponent(s.name)}`}
                 className="block p-3 rounded border hover:shadow-md transition"
                 style={{
                   borderColor: "var(--color-secondary)/20",
@@ -176,3 +172,5 @@ function QuickAction({ to, label, sub }: { to: string; label: string; sub: strin
     </Link>
   );
 }
+
+export default HomePage;

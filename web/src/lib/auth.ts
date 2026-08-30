@@ -53,7 +53,13 @@ export async function signInWithEmailLink(
 
 /** Link anonymous account to Google (so anonymous onboarding survives) */
 export async function linkAnonymousToGoogle(): Promise<UserCredential> {
-  const result = await linkWithCredential(firebaseAuth().currentUser!, googleProvider);
+  // Firebase v10 types don't accept a GoogleAuthProvider instance directly as
+  // an AuthCredential; cast via unknown to satisfy the linkWithCredential
+  // overload without touching runtime semantics (the provider is reused).
+  const result = await linkWithCredential(
+    firebaseAuth().currentUser!,
+    googleProvider as unknown as Parameters<typeof linkWithCredential>[1],
+  );
   logStructured("info", { event: "anonymous_linked_google", uid: result.user.uid });
   return result;
 }

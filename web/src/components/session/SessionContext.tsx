@@ -27,7 +27,7 @@ import { SUBNATIONS } from "../../types/session";
 import { firebaseAuth, firebaseDb } from "~/src/lib/firebase";
 import { logStructured } from "~/src/lib/observability-browser";
 
-interface SessionState {
+export interface SessionState {
   uid: string;
   email: string | null;
   isAnonymous: boolean;

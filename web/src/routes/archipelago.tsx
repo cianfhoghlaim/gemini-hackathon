@@ -7,13 +7,9 @@
  * content (per-subnation) is the diversity layer.
  */
 
-import { createFileRoute, Link } from "@tanstack/react-router";
 import { SUBNATIONS } from "../types/session";
 import { useSession } from "../components/session/SessionContext";
-
-export const Route = createFileRoute("/archipelago")({
-  component: ArchipelagoPage,
-});
+import { Link } from "react-router-dom";
 
 function ArchipelagoPage() {
   const { subnation } = useSession();
@@ -38,8 +34,7 @@ function ArchipelagoPage() {
             <Link
               key={s.code}
               to="/"
-              search={undefined}
-              className={`block p-4 rounded border transition ${
+                            className={`block p-4 rounded border transition ${
                 isActive ? "ring-2" : "hover:shadow-md"
               } ${isExpansion ? "opacity-50" : ""}`}
               style={{
@@ -81,3 +76,5 @@ function ArchipelagoPage() {
     </div>
   );
 }
+
+export default ArchipelagoPage;

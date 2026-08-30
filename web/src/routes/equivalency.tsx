@@ -1,6 +1,3 @@
-import { createFileRoute, useLoaderData } from "@tanstack/react-router";
-import { readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
 import { usePalette } from "../components/themes/SourcePaletteProvider";
 
 interface EquivalencyRow {
@@ -13,22 +10,8 @@ interface EquivalencyFile {
   rows: EquivalencyRow[];
 }
 
-function loadEquivalencies(): EquivalencyFile {
-  const candidates = [
-    join(process.cwd(), "..", "data", "equivalencies", "mathematics.json"),
-    join(process.cwd(), "data", "equivalencies", "mathematics.json"),
-  ];
-  for (const path of candidates) {
-    if (existsSync(path)) {
-      try {
-        return JSON.parse(readFileSync(path, "utf-8"));
-      } catch {
-        break;
-      }
-    }
-  }
-  // Fallback: hard-coded Mathematics equivalencies.
-  return {
+// (loader inlined as const; Cloud Function is the production source)
+const equivalencyData: EquivalencyFile = {
     subjects: [
       "Ireland", "England (AQA)", "England (OCR)", "England (Pearson)",
       "Scotland", "Wales", "Northern Ireland", "Jersey", "Guernsey", "Isle of Man",
@@ -111,15 +94,11 @@ function loadEquivalencies(): EquivalencyFile {
       },
     ],
   };
-}
 
-export const Route = createFileRoute("/equivalency")({
-  loader: loadEquivalencies,
-  component: EquivalencyPage,
-});
+// (migrated from @tanstack/react-router; route registered in src/router.tsx)
 
 function EquivalencyPage() {
-  const data = useLoaderData({ from: "/equivalency" }) as EquivalencyFile;
+  const data = equivalencyData;
   const { current } = usePalette();
   const targetKey =
     current?.jurisdiction?.replace(/\s*\(.+\)/, "").toLowerCase().trim()
@@ -169,3 +148,5 @@ function EquivalencyPage() {
     </div>
   );
 }
+
+export default EquivalencyPage;

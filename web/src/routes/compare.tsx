@@ -1,10 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { ComparisonLeaderboard } from "../components/comparison/Leaderboard";
 import { DocumentExplorer } from "../components/comparison/DocumentExplorer";
-
-export const Route = createFileRoute("/compare")({
-  component: ComparePage,
-});
 
 function ComparePage() {
   return (
@@ -33,3 +28,5 @@ function ComparePage() {
     </div>
   );
 }
+
+export default ComparePage;

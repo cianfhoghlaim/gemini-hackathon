@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { subscribeCertificateComparisons } from "../../lib/firestore.ts";
+import { firestoreQueries } from "../../lib/firestore.ts";
 
 interface ComparisonRow {
   id: string;
@@ -30,15 +30,11 @@ export function ComparisonLeaderboard() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsub = subscribeCertificateComparisons(
+    const unsub = firestoreQueries.subscribeCertificateComparisons(
       "ireland",         // default subnation (the active session's value comes via useSession)
       "scoil_sinsearach", // default stage
       (data: unknown[]) => {
         setRows(data as ComparisonRow[]);
-        setLoading(false);
-      },
-      (err) => {
-        setError(String(err));
         setLoading(false);
       },
     );

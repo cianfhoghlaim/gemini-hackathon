@@ -1,14 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSession } from "../components/session/SessionContext";
 import { MarimoEmbed } from "../components/marimo/MarimoEmbed";
-
-export const Route = createFileRoute("/subjects/$slug")({
-  component: SubjectDetailPage,
-});
+import { Link, useParams } from "react-router-dom";
 
 function SubjectDetailPage() {
   const { subnation, session } = useSession();
-  const { slug } = Route.useParams();
+  const { slug } = useParams();
 
   // The cycle is part of the session identity. The notebook pre-fills
   // its (subnation, cycle, subject) dropdowns from the URL.
@@ -56,3 +52,5 @@ function SubjectDetailPage() {
     </div>
   );
 }
+
+export default SubjectDetailPage;

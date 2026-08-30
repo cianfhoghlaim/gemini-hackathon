@@ -1,10 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSession } from "../components/session/SessionContext";
 import { MarimoEmbed } from "../components/marimo/MarimoEmbed";
-
-export const Route = createFileRoute("/subjects")({
-  component: SubjectsPage,
-});
+import { Link } from "react-router-dom";
 
 function SubjectsPage() {
   const { subnation, session } = useSession();
@@ -39,8 +35,7 @@ function SubjectsPage() {
         {subjects.map((s) => (
           <Link
             key={s.slug}
-            to="/subjects/$slug"
-            params={{ slug: s.slug }}
+            to={`/subjects/${s.slug}`}
             className="block p-4 rounded border hover:shadow-md transition"
             style={{
               borderColor: "var(--color-secondary)/20",
@@ -57,3 +52,5 @@ function SubjectsPage() {
     </div>
   );
 }
+
+export default SubjectsPage;

@@ -5,7 +5,6 @@
  * policies are behind an "all 8 subnations" expander.
  */
 
-import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useSession } from "../components/session/SessionContext";
 import { SUBNATIONS } from "../types/session";
@@ -30,10 +29,6 @@ const POLICY_SUMMARIES: Record<string, string> = {
   wales:
     "Wales' 'Keeping Learners Safe' guidance (updated 2025) sets out the safeguarding responsibilities of schools, further education colleges, and local authorities under the Social Services and Well-being (Wales) Act 2014.",
 };
-
-export const Route = createFileRoute("/safeguarding")({
-  component: SafeguardingPage,
-});
 
 function SafeguardingPage() {
   const { subnation } = useSession();
@@ -105,3 +100,5 @@ function SafeguardingPage() {
     </div>
   );
 }
+
+export default SafeguardingPage;

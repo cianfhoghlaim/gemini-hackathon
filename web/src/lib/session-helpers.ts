@@ -3,7 +3,7 @@
 // Convex `userSessions` (production). For now: a typed wrapper around
 // localStorage that all routes import.
 
-import type { ActiveSubnation, Role, Cycle } from "~/types/session";
+import type { ActiveSubnation, Role, Cycle } from "../types/session.ts";
 
 export interface SessionState {
   sessionId: string;

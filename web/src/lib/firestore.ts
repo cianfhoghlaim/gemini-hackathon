@@ -41,7 +41,7 @@ export function subscribeDoc<T extends DocumentData>(
 ): Unsubscribe {
   return onSnapshot(
     doc(firebaseDb(), COLLECTIONS[collectionName as keyof typeof COLLECTIONS] ?? collectionName, docId),
-    (snap) => onValue(snap.exists() ? ({ id: snap.id, ...snap.data() } as T) : null),
+    (snap) => onValue(snap.exists() ? ({ id: snap.id, ...snap.data() } as unknown as T) : null),
     onError,
   );
 }
@@ -56,7 +56,7 @@ export function subscribeCollection<T extends DocumentData>(
   const ref = collection(firebaseDb(), collectionName);
   return onSnapshot(
     query(ref, ...constraints),
-    (snap) => onValue(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as T)),
+    (snap) => onValue(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as unknown as T)),
     onError,
   );
 }
@@ -67,7 +67,7 @@ export async function fetchDoc<T extends DocumentData>(
   docId: string,
 ): Promise<T | null> {
   const snap = await getDoc(doc(firebaseDb(), collectionName, docId));
-  return snap.exists() ? ({ id: snap.id, ...snap.data() } as T) : null;
+  return snap.exists() ? ({ id: snap.id, ...snap.data() } as unknown as T) : null;
 }
 
 /** One-shot fetch of a collection (no realtime). */
@@ -77,7 +77,7 @@ export async function fetchCollection<T extends DocumentData>(
 ): Promise<T[]> {
   const ref = collection(firebaseDb(), collectionName);
   const snap = await getDocs(query(ref, ...constraints));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as T);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as unknown as T);
 }
 
 /** Write (upsert) a document. */
