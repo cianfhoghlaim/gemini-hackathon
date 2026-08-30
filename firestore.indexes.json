@@ -63,6 +63,22 @@
         { "fieldPath": "userId",   "order": "ASCENDING" },
         { "fieldPath": "outcomeId", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "learningGraphs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "jurisdiction", "order": "ASCENDING" },
+        { "fieldPath": "subject",      "order": "ASCENDING" },
+        { "fieldPath": "year_level",   "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "prerequisiteEdges",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "source_cell_id", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

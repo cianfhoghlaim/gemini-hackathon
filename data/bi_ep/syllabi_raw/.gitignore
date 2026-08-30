@@ -1,6 +1,5 @@
-# Phase 2 — raw PDFs (downloaded from KNOWN_OFFICIAL_URLS)
-# Never committed; the source of truth is the canonical KNOWN_OFFICIAL_URLS
-# dict in dlt_pipelines/official_doc_fetcher.py:160-500.
-*
-!*.gitkeep
-!.gitignore
+# Ignore the raw PDFs (they are large + reproducible from the upstream source)
+# but keep the INDEX.yaml manifest + the placeholder JSON for the deferred
+# download so the canonical substrate is reproducible.
+*.pdf
+!*.placeholder.json

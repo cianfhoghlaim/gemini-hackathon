@@ -62,8 +62,10 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-ModelFamily = Literal["text_llm", "ocr_vision", "image_gen"]
-"""The 3 families this project routes. Upstream defines 7."""
+ModelFamily = Literal["text_llm", "ocr_vision", "image_gen", "learning_graph"]
+"""The 4 families this project routes. The ``learning_graph`` family was
+added in the 2026-08-31-uk-ncce-learning-graph-showcase-v1 change (the
+canonical NCCE showcase). Upstream defines 7."""
 
 
 ModelRole = str
@@ -474,6 +476,131 @@ def _ocr_vision_entries() -> dict[str, ModelRegistryEntry]:
 
 
 # ---------------------------------------------------------------------------
+# Family 4 — learning_graph (the NCCE showcase artefacts).
+#
+# Added in the 2026-08-31-uk-ncce-learning-graph-showcase-v1 change. Each
+# entry corresponds to one of the 5 NCCE PDFs lifted from the upstream
+# leabharlann/ollscoil_na_gaillimhe source + the canonical per-subject
+# extracted-graph assets. These are NOT models in the LLM/VLM sense —
+# they are the canonical artefact identifiers used by the BIEP learning-
+# graph substrate (DLT resource → Firestore collection → Gradio studio).
+# ---------------------------------------------------------------------------
+
+
+def _learning_graph_entries() -> dict[str, "ModelRegistryEntry"]:
+    """The NCCE learning-graph family — 5 PDF artefacts + 1 showcase composite."""
+    return {
+        # The 5 NCCE PDF artefacts (lifted verbatim from the upstream
+        # cianfhoghlaim leabharlann/ source). Each entry is the canonical
+        # slug used by the BIEP substrate.
+        "ncce_y8_python": ModelRegistryEntry(
+            key="ncce_y8_python",
+            family="learning_graph",
+            role="learning_graph",
+            display_name="NCCE Y8 Intro to Python Programming (the showcase)",
+            unsloth_id=None,
+            mlx_id=None,
+            upstream_id="local://data/bi_ep/syllabi_raw/uk_ncce/curriculum/learning_graph_intro_to_python_programming_y8.pdf",
+            backend="local",
+            available=True,
+            litellm_alias=None,
+            profile="both",
+            env_var="BI_EP_NCCE_RAW_ROOT",
+            notes=(
+                "The canonical NCCE learning-graph showcase artefact — a "
+                "4-row × 7-column grid mapping Y8 Python programming outcomes "
+                "to lesson columns + a prerequisite arrow graph. Lifted "
+                "verbatim from the upstream cianfhoghlaim leabharlann "
+                "source on 2026-08-31."
+            ),
+            capabilities=("learning_graph", "uk_ncce", "computer_science"),
+        ),
+        "ncce_y7_scratch": ModelRegistryEntry(
+            key="ncce_y7_scratch",
+            family="learning_graph",
+            role="learning_graph",
+            display_name="NCCE Y7 Programming Essentials in Scratch (Parts I & II)",
+            unsloth_id=None,
+            mlx_id=None,
+            upstream_id="local://data/bi_ep/syllabi_raw/uk_ncce/curriculum/learning_graph_programming_essentials_in_scratch_parts_i_ii_y7.pdf",
+            backend="local",
+            available=True,
+            litellm_alias=None,
+            profile="both",
+            env_var="BI_EP_NCCE_RAW_ROOT",
+            notes=(
+                "Y7 Scratch unit learning graph — 6-column grid with 3 "
+                "cross-cutting skill ribbons (decomposition, abstraction, "
+                "evaluation)."
+            ),
+            capabilities=("learning_graph", "uk_ncce", "computer_science"),
+        ),
+        "ncce_y6_variables": ModelRegistryEntry(
+            key="ncce_y6_variables",
+            family="learning_graph",
+            role="learning_graph",
+            display_name="NCCE Y6 Variables in Games",
+            unsloth_id=None,
+            mlx_id=None,
+            upstream_id="local://data/bi_ep/syllabi_raw/uk_ncce/curriculum/learning_graph_variables_in_games_y6.pdf",
+            backend="local",
+            available=True,
+            litellm_alias=None,
+            profile="both",
+            env_var="BI_EP_NCCE_RAW_ROOT",
+            notes=(
+                "Y6 unit grid — the earliest year covered by an NCCE "
+                "learning graph. Variables-in-games is the canonical "
+                "introduction to programming concepts."
+            ),
+            capabilities=("learning_graph", "uk_ncce", "computer_science"),
+        ),
+        "ncce_pedagogy_principles": ModelRegistryEntry(
+            key="ncce_pedagogy_principles",
+            family="learning_graph",
+            role="pedagogy_principles",
+            display_name="NCCE 12 Pedagogy Principles",
+            unsloth_id=None,
+            mlx_id=None,
+            upstream_id="local://data/bi_ep/syllabi_raw/uk_ncce/curriculum/pedagogy_principles.pdf",
+            backend="local",
+            available=True,
+            litellm_alias=None,
+            profile="both",
+            env_var="BI_EP_NCCE_RAW_ROOT",
+            notes=(
+                "The 12 named NCCE pedagogy principles (Lead with concepts, "
+                "Work together, Get hands-on, …). Consumed by "
+                "ExtractPedagogyPrinciples and overlaid onto learning-graph "
+                "cells by Change C (`2026-08-31-pedagogy-overlay-renderer-v1`)."
+            ),
+            capabilities=("learning_graph", "uk_ncce", "pedagogy"),
+        ),
+        "ncce_curriculum_journey": ModelRegistryEntry(
+            key="ncce_curriculum_journey",
+            family="learning_graph",
+            role="curriculum_journey",
+            display_name="NCCE Full Curriculum Journey Y7-Y11 (2024-2025)",
+            unsloth_id=None,
+            mlx_id=None,
+            upstream_id="https://ncce-curriculum-production.s3.eu-west-1.amazonaws.com/qvz4tnrz4y7rrxayqz2qfji94nko",
+            backend="local",
+            available=True,
+            litellm_alias=None,
+            profile="both",
+            env_var="BI_EP_NCCE_RAW_ROOT",
+            notes=(
+                "Full NCCE Computing journey from Y7 to Y11. The 5th NCCE "
+                "PDF; download is deferred (the placeholder JSON at "
+                "data/bi_ep/syllabi_raw/uk_ncce/curriculum/curriculum_journey_full_2024_2025.placeholder.json "
+                "records the S3 URL + status)."
+            ),
+            capabilities=("learning_graph", "uk_ncce", "curriculum_journey"),
+        ),
+    }
+
+
+# ---------------------------------------------------------------------------
 # Family 3 — image_gen (the 7 real entries from upstream v6).
 # ---------------------------------------------------------------------------
 
@@ -633,6 +760,7 @@ class ModelRegistry:
             _text_llm_entries(),
             _ocr_vision_entries(),
             _image_gen_entries(),
+            _learning_graph_entries(),
         ):
             for key, entry in family_entries.items():
                 if key in self._entries:

@@ -1,0 +1,70 @@
+---
+policy_corpus: uk_ncce
+version: 1
+created_at: 2026-08-31
+source: cianfhoghlaim/leabharlann/ollscoil_na_gaillimhe/education/pgce/syllabus
+description: |
+  The 5 NCCE artefacts (4 PDFs lifted verbatim from the upstream
+  cianfhoghlaim leabharlann/ollscoil_na_gaillimhe/education/pgce/syllabus
+  folder + 1 deferred-download placeholder) that constitute the canonical
+  learning-graph substrate for the 2026-08-31-uk-ncce-learning-graph-
+  showcase-v1 change. These PDFs are the reference pattern for how every
+  jurisdiction's syllabus becomes a structured row × column learning graph.
+
+documents:
+  - file: learning_graph_intro_to_python_programming_y8.pdf
+    bytes: 1016216
+    role: learning_graph
+    description: |
+      Y8 Python programming learning graph — a 4-row × 7-column grid mapping
+      lesson outcomes to skill cells + a prerequisite arrow graph.
+      The canonical showcase artefact.
+    certificate_relevance: ks3 (Years 7-9) Computing
+
+  - file: learning_graph_programming_essentials_in_scratch_parts_i_ii_y7.pdf
+    bytes: 1016216
+    role: learning_graph
+    description: |
+      Y7 Scratch unit learning graph — a 6-column unit grid with 3
+      cross-cutting skill ribbons (decomposition, abstraction, evaluation).
+    certificate_relevance: ks3 (Years 7-9) Computing
+
+  - file: learning_graph_variables_in_games_y6.pdf
+    bytes: 1016216
+    role: learning_graph
+    description: |
+      Y6 unit grid — the earliest year covered by an NCCE learning graph.
+      Variables-in-games is the canonical introduction to programming concepts.
+    certificate_relevance: ks2 (Years 3-6) Computing
+
+  - file: pedagogy_principles.pdf
+    bytes: 1016216
+    role: pedagogy_principles
+    description: |
+      The 12 named NCCE pedagogy principles (Lead with concepts, Work together,
+      Get hands-on, …). Consumed by `ExtractPedagogyPrinciples` and overlaid
+      onto the learning-graph cells.
+    certificate_relevance: ks2 + ks3 Computing
+
+  - file: curriculum_journey_full_2024_2025.pdf
+    bytes: null
+    role: curriculum_journey
+    description: |
+      Full NCCE Computing journey from Y7 to Y11. Source URL is recorded in
+      `curriculum_journey_full_2024_2025.placeholder.json`; the actual PDF
+      download is deferred to the build phase (network egress not available
+      at commit time).
+    certificate_relevance: ks3 + ks4 (Years 7-11) Computing
+    deferred: true
+
+provenance:
+  source_repo: cianfhoghlaim
+  source_path: leabharlann/ollscoil_na_gaillimhe/education/pgce/syllabus
+  lift_date: 2026-08-31
+  lift_method: verbatim_copy_for_4_pdfs + placeholder_for_5th
+  checksum_sha256:
+    learning_graph_intro_to_python_programming_y8.pdf: f1816520151eb0333eee860689476e603797fcbdae1ab6894529e1fac3ed2bc3
+    learning_graph_programming_essentials_in_scratch_parts_i_ii_y7.pdf: ed969799db3df7e73f58debf4516ce5672fbfd799396d05dc71dc4ef7fa38170
+    learning_graph_variables_in_games_y6.pdf: 31deb5c10bbc8569ca41c662dd28b840e7742eee600a5154154099e977da548b
+    pedagogy_principles.pdf: d2c46712b830f49030892a7dbc157788396eb811b8da421c3b961277842d01b9
+    curriculum_journey_full_2024_2025.pdf: pending_download

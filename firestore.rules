@@ -159,5 +159,23 @@ service cloud.firestore {
       allow read:   if true;
       allow write:  if isAdmin();
     }
+
+    // ---- Phase A (Learning Graph era) — learningGraphs + prerequisiteEdges ----
+    //
+    // Shipped by the OpenSpec change
+    // `2026-08-31-uk-ncce-learning-graph-showcase-v1`. Both collections are
+    // read-public (every graph is a public reference for the BIEP
+    // learning-graph substrate) + write-admin (only the CI / Dagster
+    // pipeline writes here).
+
+    match /learningGraphs/{graphId} {
+      allow read:   if true;
+      allow write:  if isAdmin();
+    }
+
+    match /prerequisiteEdges/{edgeId} {
+      allow read:   if true;
+      allow write:  if isAdmin();
+    }
   }
 }

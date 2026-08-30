@@ -26,6 +26,7 @@ import DrillDownRoute from "./routes/drill-down";
 import ArchipelagoPage from "./routes/archipelago";
 import ComparePage from "./routes/compare";
 import EquivalencyPage from "./routes/equivalency";
+import LearningGraphsPage from "./routes/learning-graphs";
 
 export const router = createBrowserRouter([
   {
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
       { path: "archipelago", element: <ArchipelagoPage /> },
       { path: "compare", element: <ComparePage /> },
       { path: "equivalency", element: <EquivalencyPage /> },
+      { path: "learning-graphs", element: <LearningGraphsPage /> },
     ],
   },
 ]);

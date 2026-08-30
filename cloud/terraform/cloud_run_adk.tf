@@ -222,6 +222,18 @@ resource "google_cloud_run_v2_service" "adk" {
         value = "https://telemetry.googleapis.com/v1/traces"
       }
 
+      # Phase A (Learning Graph era) — the Firestore collection the
+      # orchestration layer writes the extracted LearningGraph + PedagogyPrinciple
+      # documents into. Override via the `LEARNING_GRAPH_FIRESTORE_COLLECTION`
+      # env var (default `learningGraphs`). The 5 NCCE PDFs are extracted
+      # into this collection via the canonical
+      # orchestration/defs/3_model_lifecycle/uk_ncce_learning_graphs.py
+      # Dagster assets (11 total: 5 PDF + 6 per-subject).
+      env {
+        name  = "LEARNING_GRAPH_FIRESTORE_COLLECTION"
+        value = "learningGraphs"
+      }
+
       ports {
         container_port = 8080
       }

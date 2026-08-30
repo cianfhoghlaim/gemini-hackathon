@@ -86,13 +86,18 @@ def resolve_lc_subjects_path() -> Path | str:
 # Canonical jurisdiction + subject registries
 # ---------------------------------------------------------------------------
 
-#: The 8 British Isles jurisdictions + 5 safeguarding bodies (13 sources).
+#: The 9 British Isles jurisdictions + 5 safeguarding bodies (14 sources).
 #: Mirrors `gemini_hackathon.theming.JURISDICTION_SOURCES` + `SAFEGUARDING_SOURCES`.
 #:
 #: `gov.je/education` + `gov.gg/education` added (Phase 3 of the GCP-first
 #: refactor) — completes the 8-jurisdiction British Isles set (Ireland,
 #: England x3 boards, Scotland, Wales, Northern Ireland, Isle of Man,
 #: Jersey, Guernsey).
+#:
+#: `uk_ncce` added in the 2026-08-31 Learning Graph era
+#: (`2026-08-31-uk-ncce-learning-graph-showcase-v1`) as the 9th jurisdiction.
+#: The rich metadata (covers, priority_subjects, s3_bucket, curriculum_source)
+#: lives in the companion `JURISDICTION_DETAILS` dict below.
 JURISDICTION_BOARDS: dict[str, str] = {
     "ncca.ie": "Ireland",
     "aqa.org.uk": "England",
@@ -104,7 +109,44 @@ JURISDICTION_BOARDS: dict[str, str] = {
     "gov.im/education": "Isle of Man",
     "gov.je/education": "Jersey",
     "gov.gg/education": "Guernsey",
+    "uk_ncce": "United Kingdom (NCCE)",
 }
+
+#: Per-jurisdiction rich metadata. Holds the extended fields (name,
+#: country, awarding_body, covers, curriculum_source, s3_bucket,
+#: priority_subjects) for jurisdictions that publish structured curricula
+#: (currently just `uk_ncce` per the 2026-08-31 Learning Graph era
+#: showcase). Other jurisdictions get an empty dict so `detail_for(key)`
+#: never raises.
+JURISDICTION_DETAILS: dict[str, dict[str, object]] = {
+    "uk_ncce": {
+        "name": "United Kingdom (NCCE)",
+        "country": "UK",
+        "awarding_body": "NCCE",
+        "covers": ["England", "Wales", "Northern Ireland", "Isle of Man"],
+        "curriculum_source": "https://teachcomputing.org/curriculum",
+        "s3_bucket": "ncce-curriculum-production.s3.eu-west-1.amazonaws.com",
+        "priority_subjects": [
+            "computer_science",
+            "mathematics",
+            "english",
+            "gaeilge",  # cross-walked via the NCCA Gaeilge LC curriculum
+            "chemistry",
+            "geography",
+        ],
+    },
+}
+
+
+def jurisdiction_detail(source_key: str) -> dict[str, object]:
+    """Return the rich metadata dict for `source_key`, or ``{}`` if absent.
+
+    Companion to :data:`JURISDICTION_BOARDS`. The simple
+    ``JURISDICTION_BOARDS[key]`` lookup returns the country name;
+    ``jurisdiction_detail(key)`` returns the full structured metadata
+    (priority_subjects, s3_bucket, etc.) when present.
+    """
+    return JURISDICTION_DETAILS.get(source_key, {})
 
 #: The 5 safeguarding bodies.
 SAFEGUARDING_BODIES: dict[str, str] = {
@@ -427,6 +469,8 @@ __all__ = [
     "gcs_uri",
     # Registries
     "JURISDICTION_BOARDS",
+    "JURISDICTION_DETAILS",
+    "jurisdiction_detail",
     "LC_LANGUAGE_DIRS",
     "LC_SUBJECTS_GCS_URI",
     "LC_SUBJECTS_PATH",
