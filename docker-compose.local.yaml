@@ -1,0 +1,136 @@
+# ============================================================================
+# docker-compose.local.yaml — Phase 8a local dev observability stack.
+#
+# Adds Langfuse v3 + MLflow v2.20 to the main docker-compose.yml.
+# Use as a Docker Compose override:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.local.yaml up
+#
+# Services:
+#   - langfuse-web       : Langfuse v3 UI + API on :3000
+#   - langfuse-worker    : background jobs (queue + cron)
+#   - langfuse-postgres  : PostgreSQL backend for Langfuse
+#   - langfuse-clickhouse : ClickHouse backend for Langfuse traces
+#   - langfuse-redis     : Redis cache for Langfuse
+#   - mlflow             : MLflow v2.20 server on :5000 (sqlite backend)
+#
+# When running, the ADK backend (gemini-hackathon container) auto-detects
+# LANGFUSE_PUBLIC_KEY + LANGFUSE_SECRET_KEY + MLFLOW_TRACKING_URI from the
+# .env file (or the container env) and wires the observability layer.
+# ============================================================================
+
+name: gemini-hackathon-observability
+
+services:
+  langfuse-postgres:
+    image: postgres:16
+    container_name: gemini-hackathon-langfuse-postgres
+    environment:
+      POSTGRES_USER: langfuse
+      POSTGRES_PASSWORD: langfuse_dev_password
+      POSTGRES_DB: langfuse
+    volumes:
+      - langfuse-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U langfuse"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gemini-hackathon-observability
+
+  langfuse-clickhouse:
+    image: clickhouse/clickhouse-server:24
+    container_name: gemini-hackathon-langfuse-clickhouse
+    environment:
+      CLICKHOUSE_DB: langfuse
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: clickhouse_dev_password
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - langfuse-clickhouse-data:/var/lib/clickhouse
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    networks:
+      - gemini-hackathon-observability
+
+  langfuse-redis:
+    image: redis:7-alpine
+    container_name: gemini-hackathon-langfuse-redis
+    networks:
+      - gemini-hackathon-observability
+
+  langfuse-web:
+    image: langfuse/langfuse:3
+    container_name: gemini-hackathon-langfuse-web
+    depends_on:
+      langfuse-postgres:
+        condition: service_healthy
+      langfuse-clickhouse:
+        condition: service_started
+      langfuse-redis:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql://langfuse:langfuse_dev_password@langfuse-postgres:5432/langfuse
+      CLICKHOUSE_URL: clickhouse://clickhouse:clickhouse_dev_password@langfuse-clickhouse:8123/langfuse
+      REDIS_URL: redis://langfuse-redis:6379
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: dev-secret-change-me-in-production
+      SALT: dev-salt-change-me-in-production
+      TELEMETRY_ENABLED: "false"
+      LANGFUSE_INIT_ORG_ID: seed-org
+      LANGFUSE_INIT_PROJECT_ID: seed-project
+      LANGFUSE_INIT_USER_EMAIL: admin@langfuse.local
+      LANGFUSE_INIT_USER_PASSWORD: langfuse
+      LANGFUSE_INIT_USER_NAME: Admin
+    ports:
+      - "3000:3000"
+    networks:
+      - gemini-hackathon-observability
+
+  langfuse-worker:
+    image: langfuse/langfuse-worker:3
+    container_name: gemini-hackathon-langfuse-worker
+    depends_on:
+      langfuse-web:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql://langfuse:langfuse_dev_password@langfuse-postgres:5432/langfuse
+      CLICKHOUSE_URL: clickhouse://clickhouse:clickhouse_dev_password@langfuse-clickhouse:8123/langfuse
+      REDIS_URL: redis://langfuse-redis:6379
+      SALT: dev-salt-change-me-in-production
+    networks:
+      - gemini-hackathon-observability
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.20.0
+    container_name: gemini-hackathon-mlflow
+    command: >
+      mlflow server
+        --host 0.0.0.0
+        --port 5000
+        --backend-store-uri sqlite:///mlflow/mlflow.db
+        --default-artifact-root /mlflow/artifacts
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+    volumes:
+      - mlflow-data:/mlflow
+    ports:
+      - "5000:5000"
+    networks:
+      - gemini-hackathon-observability
+
+volumes:
+  langfuse-postgres-data:
+    name: gemini-hackathon-langfuse-postgres-data
+  langfuse-clickhouse-data:
+    name: gemini-hackathon-langfuse-clickhouse-data
+  mlflow-data:
+    name: gemini-hackathon-mlflow-data
+
+networks:
+  gemini-hackathon-observability:
+    name: gemini-hackathon-observability-net
+    driver: bridge

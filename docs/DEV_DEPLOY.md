@@ -235,3 +235,57 @@ Based on what shipped and what I can't verify from here:
 - \`gemini_hackathon/backend.py\` — the stdlib HTTP server. Replace with Hono + oRPC + Convex actions when the production backend graduates.
 - \`mise.toml\` — every dev-deploy command is a mise task.
 - \`web/public/british_isles_jurisdictions.geojson\` — the 10-jurisdiction boundary file.
+
+## Phase 8 — Local dev + dev Cloud Run deploy
+
+Added in commit `3db87f8`+.
+
+### Phase 8a — Local dev (Docker Compose)
+
+`docker-compose.local.yaml` is a Docker Compose override that adds the
+observability stack (Langfuse v3 + MLflow v2.20) on top of the main
+`docker-compose.yml`.
+
+```bash
+# Boot the full local dev stack (application + llama-swap + Langfuse + MLflow)
+docker compose -f docker-compose.yml -f docker-compose.local.yaml up --build
+```
+
+Local URLs:
+- App:        http://localhost:3000  (or whatever port the app exposes)
+- Langfuse:   http://localhost:3000  (default creds: admin@langfuse.local / langfuse)
+- MLflow:     http://localhost:5000
+- llama-swap: http://localhost:8080/v1/models
+
+When the stack is up, the ADK backend container reads:
+- `LANGFUSE_PUBLIC_KEY` + `LANGFUSE_SECRET_KEY` (from .env) → wires Langfuse via `GoogleADKInstrumentor`
+- `MLFLOW_TRACKING_URI` (from .env) → wires MLflow per-tool counters
+- `GCP_PROJECT_ID` + `GOOGLE_CLOUD_LOCATION` (from .env) → wires ADK OTel → Cloud Trace + Cloud Logging
+
+### Phase 8a — Jupyter walkthrough
+
+`notebooks/09_local_dev_smoke_test.ipynb` runs 4 cells verifying:
+1. Core imports (gemini_hackathon + backend + observability)
+2. 3-tier model policy (LiteLLM router config)
+3. Memory service factory (env-gated)
+4. Pipeline modules (PDF downloader + markdown extractor + BAML extractor + equivalency graph)
+
+### Phase 8b — Dev Cloud Run deploy
+
+`.github/workflows/dev-deploy.yml` triggers a Cloud Build on every push to main, deploying to `gemini-hackathon-adk-dev`. Production promotion requires a tagged release.
+
+Required GitHub Actions secrets:
+- `GCP_PROJECT_ID`
+- `GCP_SA_KEY_DEV` (JSON service-account key with `roles/run.developer` + `roles/cloudbuild.builds.editor`)
+- `LANGFUSE_PUBLIC_KEY_DEV` + `LANGFUSE_SECRET_KEY_DEV` (dev Langfuse)
+
+### Phase 8c — Observability verification
+
+`gemini_hackathon_backend/tests/test_observability_e2e.py` (8 tests) verifies:
+- `init_backend_observability()` returns the 5-key state dict
+- The OTel env vars are setdefault'd when `GCP_PROJECT_ID` is set
+- Raw Cloud Logging is skipped when OTel is active (no double-log)
+- Memory service falls through to None when no env vars are set
+- `record_generation()` and `log_mlflow_metric()` are safe no-ops when Langfuse/MLflow are inactive
+- The module-level singletons + getters are wired correctly
+- The state dict has stable keys (the `/healthz` contract)
