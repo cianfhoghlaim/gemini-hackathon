@@ -132,3 +132,101 @@ See `docs/ARCHITECTURE.md` for the Mermaid diagram and the per-subnation user-co
 - **`500` from the agent** → the LLM call failed (typically missing creds). The endpoint returns the error verbatim with a `hint` field — check the env vars (`GOOGLE_CLOUD_PROJECT`, `GEMINI_API_KEY`, `UNSLOTH_API_KEY`).
 - **`404` on `/api/duckdb`** → the `.duckdb` file hasn't been materialised yet. Run `mise run compare:demo` first (which calls `run_comparison` and writes the rows).
 - **`timeout` on Cloud Build** → bump `timeout:` in `cloudbuild.yaml` if your image is large.
+
+## Phase 0 (2026-08-30) — GCP-first IaC refactor addendum
+
+This addendum covers the **new** Terraform-based deployment target
+that replaced the prior Oracle Cloud free tier hosting. The local dev
+path (the original content above) is unchanged.
+
+### Dev Cloud Run (Phase 0)
+
+```bash
+gcloud auth login
+gcloud config set project $DEV_PROJECT
+
+# Enable the 6 observability APIs (one-time)
+gcloud services enable aiplatform.googleapis.com \
+  serviceusage.googleapis.com \
+  telemetry.googleapis.com \
+  logging.googleapis.com \
+  monitoring.googleapis.com \
+  cloudtrace.googleapis.com
+
+# Build + push the image
+gcloud builds submit --config=cloudbuild.yaml \
+  --project=$DEV_PROJECT \
+  --substitutions=_IMAGE_URL="$REGION-docker.pkg.dev/$DEV_PROJECT/gemini-hackathon/backend:$SHA"
+
+# Deploy via Compose
+gcloud run compose up compose.yaml \
+  -f docker-compose.dev-cloudrun.yaml \
+  --project=$DEV_PROJECT --region=$REGION --max-instances=10
+```
+
+### Prod Cloud Run (Terraform)
+
+```bash
+cd cloud/terraform/envs/prod
+
+# 1. Init (downloads the GCS backend state)
+terraform init
+
+# 2. Plan (review the diff!)
+terraform plan -out=tfplan
+cat tfplan | head -100  # or use terraform show tfplan
+# Manual review required. Look for:
+#   - 6 google_project_service.observability resources enabled
+#   - 1 google_service_account.adk created
+#   - 4 google_project_iam_member.adk_roles bound
+#   - 4 google_secret_manager_secret.cloudrun_secret_*_secret created
+#   - 1 google_cloud_run_v2_service.gemini-hackathon_backend deployed
+#   - 1 google_cloud_run_v2_service.gemini-hackathon-frontend deployed
+#   - All 6 Stackdriver env vars present on the backend service
+
+# 3. Apply (after review)
+terraform apply tfplan
+```
+
+### Verify the Stackdriver integration
+
+```bash
+# Get the backend URL
+BACKEND_URL=$(terraform output -raw backend_url)
+
+# /healthz returns the 5-key observability state
+curl -fsS "${BACKEND_URL}/healthz" | jq .
+
+# The Application Monitoring dashboard in the GCP console
+# (Optimize > Observability > Application Monitoring) auto-populates
+# from the OTLP spans
+open "https://console.cloud.google.com/monitoring/traces/explorer?project=$DEV_PROJECT"
+```
+
+### Local dev with the same 6-env-var contract
+
+```bash
+# Set the 6 Stackdriver env vars (the contract is the same locally)
+export OTEL_SERVICE_NAME='gemini-hackathon-adk'
+export OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED='true'
+export OTEL_SEMCONV_STABILITY_OPT_IN='gen_ai_latest_experimental'
+export OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT='EVENT_ONLY'
+export ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS='false'
+export GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY='true'
+export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT='http://localhost:4318'  # local OTLP collector
+
+# Run the app
+uv run uvicorn gemini_hackathon_backend.main:app --reload
+```
+
+### Roll back
+
+```bash
+cd cloud/terraform/envs/prod
+terraform plan -destroy -out=tfplan-destroy
+terraform apply tfplan-destroy
+```
+
+The `disable_on_destroy = false` on the `google_project_service`
+resources ensures the APIs stay enabled after a destroy (other stacks in
+the same project may still need them).

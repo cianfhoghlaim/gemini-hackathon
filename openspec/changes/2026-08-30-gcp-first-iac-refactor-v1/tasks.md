@@ -43,27 +43,27 @@
 - [x] T3.7: git commit + git push
 
 ## Phase 4 — GCP service enablement + IAM (1 PR, manual)
-- [ ] T4.1: New `cloud/terraform/modules/observability_apis/main.tf` — 6 `google_project_service` resources
-- [ ] T4.2: New `cloud/terraform/modules/iam_gcp_ai_agent_adk/main.tf` — service account + 4 IAM roles + WIF pool
-- [ ] T4.3: `cloud/terraform/envs/dev/main.tf` — wire the 2 new modules
-- [ ] T4.4: pytest 35 → 35; `terraform validate` (no actual apply)
-- [ ] T4.5: git commit + git push
+- [x] T4.1: New `cloud/terraform/modules/observability_apis/main.tf` — 6 `google_project_service` resources
+- [x] T4.2: New `cloud/terraform/modules/iam_gcp_ai_agent_adk/main.tf` — service account + 4 IAM roles + WIF pool
+- [x] T4.3: `cloud/terraform/envs/dev/main.tf` — wire the 2 new modules
+- [x] T4.4: pytest 35 → 35; `terraform validate` (no actual apply)
+- [x] T4.5: git commit + git push
 
 ## Phase 5 — Terraform module scaffold (1 PR)
-- [ ] T5.1: 11 new Terraform module directories under `cloud/terraform/modules/`
-- [ ] T5.2: `cloud/terraform/envs/dev/main.tf` — wire the 11 modules for the dev project
-- [ ] T5.3: `cloud/terraform/envs/prod/main.tf` — wire the 11 modules for the prod project
-- [ ] T5.4: `terraform validate` (no actual apply)
-- [ ] T5.5: git commit + git push
+- [x] T5.1: 11 new Terraform module directories under `cloud/terraform/modules/`
+- [x] T5.2: `cloud/terraform/envs/dev/main.tf` — wire the 11 modules for the dev project
+- [x] T5.3: `cloud/terraform/envs/prod/main.tf` — wire the 11 modules for the prod project
+- [x] T5.4: `terraform validate` (no actual apply)
+- [x] T5.5: git commit + git push
 
-## Phase 6 — `envs/dev/` apply (1 PR, manual `terraform apply`)
+## Phase 6 — `envs/dev/` apply (1 PR, manual `terraform apply` — DEFERRED to user)
 - [ ] T6.1: `cd cloud/terraform/envs/dev && terraform init && terraform plan`
 - [ ] T6.2: Manual `terraform apply` (gated; user reviews the plan first)
 - [ ] T6.3: `curl $BACKEND_URL/healthz | jq .` returns 5-key observability state
 - [ ] T6.4: `gcloud services list --enabled` shows the 6 APIs
 - [ ] T6.5: git commit + git push
 
-## Phase 7 — Production promotion gates (1 PR)
+## Phase 7 — Production promotion gates (1 PR — DEFERRED to user)
 - [ ] T7.1: `cloud/terraform/envs/prod/main.tf` — Memorystore Standard M3, Cloud SQL Enterprise HA, `min-instances=1`, IAP on frontend
 - [ ] T7.2: `terraform plan` returns 0 unexpected diffs
 - [ ] T7.3: Cloud Armor WAF policy reviewed
@@ -72,25 +72,25 @@
 - [ ] T7.6: git commit + git push
 
 ## Phase 8 — End-to-end observability verification (1 PR)
-- [ ] T8.1: New `gemini_hackathon_backend/tests/test_gcp_observability_e2e.py`:
+- [x] T8.1: New `gemini_hackathon_backend/tests/test_gcp_observability_e2e.py`:
   - `try_init_adk_otel()` returns non-None when `GCP_PROJECT_ID` is set
   - The 6 Stackdriver env vars are setdefault'd
   - The 5-key state dict is stable + includes `adk_otel`
   - Langfuse dual-export config is correct when `LANGFUSE_BASE_URL` is set
-- [ ] T8.2: New `tests/integration/test_full_pipeline.py`:
+- [x] T8.2: New `tests/integration/test_full_pipeline.py`:
   - Read 1 BI source PDF → extract via 5 BAML functions → upsert to Lance namespace → emit observability events
   - Asserts every step lands in Cloud Trace + Cloud Logging + (when configured) Langfuse
-- [ ] T8.3: pytest 35 → 39
-- [ ] T8.4: git commit + git push
+- [x] T8.3: pytest 35 → 39
+- [x] T8.4: git commit + git push
 
 ## Phase 9 — Documentation + handover (1 PR)
-- [ ] T9.1: New `docs/IAC.md` — replaces the bonneagar IaC docs
-- [ ] T9.2: `docs/DEPLOYMENT.md` — Google Secret Manager + WIF + Cloud Run + the 6-env-var set
-- [ ] T9.3: New `docs/DEPLOY_RUNBOOK.md` — `terraform apply` step-by-step
-- [ ] T9.4: New `docs/STACKDRIVER_AI_AGENT_ADK_INTEGRATION.md` — reference to the Stackdriver doc + the 6 env vars + the 4 IAM roles + the sample
-- [ ] T9.5: `ARCHITECTURE.md` — update with the GCP-native refactor
-- [ ] T9.6: `README.md` — link to the 4 NEW deployment docs
-- [ ] T9.7: git commit + git push
+- [x] T9.1: New `docs/IAC.md` — replaces the bonneagar IaC docs
+- [x] T9.2: `docs/DEPLOYMENT.md` — Google Secret Manager + WIF + Cloud Run + the 6-env-var set
+- [x] T9.3: New `docs/DEPLOY_RUNBOOK.md` — `terraform apply` step-by-step
+- [x] T9.4: New `docs/STACKDRIVER_AI_AGENT_ADK_INTEGRATION.md` — reference to the Stackdriver doc + the 6 env vars + the 4 IAM roles + the sample
+- [x] T9.5: `ARCHITECTURE.md` — update with the GCP-native refactor
+- [x] T9.6: `README.md` — link to the 4 NEW deployment docs
+- [x] T9.7: git commit + git push
 
 ## Phase validation
 - [ ] V1: `pytest` (root) — no new failures; 7 pre-existing failures per `docs/KNOWN_ISSUES.md` stay at 7
