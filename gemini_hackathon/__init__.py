@@ -189,3 +189,41 @@ __all__ += [
     "sources_subjects_for",
     "sources_public_roster",
 ]
+
+
+# ---------------------------------------------------------------------------
+# Phase 0 — Google Cloud Secret Manager injection (2026-08-30)
+# Replaces the legacy Infisical + Locket contract for the gemini_hackathon
+# dev demo. Behaviour is opt-in via ADK_LOAD_SECRETS=1 — the default is to
+# leave the environment untouched so that existing tools (uvicorn, marimo,
+# BAML CLI) continue to work in dev. CI / Cloud Run / GCE should always set
+# ADK_LOAD_SECRETS=1 so that ADC + GSM populate the env at process start.
+# ---------------------------------------------------------------------------
+try:
+    import os as _os
+    if _os.environ.get("ADK_LOAD_SECRETS", "").strip().lower() in {"1", "true", "yes"}:
+        from .secrets_loader import inject_into_environ as _inject_secrets  # noqa: E402
+
+        _injected = _inject_secrets()
+        _SECRETS_LOADED = True
+        _SECRETS_COUNT = len(_injected)
+        _SECRETS_BACKEND = "gsm" if _os.environ.get("ADK_LOCAL_SECRETS", "").strip().lower() not in {"1", "true", "yes"} else "dotenv"
+    else:
+        _SECRETS_LOADED = False
+        _SECRETS_COUNT = 0
+        _SECRETS_BACKEND = None
+except Exception as _exc:
+    _SECRETS_LOADED = False
+    _SECRETS_COUNT = 0
+    _SECRETS_BACKEND = None
+    _SECRETS_LOAD_ERROR = str(_exc)
+else:
+    _SECRETS_LOAD_ERROR = None
+
+
+__all__ += [
+    "_SECRETS_LOADED",
+    "_SECRETS_COUNT",
+    "_SECRETS_BACKEND",
+    "_SECRETS_LOAD_ERROR",
+]

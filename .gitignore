@@ -13,6 +13,7 @@ __pycache__/
 
 # --- uv + virtualenvs --------------------------------------------------------
 .venv/
+.venv-secrets/  # used by scripts/seed_gsm.py + scripts/audit_gsm.py + the GSM loader
 venv/
 env/
 ENV/

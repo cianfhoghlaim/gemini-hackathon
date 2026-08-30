@@ -130,6 +130,10 @@ dev = [
     "google-cloud-build>=3.24",
     "google-cloud-run>=0.10",
     "huggingface-hub[cli]>=0.30",
+    # GSM secrets loader (scripts/seed_gsm.py + scripts/audit_gsm.py)
+    "google-cloud-secret-manager>=2.20",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
 ]
 docs = [
     "marimo>=0.10",
