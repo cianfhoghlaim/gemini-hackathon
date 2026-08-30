@@ -31,16 +31,16 @@
 - [x] T2.7: git commit + git push
 
 ## Phase 3 — Lance namespace integration
-- [ ] T3.1: `pyproject.toml` — add `lance-namespace>=0.4` (Apache 2.0)
-- [ ] T3.2: New `gemini_hackathon_backend/lakehouse/namespace.py`:
+- [x] T3.1: `pyproject.toml` — add `lance-namespace>=0.4` (Apache 2.0)
+- [x] T3.2: New `gemini_hackathon_backend/lakehouse/namespace.py`:
   - `connect_lance_namespace(backend: str, ...)` factory
   - Backends: `"dir"` (dev), `"iceberg"` (prod/BigLake)
   - The `lance.connect(...)` call is the canonical entry point
-- [ ] T3.3: Wrap `cocoindex_flows/_shared/_vector_target.py` to mount the namespace when `LANCE_NAMESPACE_BACKEND` is set
-- [ ] T3.4: New `gemini_hackathon_backend/tests/test_lance_namespace_e2e.py` — write + read via the dev Directory backend
-- [ ] T3.5: `gemini_hackathon_backend/tests/test_lance_namespace_e2e.py` — verify the BigLake Iceberg URL is built correctly (mocked, no actual network)
-- [ ] T3.6: pytest 31 → 35
-- [ ] T3.7: git commit + git push
+- [x] T3.3: Wrap `cocoindex_flows/_shared/_vector_target.py` to mount the namespace when `LANCE_NAMESPACE_BACKEND` is set
+- [x] T3.4: New `gemini_hackathon_backend/tests/test_lance_namespace_e2e.py` — write + read via the dev Directory backend
+- [x] T3.5: `gemini_hackathon_backend/tests/test_lance_namespace_e2e.py` — verify the BigLake Iceberg URL is built correctly (mocked, no actual network)
+- [x] T3.6: pytest 31 → 35
+- [x] T3.7: git commit + git push
 
 ## Phase 4 — GCP service enablement + IAM (1 PR, manual)
 - [ ] T4.1: New `cloud/terraform/modules/observability_apis/main.tf` — 6 `google_project_service` resources

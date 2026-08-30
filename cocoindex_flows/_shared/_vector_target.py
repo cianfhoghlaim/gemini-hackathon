@@ -322,21 +322,43 @@ class VertexVectorSearchTarget:
 
 
 def get_vector_target(*, backend: str | None = None) -> VectorTarget:
-    """Return the configured `VectorTarget`, selected by `VECTOR_BACKEND`
-    (`"firestore"` default, or `"vertex"`).
+    """Return the configured `VectorTarget`, selected by either:
+
+    - ``VECTOR_BACKEND=firestore|vertex``        (default: firestore)
+    - ``LANCE_NAMESPACE_BACKEND=dir|rest``        (Phase 0 — takes
+      precedence; if set, the Lance namespace is used for vector writes
+      instead of the Firestore native path)
+
+    Reference: https://lance.org/format/namespace/supported-catalogs/biglake/
+    and
+    https://lance.org/format/namespace/supported-catalogs/iceberg/
     """
+    if os.environ.get("LANCE_NAMESPACE_BACKEND"):
+        # Phase 0: Lance namespace takes precedence when LANCE_NAMESPACE_BACKEND
+        # is set. The vector target wrapper writes to the namespace
+        # instead of Firestore native vector search.
+        from gemini_hackathon_backend.lakehouse import namespace_from_env
+        from gemini_hackathon_backend.lakehouse.lance_vector_target import (
+            LanceVectorTarget,
+        )
+        return LanceVectorTarget(namespace=namespace_from_env())
+
     resolved = (backend or os.environ.get("VECTOR_BACKEND", "firestore")).lower()
     if resolved == "vertex":
         return VertexVectorSearchTarget()
     if resolved == "firestore":
         return FirestoreVectorTarget()
-    raise ValueError(f"get_vector_target: unknown VECTOR_BACKEND {resolved!r} (want 'firestore' or 'vertex')")
+    raise ValueError(
+        f"get_vector_target: unknown VECTOR_BACKEND {resolved!r} "
+        "(want 'firestore' or 'vertex'); or set LANCE_NAMESPACE_BACKEND=dir|rest"
+    )
 
 
 __all__ = [
     "FIRESTORE_AVAILABLE",
     "VERTEX_VECTOR_SEARCH_AVAILABLE",
     "FirestoreVectorTarget",
+    "LanceVectorTarget",
     "VectorMatch",
     "VectorRow",
     "VectorTarget",

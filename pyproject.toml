@@ -152,6 +152,12 @@ cianfhoghlaim-parity = [
     "ducklake<=0.1.1",
     "motherduck>=0.10",
     "lancedb>=0.10",
+    # Phase 0 (GCP-first IaC refactor) — Lance namespace SDK.
+    # The vector target wrapper in cocoindex_flows/_shared/_vector_target.py
+    # reads LANCE_NAMESPACE_BACKEND to switch between the in-process
+    # LanceDB write (backward compat) and the new namespace-driven write.
+    "lance-namespace>=0.4",
+    "pylance>=0.10",
     "falkordb>=1.0",
     "graphiti-core>=0.20",
     "cognee>=0.2",
