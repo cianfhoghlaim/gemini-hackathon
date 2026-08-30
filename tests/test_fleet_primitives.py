@@ -302,8 +302,12 @@ def test_fleet_observability_emits_structlog_event() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_fleet_memory_letta_namespace() -> None:
-    """``namespace_for_agent`` lowercases + dot-separates the agent name."""
+def test_fleet_memory_namespace() -> None:
+    """``namespace_for_agent`` lowercases + dot-separates the agent name.
+
+    Phase 0: the field name changed from ``letta_agent_id`` to
+    ``memory_namespace`` but the transformation helper is unchanged.
+    """
     assert namespace_for_agent("adaptive_tutor") == "adaptive_tutor"
     assert namespace_for_agent("Adaptive Tutor") == "adaptive.tutor"
     assert namespace_for_agent("MARKING-GRADER") == "marking-grader"

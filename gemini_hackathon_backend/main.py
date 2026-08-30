@@ -21,11 +21,13 @@ this, since both are FastAPI + ADK + the same venv.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from gemini_hackathon_backend.observability import (
     init_backend_observability,
     lifespan_observability,
 )
+from gemini_hackathon_backend.agents.memory import build_memory_service
 
 logger = logging.getLogger(__name__)
 
@@ -88,12 +90,20 @@ def build_app():
     llm_agent = build_ncca_panel_agent(
         tools=[cite_pdf, fetch_highlight, list_ncca_pdfs, AGUIToolset()],
     )
-    adk_wrapper = ADKAgent(
-        adk_agent=llm_agent,
-        app_name="gemini_hackathon_ncca_panel",
-        user_id="default_user",
-        use_in_memory_services=True,
-    )
+    # Memory service — env-gated:
+    #   DEPLOYED_AGENT_ENGINE_ID  -> VertexAiMemoryBankService (production)
+    #   GH_MEMORY_DIR            -> MarkdownMemoryService (dev / offline)
+    #   neither set              -> None -> ADK's InMemoryMemoryService default
+    memory_service = build_memory_service()
+
+    adk_wrapper_kwargs: dict[str, Any] = {
+        "adk_agent": llm_agent,
+        "app_name": "gemini_hackathon_ncca_panel",
+        "user_id": "default_user",
+    }
+    if memory_service is not None:
+        adk_wrapper_kwargs["memory_service"] = memory_service
+    adk_wrapper = ADKAgent(**adk_wrapper_kwargs)
 
     # AG-UI request middleware — opens a Langfuse trace + structlog span
     # for each POST to the AG-UI endpoint so every chat turn is observable.

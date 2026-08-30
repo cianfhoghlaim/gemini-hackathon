@@ -1,10 +1,20 @@
-"""gemini_hackathon.agents.fleet.fleet_memory — Letta long-term memory layer.
+"""gemini_hackathon.agents.fleet.fleet_memory — fleet long-term memory surface (Phase 0 — Letta retired).
 
 The 5th Fleet primitive (per the openspec
 ``2026-08-24-gemini-hackathon-public-v1``). Provides the canonical
 long-term memory surface for the 4 idea agents.
 
-The :class:`FleetMemory` class wraps the ``letta`` SDK and exposes
+Phase 0 of the multi-stage plan removed the Letta SDK dependency.
+The :class:`FleetMemory` class now wraps the in-tree
+:class:`gemini_hackathon.memory.markdown.MarkdownMemoryService` (when
+``GH_MEMORY_DIR`` is set) or falls back to a pure in-memory dict
+when neither ``DEPLOYED_AGENT_ENGINE_ID`` nor ``GH_MEMORY_DIR`` is
+configured. The ADK 2 backend uses
+``gemini_hackathon_backend.agents.memory.build_memory_service`` as
+its canonical entrypoint — this module stays for the 4 idea agents
+that pre-date the ADK 2 refactor.
+
+The :class:`FleetMemory` class exposes
 3 high-level operations:
 
 * :meth:`FleetMemory.remember` — persist a new memory entry for a
@@ -20,12 +30,9 @@ user can have separate memory streams per agent (e.g. an
 
 The module is a wholesale port of the Cianfhoghlaim
 ``agents/fleet/memory_layer.py`` (per the
-``wholesale-copy-convention``) with two adaptations:
+``wholesale-copy-convention``) with one adaptation:
 
-1. ``letta`` is an optional dependency — when it is missing the
-   :class:`FleetMemory` class degrades to an in-memory dict so the
-   rest of the fleet can be exercised in tests + CI.
-2. Every memory operation emits a structured ``memory.*`` log
+1. Every memory operation emits a structured ``memory.*`` log
    event so the trace shows the full read/write history.
 """
 
@@ -46,26 +53,12 @@ logger = structlog.get_logger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Optional Letta client (graceful degradation)
+# Memory backends
 # ---------------------------------------------------------------------------
-
-_LETTA_AVAILABLE: bool = False
-try:
-    from letta import (  # type: ignore[import-not-found]
-        LettaClient as _LettaClient,  # pragma: no cover
-    )
-    from letta import (  # type: ignore[import-not-found]
-        create_letta_client as _create_letta_client,  # pragma: no cover
-    )
-except ImportError:  # pragma: no cover
-    _LettaClient = None  # type: ignore[assignment,misc]
-    _create_letta_client = None  # type: ignore[assignment]
-
-if _LettaClient is None and _create_letta_client is not None:
-    _LETTA_AVAILABLE = True
-elif _LettaClient is not None:
-    _LETTA_AVAILABLE = True
-
+# Phase 0: Letta was retired in favour of MarkdownMemoryService (in-tree,
+# file-backed, dev/offline) and the ADK 2 BaseMemoryService contract. The
+# MarkdownMemoryService is the canonical "markdown" backend below; the
+# _InMemoryBackend stays as the no-config fallback for tests + offline CI.
 
 # ---------------------------------------------------------------------------
 # Exceptions
@@ -147,20 +140,20 @@ class MemoryHit:
 
 
 # ---------------------------------------------------------------------------
-# In-memory backend (used when Letta is unavailable + in tests)
+# In-memory backend (used when GH_MEMORY_DIR is unset + in tests)
 # ---------------------------------------------------------------------------
 
 
 class _InMemoryBackend:
     """A simple in-memory implementation of the memory operations.
 
-    Used when ``letta`` is not installed OR when ``MEMORY_BACKEND``
+    Used when ``GH_MEMORY_DIR`` is unset OR when ``backend="memory"``
     is set to ``"memory"``. Stores entries in a dict keyed by
     ``(user_id, namespace)`` → ``deque[MemoryEntry]``.
 
     This class is intentionally minimal — keyword search is a
     case-insensitive substring match. For semantic search, install
-    Letta + the canonical BGE-M3 embedder.
+    MarkdownMemoryService + the canonical BGE-M3 embedder.
     """
 
     def __init__(self, max_entries_per_namespace: int = 1024) -> None:
@@ -232,87 +225,83 @@ class FleetMemory:
     """The fleet-wide long-term memory surface.
 
     Constructed once at process start and shared by every agent.
-    Reads + writes go through Letta when ``LETTA_API_KEY`` is set
-    (the production path); otherwise they fall through to the
-    in-memory backend (test + dev path).
+    Reads + writes go through MarkdownMemoryService when ``GH_MEMORY_DIR``
+    is set (the dev / offline path); otherwise they fall through to the
+    in-memory backend (test + CI path).
+
+    For the production Agent Engine path, see
+    ``gemini_hackathon_backend.agents.memory.build_memory_service``
+    which wires ``VertexAiMemoryBankService`` via the ADK 2
+    ``BaseMemoryService`` contract.
     """
 
     def __init__(
         self,
         *,
-        letta_api_key: str | None = None,
-        letta_agent_id: str | None = None,
+        memory_namespace: str | None = None,
         backend: str | None = None,
         max_entries_per_namespace: int = 1024,
     ) -> None:
         """Initialise the memory layer.
 
         Args:
-            letta_api_key: Letta API key (defaults to
-                ``LETTA_API_KEY`` env var).
-            letta_agent_id: The default Letta agent ID.
+            memory_namespace: The default memory namespace (per-agent
+                Vertex AI Memory Bank / MarkdownMemoryService namespace).
+                Defaults to ``MEMORY_NAMESPACE`` env var, then ``"default"``.
             backend: Override the backend selection — ``"memory"``
-                forces the in-memory backend, ``"letta"`` forces
-                Letta (raises if Letta is unavailable). ``None``
-                = auto-select based on ``LETTA_API_KEY``.
+                forces the in-memory backend, ``"markdown"`` forces
+                MarkdownMemoryService (falls back to in-memory if the
+                service isn't importable). ``None`` = auto-select based
+                on whether ``GH_MEMORY_DIR`` is set.
             max_entries_per_namespace: Cap for the in-memory backend.
         """
-        self._letta_client: Any = None
-        self._letta_agent_id = letta_agent_id or os.getenv(
-            "LETTA_AGENT_ID", "default"
+        self._memory_namespace = memory_namespace or os.getenv(
+            "MEMORY_NAMESPACE", "default"
         )
         self._in_memory = _InMemoryBackend(
             max_entries_per_namespace=max_entries_per_namespace
         )
+        self._markdown: Any = None
+        self._backend_name = self._resolve_backend(backend, memory_namespace)
+        if self._backend_name == "markdown":
+            self._init_markdown(memory_namespace)
 
-        use_letta = self._resolve_backend(backend, letta_api_key)
-        if use_letta:
-            self._init_letta(letta_api_key)
-
-    def _resolve_backend(self, backend: str | None, api_key: str | None) -> bool:
-        """Pick the backend (Letta vs in-memory) based on config."""
+    def _resolve_backend(
+        self, backend: str | None, memory_namespace: str | None
+    ) -> str:
+        """Pick the backend ("memory" vs "markdown") based on config."""
         if backend == "memory":
-            return False
-        if backend == "letta":
-            if not _LETTA_AVAILABLE:
-                raise MemoryError(
-                    "Backend 'letta' requested but the `letta` library "
-                    "is not installed. Install with `uv add letta`."
-                )
-            return True
-        # Auto: prefer Letta when an API key is set.
-        return bool(api_key or os.getenv("LETTA_API_KEY"))
+            return "memory"
+        if backend == "markdown":
+            return "markdown"
+        # Auto: prefer markdown when GH_MEMORY_DIR is set.
+        return "markdown" if os.getenv("GH_MEMORY_DIR") else "memory"
 
-    def _init_letta(self, api_key: str | None) -> None:
-        """Initialise the Letta client (or fall back to in-memory)."""
-        if not _LETTA_AVAILABLE:  # pragma: no cover
-            logger.warning(
-                "memory.letta_unavailable",
-                reason="letta library not installed; falling back to in-memory backend",
-            )
-            return
-        key = api_key or os.getenv("LETTA_API_KEY", "")
-        if not key:
-            logger.warning(
-                "memory.letta_disabled",
-                reason="LETTA_API_KEY not set; falling back to in-memory backend",
-            )
-            return
+    def _init_markdown(self, memory_namespace: str | None) -> None:
+        """Initialise the MarkdownMemoryService backend (or fall back to in-memory)."""
         try:
-            if _create_letta_client is not None:
-                self._letta_client = _create_letta_client(token=key)
-            elif _LettaClient is not None:
-                self._letta_client = _LettaClient(token=key)
+            from gemini_hackathon.memory.markdown import MarkdownMemoryService  # type: ignore[import-not-found]
+            root = os.getenv("GH_MEMORY_DIR", "").strip() or None
+            if not root:
+                logger.warning(
+                    "memory.markdown_unavailable",
+                    reason="GH_MEMORY_DIR unset; falling back to in-memory",
+                )
+                self._backend_name = "memory"
+                return
+            self._markdown = MarkdownMemoryService(root=root)
             logger.info(
-                "memory.letta_ready",
-                agent_id=self._letta_agent_id,
+                "memory.markdown_initialised",
+                root=root,
+                namespace=self._memory_namespace,
             )
-        except Exception as e:  # noqa: BLE001
+        except ImportError as exc:  # pragma: no cover
             logger.warning(
-                "memory.letta_init_failed",
-                error=f"{type(e).__name__}: {e}",
+                "memory.markdown_unavailable",
+                reason=f"{type(exc).__name__}: {exc}",
             )
-            self._letta_client = None
+            self._backend_name = "memory"
+
 
     # ------------------------------------------------------------------
     # Public API
@@ -320,8 +309,8 @@ class FleetMemory:
 
     @property
     def backend_name(self) -> str:
-        """Return the active backend name (``"letta"`` or ``"memory"``)."""
-        return "letta" if self._letta_client is not None else "memory"
+        """Return the active backend name (``"markdown"`` or ``"memory"``)."""
+        return self._backend_name
 
     def remember(
         self,
@@ -355,8 +344,8 @@ class FleetMemory:
             confidence=confidence,
             metadata=dict(metadata or {}),
         )
-        if self._letta_client is not None:
-            self._remember_letta(entry)
+        if self._markdown is not None:
+            self._remember_markdown(entry)
         else:
             self._in_memory.put(entry)
         logger.info(
@@ -381,8 +370,8 @@ class FleetMemory:
             descending relevance.
         """
         start = time.monotonic()
-        if self._letta_client is not None:
-            hits = self._recall_letta(query)
+        if self._markdown is not None:
+            hits = self._recall_markdown(query)
         else:
             hits = self._in_memory.search(query)
         elapsed_ms = int((time.monotonic() - start) * 1000)
@@ -413,9 +402,11 @@ class FleetMemory:
                 matches.
         """
         removed = self._in_memory.delete(entry_id)
-        # NOTE: the Letta backend would issue a delete here too,
-        # but the SDK shape varies between Letta releases — the
-        # in-memory backend is the canonical one for now.
+        # NOTE: the markdown backend is append-only (matches the
+        # MarkdownMemoryService contract — see
+        # ``gemini_hackathon/memory/markdown.py``). Forgetting from
+        # the in-memory backend is the canonical path; the markdown
+        # file will be compacted on the next ``add_session_to_memory``.''
         if removed:
             logger.info(
                 "memory.forget",
@@ -431,67 +422,75 @@ class FleetMemory:
         return removed
 
     # ------------------------------------------------------------------
-    # Internals — Letta backend
+    # Internals — MarkdownMemoryService backend (Phase 0)
     # ------------------------------------------------------------------
+    # MarkdownMemoryService's public API is session-oriented (ADK 2
+    # BaseMemoryService contract). For FleetMemory's entry-oriented API we
+    # bypass the session interface and append/parse the user's markdown
+    # file directly via ``_memory_path``. This keeps FleetMemory's
+    # remember/recall semantics intact while removing the Letta SDK
+    # dependency entirely.
 
-    def _remember_letta(self, entry: MemoryEntry) -> None:
-        """Persist ``entry`` to the Letta backend."""
-        if self._letta_client is None:  # pragma: no cover
+    def _remember_markdown(self, entry: MemoryEntry) -> None:
+        """Persist ``entry`` to the MarkdownMemoryService backend."""
+        from gemini_hackathon.memory.markdown import _memory_path as _md_path  # type: ignore[import-not-found]
+        if self._markdown is None:  # pragma: no cover
             return
+        path = _md_path(self._markdown.root, entry.user_id, for_writing=True)
+        ts = datetime.now(tz=timezone.utc).isoformat(timespec="seconds")
+        bullet = (
+            f"- [{ts}] (ns={entry.namespace}, conf={entry.confidence:.2f}"
+            f"{', tags=' + ','.join(entry.tags) if entry.tags else ''}) "
+            f"{entry.content}\n"
+        )
         try:
-            # Letta's "archival memory" API. The shape varies by SDK
-            # version; wrapped in try/except so older versions degrade.
-            self._letta_client.agents.passages.create(
-                agent_id=self._letta_agent_id,
-                text=entry.content,
-                metadata={
-                    "user_id": entry.user_id,
-                    "namespace": entry.namespace,
-                    "tags": list(entry.tags),
-                    "confidence": entry.confidence,
-                    **entry.metadata,
-                },
-            )
-        except Exception as e:  # noqa: BLE001
+            with path.open("a", encoding="utf-8") as fh:
+                fh.write(bullet)
+        except OSError as exc:  # pragma: no cover — disk / permissions
             logger.warning(
-                "memory.letta_put_failed",
-                error=f"{type(e).__name__}: {e}",
+                "memory.markdown_put_failed",
+                error=f"{type(exc).__name__}: {exc}",
             )
             # Fall through to in-memory write.
             self._in_memory.put(entry)
 
-    def _recall_letta(self, query: MemoryQuery) -> list[MemoryHit]:
-        """Search the Letta backend for ``query``."""
-        if self._letta_client is None:  # pragma: no cover
+    def _recall_markdown(self, query: MemoryQuery) -> list[MemoryHit]:
+        """Search the MarkdownMemoryService backend for ``query``."""
+        from gemini_hackathon.memory.markdown import _memory_path as _md_path  # type: ignore[import-not-found]
+        if self._markdown is None:  # pragma: no cover
+            return []
+        path = _md_path(self._markdown.root, query.user_id)
+        if not path.exists():
             return []
         try:
-            results = self._letta_client.agents.passages.search(
-                agent_id=self._letta_agent_id,
-                query=query.query,
-                limit=query.top_k,
-            )
-            hits: list[MemoryHit] = []
-            for r in getattr(results, "results", []):
-                text = getattr(r, "text", "")
-                hits.append(
-                    MemoryHit(
-                        entry=MemoryEntry(
-                            entry_id=getattr(r, "id", str(uuid.uuid4())),
-                            user_id=query.user_id,
-                            namespace=query.namespace,
-                            content=text,
-                        ),
-                        score=float(getattr(r, "score", 0.5) or 0.5),
-                        match_reason="letta_semantic",
-                    )
+            content = path.read_text(encoding="utf-8")
+        except OSError:  # pragma: no cover
+            return []
+        # Parse the bullets + do keyword scoring (no semantic search yet).
+        hits: list[MemoryHit] = []
+        q_tokens = set(query.query.lower().split())
+        for i, line in enumerate(content.splitlines()):
+            line_l = line.lower()
+            if not line_l.startswith("- "):
+                continue
+            text = line_l[2:].strip()
+            overlap = len(q_tokens & set(text.split()))
+            if overlap == 0:
+                continue
+            hits.append(
+                MemoryHit(
+                    entry=MemoryEntry(
+                        entry_id=f"md-{query.user_id}-{i}",
+                        user_id=query.user_id,
+                        namespace=query.namespace,
+                        content=text,
+                    ),
+                    score=min(1.0, overlap / max(1, len(q_tokens))),
+                    match_reason="markdown_keyword",
                 )
-            return hits
-        except Exception as e:  # noqa: BLE001
-            logger.warning(
-                "memory.letta_search_failed",
-                error=f"{type(e).__name__}: {e}",
             )
-            return self._in_memory.search(query)
+        hits.sort(key=lambda h: h.score, reverse=True)
+        return hits[: query.top_k]
 
 
 # ---------------------------------------------------------------------------

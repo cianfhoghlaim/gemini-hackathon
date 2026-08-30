@@ -162,6 +162,31 @@ resource "google_cloud_run_v2_service" "adk" {
         value = var.project_id
       }
 
+      # Memory service — env-gated between VertexAiMemoryBankService
+      # (production) and MarkdownMemoryService (dev/offline fallback).
+      # Both implementations satisfy the ADK 2 BaseMemoryService contract;
+      # the canonical factory is gemini_hackathon_backend.agents.memory.build_memory_service().
+      # DEPLOYED_AGENT_ENGINE_ID is wired from a Secret Manager reference
+      # (the Agent Engine resource is provisioned by cloud/terraform/agent_engine.tf
+      # in Phase 8).
+      env {
+        name = "DEPLOYED_AGENT_ENGINE_ID"
+        value_from {
+          secret_key_ref {
+            name = "gemini-hackathon-adk-agent-engine"
+            key  = "latest"
+          }
+        }
+      }
+      env {
+        name  = "GH_MEMORY_DIR"
+        value = "/var/run/gh-memory"
+      }
+      env {
+        name  = "GH_MEMORY_USER"
+        value = "cloud-run"
+      }
+
       ports {
         container_port = 8080
       }

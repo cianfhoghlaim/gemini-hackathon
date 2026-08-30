@@ -77,8 +77,10 @@ dependencies = [
     # Observability (structlog always-on; Langfuse/MLflow optional exporters
     # gated behind env vars — see `gemini_hackathon/observability.py`)
     "structlog>=24.0",
-    # Agent memory (Letta)
-    "letta>=0.50",
+    # Agent memory is now env-gated between VertexAiMemoryBankService
+    # (production) and MarkdownMemoryService (dev/offline fallback) — see
+    # `gemini_hackathon_backend/agents/memory.py:build_memory_service()`.
+    # The Letta dependency was removed in the 2026-08-30 Phase 0 change.
     # Web scraping + PDF
     "firecrawl-py>=1.0",
     "pypdf>=4.0",
@@ -252,7 +254,6 @@ mypy_path = "src"
 # BAML generated client + third-party agent libs lack inline type stubs
 module = [
     "baml_client.*",
-    "letta.*",
     "litellm.*",
     "firecrawl.*",
     "langfuse.*",

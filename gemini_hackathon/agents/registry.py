@@ -8,7 +8,7 @@ Adapted for the British Isles education system:
 
   - SubjectAgentWiring is the canonical 8-field record
     (ncca_subject / module_slug / display_name / baml_prefix /
-    langfuse_trace_name / cognee_dataset / letta_agent_id /
+    langfuse_trace_name / cognee_dataset / memory_namespace /
     litellm_routing_key).
   - The 14-subject registry (8 NCCA + 6 NCCA-adjacent) is the canonical
     set of specialists that the W7 ADK 2 stage coordinators route to.
@@ -43,7 +43,7 @@ class SubjectAgentWiring:
     Pattern (verbatim from the parent cianfhoghlaim registry):
     - 5 positional fields: ncca_subject / module_slug / display_name /
       baml_prefix / langfuse_trace_name / cognee_dataset
-    - Plus: letta_agent_id (the Letta memory ID — W9)
+    - Plus: memory_namespace (per-agent Vertex AI Memory Bank / MarkdownMemoryService namespace)
     - Plus: litellm_routing_key (the LiteLLM routing key)
 
     Every agent in the gemini_hackathon fleet carries one of these.
@@ -56,7 +56,7 @@ class SubjectAgentWiring:
     baml_prefix: str
     langfuse_trace_name: str
     cognee_dataset: str
-    letta_agent_id: str
+    memory_namespace: str
     litellm_routing_key: str = "minimax"
 
 
@@ -67,7 +67,7 @@ def build_wire(
     baml_prefix: str,
     langfuse_trace_name: str,
     cognee_dataset: str,
-    letta_agent_id: str,
+    memory_namespace: str,
     litellm_routing_key: str = "minimax",
 ) -> SubjectAgentWiring:
     """Build the canonical SubjectAgentWiring for a subject / stage.
@@ -83,7 +83,7 @@ def build_wire(
         baml_prefix=baml_prefix,
         langfuse_trace_name=langfuse_trace_name,
         cognee_dataset=cognee_dataset,
-        letta_agent_id=letta_agent_id,
+        memory_namespace=memory_namespace,
         litellm_routing_key=litellm_routing_key,
     )
 
@@ -100,7 +100,7 @@ SUBJECT_WIRING_REGISTRY: dict[str, SubjectAgentWiring] = {
         baml_prefix="Math",
         langfuse_trace_name="agent.mathematics.<verb>",
         cognee_dataset="oideachais_lc_mathematics",
-        letta_agent_id="gemini-hackathon-mathematics-agent",
+        memory_namespace="gemini-hackathon-mathematics-agent",
     ),
     "applied_mathematics": build_wire(
         ncca_subject="applied_mathematics",
@@ -109,7 +109,7 @@ SUBJECT_WIRING_REGISTRY: dict[str, SubjectAgentWiring] = {
         baml_prefix="AppM",
         langfuse_trace_name="agent.applied_mathematics.<verb>",
         cognee_dataset="oideachais_lc_applied_mathematics",
-        letta_agent_id="gemini-hackathon-applied-mathematics-agent",
+        memory_namespace="gemini-hackathon-applied-mathematics-agent",
     ),
     "chemistry": build_wire(
         ncca_subject="chemistry",
@@ -118,7 +118,7 @@ SUBJECT_WIRING_REGISTRY: dict[str, SubjectAgentWiring] = {
         baml_prefix="Chem",
         langfuse_trace_name="agent.chemistry.<verb>",
         cognee_dataset="oideachais_lc_chemistry",
-        letta_agent_id="gemini-hackathon-chemistry-agent",
+        memory_namespace="gemini-hackathon-chemistry-agent",
     ),
     "geography": build_wire(
         ncca_subject="geography",
@@ -127,7 +127,7 @@ SUBJECT_WIRING_REGISTRY: dict[str, SubjectAgentWiring] = {
         baml_prefix="Geog",
         langfuse_trace_name="agent.geography.<verb>",
         cognee_dataset="oideachais_lc_geography",
-        letta_agent_id="gemini-hackathon-geography-agent",
+        memory_namespace="gemini-hackathon-geography-agent",
     ),
     "history": build_wire(
         ncca_subject="history",
@@ -136,7 +136,7 @@ SUBJECT_WIRING_REGISTRY: dict[str, SubjectAgentWiring] = {
         baml_prefix="Hist",
         langfuse_trace_name="agent.history.<verb>",
         cognee_dataset="oideachais_lc_history",
-        letta_agent_id="gemini-hackathon-history-agent",
+        memory_namespace="gemini-hackathon-history-agent",
     ),
     "english": build_wire(
         ncca_subject="english",
@@ -145,7 +145,7 @@ SUBJECT_WIRING_REGISTRY: dict[str, SubjectAgentWiring] = {
         baml_prefix="Eng",
         langfuse_trace_name="agent.english.<verb>",
         cognee_dataset="oideachais_lc_english",
-        letta_agent_id="gemini-hackathon-english-agent",
+        memory_namespace="gemini-hackathon-english-agent",
     ),
     "gaeilge": build_wire(
         ncca_subject="gaeilge",
@@ -154,7 +154,7 @@ SUBJECT_WIRING_REGISTRY: dict[str, SubjectAgentWiring] = {
         baml_prefix="Gae",
         langfuse_trace_name="agent.gaeilge.<verb>",
         cognee_dataset="oideachais_lc_gaeilge",
-        letta_agent_id="gemini-hackathon-gaeilge-agent",
+        memory_namespace="gemini-hackathon-gaeilge-agent",
     ),
     "computer_science": build_wire(
         ncca_subject="computer_science",
@@ -163,7 +163,7 @@ SUBJECT_WIRING_REGISTRY: dict[str, SubjectAgentWiring] = {
         baml_prefix="CS",
         langfuse_trace_name="agent.computer_science.<verb>",
         cognee_dataset="oideachais_lc_computer_science",
-        letta_agent_id="gemini-hackathon-cs-agent",
+        memory_namespace="gemini-hackathon-cs-agent",
     ),
     # 6 NCCA-adjacent subjects
     "accounting": build_wire(
@@ -173,7 +173,7 @@ SUBJECT_WIRING_REGISTRY: dict[str, SubjectAgentWiring] = {
         baml_prefix="Acc",
         langfuse_trace_name="agent.accounting.<verb>",
         cognee_dataset="oideachais_lc_accounting",
-        letta_agent_id="gemini-hackathon-accounting-agent",
+        memory_namespace="gemini-hackathon-accounting-agent",
     ),
     "biology": build_wire(
         ncca_subject="biology",
@@ -182,7 +182,7 @@ SUBJECT_WIRING_REGISTRY: dict[str, SubjectAgentWiring] = {
         baml_prefix="Bio",
         langfuse_trace_name="agent.biology.<verb>",
         cognee_dataset="oideachais_lc_biology",
-        letta_agent_id="gemini-hackathon-biology-agent",
+        memory_namespace="gemini-hackathon-biology-agent",
     ),
     "business": build_wire(
         ncca_subject="business",
@@ -191,7 +191,7 @@ SUBJECT_WIRING_REGISTRY: dict[str, SubjectAgentWiring] = {
         baml_prefix="Bus",
         langfuse_trace_name="agent.business.<verb>",
         cognee_dataset="oideachais_lc_business",
-        letta_agent_id="gemini-hackathon-business-agent",
+        memory_namespace="gemini-hackathon-business-agent",
     ),
     "french": build_wire(
         ncca_subject="french",
@@ -200,7 +200,7 @@ SUBJECT_WIRING_REGISTRY: dict[str, SubjectAgentWiring] = {
         baml_prefix="Fr",
         langfuse_trace_name="agent.french.<verb>",
         cognee_dataset="oideachais_lc_french",
-        letta_agent_id="gemini-hackathon-french-agent",
+        memory_namespace="gemini-hackathon-french-agent",
     ),
     "irish_t2": build_wire(
         ncca_subject="irish_t2",
@@ -209,7 +209,7 @@ SUBJECT_WIRING_REGISTRY: dict[str, SubjectAgentWiring] = {
         baml_prefix="Ir2",
         langfuse_trace_name="agent.irish_t2.<verb>",
         cognee_dataset="oideachais_lc_irish_t2",
-        letta_agent_id="gemini-hackathon-irish-t2-agent",
+        memory_namespace="gemini-hackathon-irish-t2-agent",
     ),
     "physics": build_wire(
         ncca_subject="physics",
@@ -218,7 +218,7 @@ SUBJECT_WIRING_REGISTRY: dict[str, SubjectAgentWiring] = {
         baml_prefix="Phys",
         langfuse_trace_name="agent.physics.<verb>",
         cognee_dataset="oideachais_lc_physics",
-        letta_agent_id="gemini-hackathon-physics-agent",
+        memory_namespace="gemini-hackathon-physics-agent",
     ),
 }
 

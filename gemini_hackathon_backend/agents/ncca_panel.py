@@ -293,7 +293,30 @@ def build_ncca_panel_agent(model: str = "gemini-3.5-flash", *, tools: list | Non
         tools=tools,
         before_agent_callback=_seed_participant_state,
         before_model_callback=_reinject_state_into_prompt,
+        after_agent_callback=_persist_session_to_memory,
     )
+
+
+async def _persist_session_to_memory(callback_context) -> object:
+    """Phase 0 — persist the completed session to the configured memory service.
+
+    Fires after each completed turn. ADK 2's Runner handles the call to
+    ``callback_context.add_session_to_memory()`` against whichever
+    ``BaseMemoryService`` the agent runner was constructed with (set in
+    ``gemini_hackathon_backend/main.py:build_memory_service()``).
+
+    No-op when no memory service is configured (the default
+    ``InMemoryMemoryService`` is still set up by the Runner, but
+    ``add_session_to_memory`` on it is harmless).
+    """
+    try:
+        await callback_context.add_session_to_memory()
+    except Exception as exc:  # noqa: BLE001 — observability only
+        logger.warning(
+            "ncca_panel: add_session_to_memory failed (%s); memory not persisted",
+            exc,
+        )
+    return None
 
 
 __all__ = [
@@ -304,6 +327,7 @@ __all__ = [
     "_find_pdf",
     "_reinject_state_into_prompt",
     "_seed_participant_state",
+    "_persist_session_to_memory",
     "build_ncca_panel_agent",
     "cite_pdf",
     "fetch_highlight",
