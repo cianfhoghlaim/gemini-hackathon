@@ -20,6 +20,10 @@ the "skill progression ledger" (W9).
 The full app implementation is in W12 (the big Gradio editorial
 studio on Cloud Run). This package provides the per-feature modules
 that the editorial canvas wires together.
+
+Phase 4 (the `2026-08-31-journey-gradio-polish-v1` openspec change)
+added a per-tab BAML extraction operator (`_build_baml_operator`) that
+calls `BAMLSyllabusExtractor.extract()` honouring `BAML_TEST_MODE=true`.
 """
 
 from __future__ import annotations
@@ -33,6 +37,17 @@ try:
     import gradio as gr
 except ImportError:
     gr = None  # type: ignore[assignment]
+
+try:
+    from gemini_hackathon.syllabus.baml_extractor import BAMLSyllabusExtractor
+except ImportError as _baml_exc:
+    # Phase 5 owns the baml_extracts / per_topic_schema wiring. Until
+    # that's stable we tolerate the missing import and fall back to a
+    # stub dict from `_on_run_baml_extraction()`.
+    BAMLSyllabusExtractor = None  # type: ignore[assignment,misc]
+    _BAML_IMPORT_ERROR = _baml_exc
+else:
+    _BAML_IMPORT_ERROR = None
 
 from .._common import (
     GRADIO_CSS,
@@ -99,6 +114,119 @@ def _list_syllabi_pdfs() -> list[str]:
     return sorted(str(p) for p in _SYLLABI_PDF_DIR.glob("**/*.pdf"))
 
 
+# The 7 Phase 4 polish subjects (the per-tab BAML extraction picks one).
+# The 8th ("cross-subject") is the default for the Curriculum Map tab.
+_ANAM_SUBJECT_CHOICES: tuple[str, ...] = (
+    "chemistry",
+    "physics",
+    "biology",
+    "mathematics",
+    "english",
+    "gaeilge",
+    "geography",
+    "computer_science",  # the cross-subject slot
+)
+
+
+def _on_run_baml_extraction(subject: str, language: str) -> dict:
+    """Run the BAMLSyllabusExtractor (Phase 4 polish — sub-task 4.2).
+
+    Honours the `BAML_TEST_MODE=true` env var so the workshop demo runs
+    offline against the canonical `TestMock` client. The result is the
+    `ExtractedSyllabus` serialised as a JSON-friendly dict.
+
+    Args:
+        subject: One of _ANAM_SUBJECT_CHOICES (the 7 LC subjects + CS).
+        language: "EN" or "GA".
+
+    Returns:
+        A dict representation of the ExtractedSyllabus.
+    """
+    if BAMLSyllabusExtractor is None:
+        return {
+            "_stub": True,
+            "_stub_reason": (
+                f"BAML extractor import failed: {_BAML_IMPORT_ERROR}. "
+                f"Phase 5 owns the baml_extracts / per_topic_schema wiring."
+            ),
+            "subject": subject,
+            "language": language,
+            "module_topics": [],
+            "total_learning_outcomes": 0,
+        }
+    extractor = BAMLSyllabusExtractor()
+    try:
+        result = extractor.extract(
+            subject=subject,
+            level="scoil_sinsearach",
+            language=language,
+        )
+    except Exception as exc:
+        return {
+            "_stub": True,
+            "_stub_reason": f"extraction failed: {exc}",
+            "subject": subject,
+            "language": language,
+            "module_topics": [],
+            "total_learning_outcomes": 0,
+        }
+    # ExtractedSyllabus may be a dataclass or Pydantic — serialise uniformly.
+    if hasattr(result, "model_dump"):
+        return result.model_dump()
+    if hasattr(result, "__dict__"):
+        d = dict(result.__dict__)
+        # ExtractSyllabus fields we care about
+        return {
+            "subject": d.get("subject"),
+            "language": d.get("language"),
+            "module_topics": d.get("module_topics", []),
+            "total_learning_outcomes": d.get("total_learning_outcomes", 0),
+            "cross_curricular": d.get("cross_curricular", []),
+            "assessment_objectives": d.get("assessment_objectives", []),
+            "prescribed_texts": d.get("prescribed_texts", []),
+            "formulas": d.get("formulas", []),
+            "extraction_method": getattr(result, "extraction_method", "baml"),
+            "extraction_confidence": getattr(result, "extraction_confidence", 0.95),
+            "extraction_latency_ms": getattr(result, "extraction_latency_ms", 0),
+        }
+    return {"_stub": True, "reason": f"unknown return type {type(result).__name__}"}
+
+
+def _build_baml_operator(*, default_subject: str, accent_class: str) -> None:
+    """Build the per-tab BAML extraction operator (Phase 4 polish).
+
+    Adds 3 widgets to the enclosing gr.Tabs context:
+
+      - `subject_dropdown` — sourced from `_ANAM_SUBJECT_CHOICES`
+      - `baml_btn` — the trigger button
+      - `baml_json` — JSON output
+
+    The actual click handler is `_on_run_baml_extraction` (defined above).
+    """
+    if gr is None:  # defensive
+        return
+    with gr.Row(elem_classes=accent_class):
+        subject_dropdown = gr.Dropdown(
+            choices=list(_ANAM_SUBJECT_CHOICES),
+            value=default_subject,
+            label="Subject (BAML extraction)",
+            scale=2,
+        )
+        language_dropdown = gr.Dropdown(
+            choices=["EN", "GA"],
+            value="EN",
+            label="Language",
+            scale=1,
+        )
+    baml_btn = gr.Button("Run BAML extraction", variant="secondary")
+    baml_json = gr.JSON(label="ExtractedSyllabus (BAML or stub)")
+    baml_btn.click(
+        fn=_on_run_baml_extraction,
+        inputs=[subject_dropdown, language_dropdown],
+        outputs=[baml_json],
+    )
+
+
 def build_app():
     """Build the Anam Oideachais (Education Integration Studio) Gradio app.
 
@@ -150,6 +278,7 @@ system, on one canvas. Each tab maps to one of the 5 stage coordinators
                     wrap=True,
                 )
                 cm_refresh.click(fn=lambda: _load_syllabi_rows(), outputs=[cm_df])
+                _build_baml_operator(default_subject="computer_science", accent_class="stage-bunscoil")
 
             # 2. Chemistry Visual — Plotly scatter (Molmo2 placeholder)
             with gr.Tab("Chemistry Visual", elem_classes="stage-meanscoil"):
@@ -177,6 +306,7 @@ system, on one canvas. Each tab maps to one of the 5 stage coordinators
                     chem_plot = gr.Plot(value=fig, label="Reactivity curve")
                 except ImportError:
                     chem_plot = gr.Markdown("Install `plotly` to see the placeholder chart.")
+                _build_baml_operator(default_subject="chemistry", accent_class="stage-meanscoil")
 
             # 3. Exit Card — BAML-driven formative assessment stub
             with gr.Tab("Exit Card", elem_classes="stage-scoil-sinsearach"):
@@ -231,6 +361,7 @@ system, on one canvas. Each tab maps to one of the 5 stage coordinators
                     inputs=[ec_topic, ec_learner],
                     outputs=[ec_out, ec_status],
                 )
+                _build_baml_operator(default_subject="biology", accent_class="stage-scoil-sinsearach")
 
             # 4. Gaelscribhneoir — Irish grammar helper stub
             with gr.Tab("Gaelscribhneoir", elem_classes="stage-aistear"):
@@ -263,6 +394,7 @@ system, on one canvas. Each tab maps to one of the 5 stage coordinators
                     return "\n".join(notes)
 
                 gs_btn.click(fn=_gaelscribhneoir_check, inputs=[gs_input], outputs=[gs_out])
+                _build_baml_operator(default_subject="gaeilge", accent_class="stage-aistear")
 
             # 5. Bilingual EN/GA — side-by-side toggle
             with gr.Tab("Bilingual EN/GA", elem_classes="stage-ollscoil"):
@@ -292,6 +424,7 @@ system, on one canvas. Each tab maps to one of the 5 stage coordinators
                     )
 
                 bil_btn.click(fn=_render_bilingual, inputs=[en_text, ga_text], outputs=[bil_out])
+                _build_baml_operator(default_subject="english", accent_class="stage-ollscoil")
 
             # 6. Certificate — gallery of syllabus PDFs
             with gr.Tab("Certificate", elem_classes="stage-ollscoil"):
@@ -310,6 +443,7 @@ system, on one canvas. Each tab maps to one of the 5 stage coordinators
                     )
                 else:
                     cert_gal = gr.Markdown("_No PDFs in `data/syllabi/`._")
+                _build_baml_operator(default_subject="geography", accent_class="stage-ollscoil")
 
             # 7. Skill Progression — DuckDB mastery ledger
             with gr.Tab("Skill Progression", elem_classes="stage-ollscoil"):
@@ -326,6 +460,7 @@ system, on one canvas. Each tab maps to one of the 5 stage coordinators
                     wrap=True,
                 )
                 sp_refresh.click(fn=lambda: _load_skill_progression(), outputs=[sp_df])
+                _build_baml_operator(default_subject="physics", accent_class="stage-ollscoil")
 
         render_anam_bonneagar_footer(
             space_id="cianfhoghlaim/gemini-hackathon-anam-education",

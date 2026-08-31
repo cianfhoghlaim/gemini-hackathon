@@ -1,32 +1,35 @@
-"""gemini_hackathon_gradio.oideachais_mission_control — 5-stage mission control.
+"""gemini_hackathon_gradio.oideachais_mission_control — 5-operator mission control.
 
 Lifted from `sruth/spaces/oideachais_mission_control/`. The Celtic 5-element
-tabs are replaced with the 5 British Isles education stages:
+tabs were replaced with the 5 British Isles education stages in Phase 3.
 
-  - Aistear (Early Years 0-6)
-  - Bunscoil (Primary 4-12)
-  - MeanScoil (Junior Cycle 12-15)
-  - Scoil Sinsearach (Senior Cycle / Leaving Certificate 15-19)
-  - Ollscoil (Tertiary — Phase 2)
+Phase 4 (the `2026-08-31-journey-gradio-polish-v1` openspec change)
+extended the studio with 5 NEW operator tabs that surface live platform
+state for the workshop host:
 
-The 4-tab structure becomes 5 tabs. Each tab is wired to a marimo
-notebook + the Cognify + BAML extraction buttons per stage.
+  - **Subjects** — the 14-subject SUBJECT_WIRING_REGISTRY as a Dataframe
+  - **Models** — the MODEL_REGISTRY._entries as a Dataframe
+  - **Outputs** — the generated certificates (data/certificates/*.json)
+  - **Observability** — the last 5 structlog events (mocked)
+  - **Settings** — the .env.example keys as a Markdown code block
 
-Each tab now shows a live `gr.Dataframe` sourced from
-`raw.official_documents` in `gemini_hackathon.duckdb` — filtered by
-jurisdiction + level so the operator can see the available evidence at a
-glance.
+The 5 stage tabs (Aistear / Bunscoil / MeanScoil / Scoil Sinsearach /
+Ollscoil) are preserved as a separate section so the operator can see
+the live evidence rows per stage.
 """
 
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 
 try:
     import gradio as gr
 except ImportError:
     gr = None  # type: ignore[assignment]
+
+from gemini_hackathon.agents.registry import SUBJECT_WIRING_REGISTRY
 
 from .._common import (
     GRADIO_CSS,
@@ -39,10 +42,12 @@ from .._common import (
 _log = logging.getLogger("oideachais_mission_control.app")
 
 _DUCKDB_PATH = Path(__file__).resolve().parents[2] / "gemini_hackathon.duckdb"
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]  # the gemini_hackathon/ repo root
+_CERTIFICATES_DIR = _PROJECT_ROOT / "data" / "certificates"
+_ENV_EXAMPLE = _PROJECT_ROOT / ".env.example"
 
-# Each tab maps to one (or more) jurisdictions + the canonical
-# `level` filter that matches the 5-stage taxonomy. The Irish rows
-# default to "Ireland" + the per-stage level labels.
+# Each stage tab maps to one (or more) jurisdictions + the canonical
+# `level` filter that matches the 5-stage taxonomy.
 _STAGE_FILTERS = {
     "aistear": ("Ireland", ("Early Years", "Aistear", "Foundation")),
     "bunscoil": ("Ireland", ("Primary", "Bunscoil", "KS1", "KS2")),
@@ -74,8 +79,99 @@ def _stage_documents(jurisdiction: str, level_filter: tuple[str, ...]) -> list[l
         return [["ERROR", str(exc), "", "", "", ""]]
 
 
+# ---------------------------------------------------------------------------
+# Phase 4 polish — the 5 operator panels
+# ---------------------------------------------------------------------------
+
+
+def _subjects_dataframe_rows() -> list[list]:
+    """Render the 14-subject SUBJECT_WIRING_REGISTRY as a Dataframe."""
+    rows: list[list] = []
+    for slug, wire in sorted(SUBJECT_WIRING_REGISTRY.items()):
+        rows.append([
+            slug,
+            wire.ncca_subject,
+            "(stage-agnostic)",  # subjects are stage-agnostic in the registry
+            "EN+GA",  # default bilingual
+            wire.langfuse_trace_name,
+            wire.baml_prefix,
+            wire.memory_namespace,
+            wire.litellm_routing_key,
+        ])
+    return rows
+
+
+def _models_dataframe_rows() -> list[list]:
+    """Render MODEL_REGISTRY._entries as a Dataframe."""
+    try:
+        from gemini_hackathon.model_registry import MODEL_REGISTRY
+    except ImportError as exc:
+        return [["ERROR", f"MODEL_REGISTRY import failed: {exc}", "", "", "", ""]]
+    rows: list[list] = []
+    for entry in MODEL_REGISTRY:
+        rows.append([
+            entry.key,
+            str(entry.family),
+            entry.role,
+            str(entry.backend),
+            str(entry.profile),
+            "yes" if entry.available else "no",
+        ])
+    return rows
+
+
+def _outputs_dataframe_rows() -> list[list]:
+    """List the generated certificate JSONs in data/certificates/."""
+    if not _CERTIFICATES_DIR.exists():
+        return [["", "(data/certificates/ does not exist yet)", "", "", ""]]
+    paths = sorted(_CERTIFICATES_DIR.glob("*.json"))
+    if not paths:
+        return [["", "(no certificates generated yet)", "", "", ""]]
+    return [
+        [p.name, str(p.stat().st_size), p.stat().st_mtime, str(p.parent), p.name]
+        for p in paths
+    ]
+
+
+def _observability_events() -> list[list]:
+    """Return 5 mocked structlog-style events (Phase 4 placeholder).
+
+    The real implementation reads the logfire / langfuse endpoint —
+    that's Phase 5. For the workshop demo we surface the last 5 mocked
+    events so the operator can see the panel.
+    """
+    return [
+        ["ts=10:00:01", "level=INFO", "module=editorial_studio.app", "msg=build_app() OK"],
+        ["ts=10:00:02", "level=INFO", "module=anam_education.app", "msg=build_app() OK"],
+        ["ts=10:00:03", "level=INFO", "module=oideachais_mission_control.app", "msg=build_app() OK"],
+        ["ts=10:00:04", "level=INFO", "module=oideachais_pdf_review.app", "msg=build_app() OK"],
+        ["ts=10:00:05", "level=INFO", "module=an_scrudu.app", "msg=build_app() OK"],
+    ]
+
+
+def _settings_markdown() -> str:
+    """Render the .env.example keys as a fenced code block."""
+    if not _ENV_EXAMPLE.exists():
+        return "_`.env.example` not found in the project root._"
+    try:
+        text = _ENV_EXAMPLE.read_text(encoding="utf-8")
+    except OSError as exc:
+        return f"_Could not read `.env.example`: {exc}_"
+    # Show only the `KEY=value` lines + the section comments.
+    out: list[str] = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            out.append(line)
+        elif "=" in stripped and not stripped.startswith("export "):
+            out.append(line)
+        else:
+            out.append(line)
+    return "```bash\n" + "\n".join(out) + "\n```"
+
+
 def build_app():
-    """Build the Oideachais Mission Control Gradio app (5-tab).
+    """Build the Oideachais Mission Control Gradio app (5 stage + 5 operator tabs).
 
     Raises:
         ImportError: If Gradio is not installed.
@@ -94,16 +190,91 @@ def build_app():
             f"""# {t("mission_control.title")}
 ### *{t("mission_control.subtitle")}*
 
-The 5-stage mission control — each tab surfaces the live
-`raw.official_documents` rows for that stage's jurisdiction + level
-filter, so the operator can see what evidence is available before they
-hit the Cognify / BAML extraction buttons.""",
+The 5-stage mission control + 5 operator panels. The 5 stage tabs
+(Aistear / Bunscoil / MeanScoil / Scoil Sinsearach / Ollscoil) surface
+the live `raw.official_documents` rows per stage. The 5 operator tabs
+(Subjects / Models / Outputs / Observability / Settings) surface the
+canonical platform registries.""",
             elem_classes="stage-bunscoil",
         )
 
         headers = ["source_id", "jurisdiction", "level", "subject", "language", "file_size_bytes"]
 
         with gr.Tabs():
+            # ── Phase 4 polish — the 5 operator tabs ────────────────────
+            with gr.Tab("Subjects", elem_classes="stage-bunscoil"):
+                gr.Markdown(
+                    "**The 14-subject `SUBJECT_WIRING_REGISTRY`** "
+                    "(`gemini_hackathon/agents/registry.py:94`)."
+                )
+                subj_refresh = gr.Button("Refresh", variant="primary")
+                subj_df = gr.Dataframe(
+                    headers=[
+                        "subject_slug",
+                        "ncca_subject",
+                        "stage",
+                        "language",
+                        "langfuse_trace_name",
+                        "baml_prefix",
+                        "memory_namespace",
+                        "litellm_routing_key",
+                    ],
+                    value=_subjects_dataframe_rows(),
+                    interactive=False,
+                    wrap=True,
+                )
+                subj_refresh.click(fn=_subjects_dataframe_rows, outputs=[subj_df])
+
+            with gr.Tab("Models", elem_classes="stage-meanscoil"):
+                gr.Markdown(
+                    "**The `MODEL_REGISTRY._entries`** "
+                    "(`gemini_hackathon/model_registry.py:1092`)."
+                )
+                models_refresh = gr.Button("Refresh", variant="primary")
+                models_df = gr.Dataframe(
+                    headers=["key", "family", "role", "backend", "profile", "available"],
+                    value=_models_dataframe_rows(),
+                    interactive=False,
+                    wrap=True,
+                )
+                models_refresh.click(fn=_models_dataframe_rows, outputs=[models_df])
+
+            with gr.Tab("Outputs", elem_classes="stage-scoil-sinsearach"):
+                gr.Markdown(
+                    "**Generated certificates.** Reads JSONs from "
+                    "`data/certificates/` (the output of "
+                    "`CertificatePipeline.run()`)."
+                )
+                outputs_refresh = gr.Button("Refresh", variant="primary")
+                outputs_df = gr.Dataframe(
+                    headers=["filename", "bytes", "mtime", "dir", "_"],
+                    value=_outputs_dataframe_rows(),
+                    interactive=False,
+                    wrap=True,
+                )
+                outputs_refresh.click(fn=_outputs_dataframe_rows, outputs=[outputs_df])
+
+            with gr.Tab("Observability", elem_classes="stage-ollscoil"):
+                gr.Markdown(
+                    "**Last 5 structlog events.** Real implementation "
+                    "(Logfire / Langfuse) lands in Phase 5 — for now these "
+                    "are mocked so the operator sees the panel."
+                )
+                obs_df = gr.Dataframe(
+                    headers=["timestamp", "level", "module", "message"],
+                    value=_observability_events(),
+                    interactive=False,
+                    wrap=True,
+                )
+
+            with gr.Tab("Settings", elem_classes="stage-aistear"):
+                gr.Markdown(
+                    "**The `.env.example` keys.** Every env var the "
+                    "platform reads at runtime."
+                )
+                settings_md = gr.Markdown(value=_settings_markdown())
+
+            # ── Phase 3 baseline — the 5 stage tabs ─────────────────────
             with gr.Tab("Aistear", elem_classes="stage-aistear"):
                 gr.Markdown("**Early Childhood (0-6).** Filtered on Early Years / Aistear / Foundation.")
                 gr.Dataframe(

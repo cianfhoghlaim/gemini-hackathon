@@ -16,13 +16,14 @@ The studio runs as a single Cloud Run service per Workstream 12.
 The HF Spaces (`cianfhoghlaim/gemini_hackathon_<stage>`, W13) are
 smaller, per-stage surfaces.
 
-This W3 file provides the scaffolding (the big gr.Blocks layout + the
-gr.Workflow canvas + the 5-stage navigation). The full per-stage + per-
-feature wiring is in W12.
+Phase 4 (the `2026-08-31-journey-gradio-polish-v1` openspec change)
+wired the 4 previously-Markdown-stub tabs (Aistear / Bunscoil / MeanScoil
+/ Ollscoil) to the canonical 7-stage CertificatePipeline.
 """
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 try:
@@ -30,17 +31,210 @@ try:
 except ImportError:
     gr = None  # type: ignore[assignment]
 
+from gemini_hackathon.agents.registry import SUBJECT_WIRING_REGISTRY
+from gemini_hackathon.certificate.pipeline import (
+    CertificateOutcomeRecord,
+    CertificatePipeline,
+)
+from gemini_hackathon.certificate.types import CertificateRecord
+
 from .._common import (
     GRADIO_CSS,
     apply_education_theme,
     render_anam_bonneagar_footer,
     set_lang,
+)
+from .._common import (
     translate as t,
 )
 
-
 _log = logging.getLogger("editorial_studio.app")
 set_lang("en")
+
+
+# The 5 stage slugs (aistear / bunscoil / meanscoil / scoil_sinsearach /
+# ollscoil) — each tab maps to one stage + a certificate-type label.
+_STAGE_TO_CERTIFICATE_TYPE: dict[str, str] = {
+    "aistear": "aistear",
+    "bunscoil": "primary_l1lp",
+    "meanscoil": "jc_cba",
+    "scoil_sinsearach": "lc",
+    "ollscoil": "tertiary",
+}
+
+_STAGE_TABS: tuple[tuple[str, str], ...] = (
+    ("Aistear", "aistear"),
+    ("Bunscoil (Primary)", "bunscoil"),
+    ("MeanScoil (Junior Cycle)", "meanscoil"),
+    ("Scoil Sinsearach (LC)", "scoil_sinsearach"),
+    ("Ollscoil (Tertiary)", "ollscoil"),
+)
+
+
+def _run_async(coro):
+    """Run an async coroutine from a sync Gradio handler (Phase 4 polish).
+
+    Properly closes the event loop after running the coroutine to
+    avoid `ResourceWarning: unclosed event loop` warnings in the test
+    suite (the pyproject `filterwarnings = ["error", ...]` policy
+    promotes these to errors).
+    """
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        try:
+            loop.run_until_complete(loop.shutdown_asyncgens())
+        finally:
+            loop.close()
+            asyncio.set_event_loop(None)
+
+
+def _build_certificate_operator(*, stage: str, accent_class: str) -> None:
+    """Build the per-stage CertificatePipeline operator (Phase 4 polish).
+
+    Adds 4 widgets to the enclosing gr.Tabs context:
+
+      - `learner_id_box` — text input for the learner's ID
+      - `subject_dropdown` — dropdown sourced from SUBJECT_WIRING_REGISTRY
+      - `extract_btn` — the trigger button
+      - 2 outputs — `cert_md` (Markdown) + `cert_json` (JSON)
+
+    The actual click handler lives in `_on_extract_certificate` (defined
+    above) and is wired inside the function so each tab has its own
+    event handler with its own closure over `stage`.
+
+    Args:
+        stage: One of "aistear" / "bunscoil" / "meanscoil" /
+            "scoil_sinsearach" / "ollscoil".
+        accent_class: The CSS stage-accent class for theming the row.
+    """
+    if gr is None:  # defensive — `build_app()` already checks, but be safe
+        return
+    subject_choices = sorted(SUBJECT_WIRING_REGISTRY.keys())
+    with gr.Row(elem_classes=accent_class):
+        learner_id_box = gr.Textbox(
+            value="demo-learner-001",
+            label="Learner ID",
+            scale=1,
+        )
+        learner_name_box = gr.Textbox(
+            value="Demo Learner",
+            label="Learner name",
+            scale=1,
+        )
+        subject_dropdown = gr.Dropdown(
+            choices=subject_choices,
+            value="mathematics",
+            label="Subject (from SUBJECT_WIRING_REGISTRY)",
+            scale=2,
+        )
+    extract_btn = gr.Button(
+        f"Extract {stage.replace('_', ' ').title()} certificate",
+        variant="primary",
+    )
+    cert_md = gr.Markdown(
+        value="_Click 'Extract certificate' to run the 7-stage pipeline._",
+        label="Certificate summary",
+    )
+    cert_json = gr.JSON(label="CertificateRecord (full provenance)")
+
+    def _on_click(learner_id: str, learner_name: str, subject_slug: str):
+        return _on_extract_certificate(
+            learner_id=learner_id,
+            learner_name=learner_name,
+            subject_slug=subject_slug,
+            stage=stage,
+        )
+
+    extract_btn.click(
+        fn=_on_click,
+        inputs=[learner_id_box, learner_name_box, subject_dropdown],
+        outputs=[cert_md, cert_json],
+    )
+
+
+def _on_extract_certificate(
+    learner_id: str,
+    learner_name: str,
+    subject_slug: str,
+    stage: str,
+) -> tuple[str, dict]:
+    """The Phase 4 polished operator — runs the 7-stage certificate pipeline.
+
+    Returns a Markdown summary + the CertificateRecord serialised as JSON
+    so the workshop host can see both the rendered certificate (the PNG
+    bytes are referenced by sha256) + the full provenance record.
+    """
+    pipeline = CertificatePipeline()
+    # A minimal outcome list — the workshop host enters a single outcome
+    # in the demo; the real per-subject outcome catalogue is in
+    # `gemini_hackathon/certificate/outcomes.py` (Phase 5).
+    outcomes = [
+        CertificateOutcomeRecord(
+            outcome_code=f"{subject_slug.upper()}-{stage[:3].upper()}-1.1",
+            subject_slug=subject_slug,
+            descriptor=f"Mastery for {learner_name} in {subject_slug}",
+            mastery_score=0.85,
+        ),
+    ]
+    record: CertificateRecord = _run_async(
+        pipeline.run(
+            learner_id=learner_id or "demo-learner-001",
+            learner_name=learner_name or "Demo Learner",
+            subject_slug=subject_slug or "mathematics",
+            stage=stage,
+            outcomes=outcomes,
+        )
+    )
+
+    markdown = (
+        f"## Certificate for {record.learner_name}\n\n"
+        f"- **Stage:** `{record.stage}`  \n"
+        f"- **Subject:** `{record.subject_slug}`  \n"
+        f"- **Award descriptor:** {record.criteria.award_descriptor}  \n"
+        f"- **Issued at:** {record.issued_at}  \n"
+        f"- **Outcomes:** {len(record.outcomes)}  \n"
+        f"- **Policy citations:** {len(record.policy_citations)}  \n"
+        f"- **PNG bytes:** {len(record.png_bytes)}  \n"
+        f"- **PDF bytes:** {len(record.pdf_bytes)}  \n\n"
+        f"_UNOFFICIAL — NOT an NCCA-issued credential._"
+    )
+    json_payload = {
+        "learner_id": record.learner_id,
+        "learner_name": record.learner_name,
+        "subject_slug": record.subject_slug,
+        "stage": record.stage,
+        "criteria": {
+            "stage": record.criteria.stage,
+            "subject_slug": record.criteria.subject_slug,
+            "award_descriptor": record.criteria.award_descriptor,
+            "descriptor_vocabulary": list(record.criteria.descriptor_vocabulary),
+            "key_competencies": list(record.criteria.key_competencies),
+        },
+        "outcomes": [
+            {
+                "outcome_code": o.outcome_code,
+                "subject_slug": o.subject_slug,
+                "descriptor": o.descriptor,
+                "mastery_score": o.mastery_score,
+            }
+            for o in record.outcomes
+        ],
+        "policy_citations": [
+            {
+                "source_pdf": c.source_pdf,
+                "page": c.page,
+                "relevance": c.relevance,
+            }
+            for c in record.policy_citations[:5]
+        ],
+        "png_bytes_len": len(record.png_bytes),
+        "pdf_bytes_len": len(record.pdf_bytes),
+        "issued_at": record.issued_at,
+    }
+    return markdown, json_payload
 
 
 def _baml_extract_curriculum(pdf_text: str, subject: str) -> dict:
@@ -63,7 +257,7 @@ def _baml_extract_curriculum(pdf_text: str, subject: str) -> dict:
         if hasattr(result, "model_dump"):
             return result.model_dump()
         return dict(result)
-    except Exception as exc:  # noqa: BLE001 — offline-path fallback
+    except Exception as exc:
         _log.info("BAML unavailable (%s); returning stub extraction", exc)
         return {
             "_stub": True,
@@ -115,7 +309,6 @@ def build_workflow_canvas():
             "Gradio is required for build_workflow_canvas(); install with "
             "`pip install gradio>=6.0,<7.0`"
         )
-    from .._common.baml_client import chat_complete
     from .._common.i18n import set_lang as _set
 
     _set("en")
@@ -127,7 +320,7 @@ def build_workflow_canvas():
         or a stub dict when the BAML client is unavailable.
         """
         # The real workflow would read the source PDF from Firestore and
-        # call into the BAML client. For the W3 scaffolding we fabricate a
+        # call into the BAML client. For the workshop demo we fabricate a
         # short PDF-text snippet + call the extractor.
         pdf_text = (
             f"{subject_slug.upper()} syllabus — sample text for learner {learner_id}. "
@@ -288,21 +481,27 @@ compose the certificate end-to-end.""",
             with gr.Tab("Aistear", elem_classes="stage-aistear"):
                 gr.Markdown(
                     "**Early Childhood (0-6).** Aistear is the Irish-language "
-                    "framework for children from birth to 6. Wired in W12."
+                    "framework for children from birth to 6. The "
+                    "CertificatePipeline runs all 7 stages end-to-end."
                 )
+                _build_certificate_operator(stage="aistear", accent_class="stage-aistear")
 
             with gr.Tab("Bunscoil (Primary)", elem_classes="stage-bunscoil"):
                 gr.Markdown(
                     "**Primary (4-12).** 12 NCCA curriculum areas; the 1999 "
-                    "Primary Curriculum is the source of truth. Wired in W12."
+                    "Primary Curriculum is the source of truth. The "
+                    "CertificatePipeline renders L1LP/L2LP certificates."
                 )
+                _build_certificate_operator(stage="bunscoil", accent_class="stage-bunscoil")
 
             with gr.Tab("MeanScoil (Junior Cycle)", elem_classes="stage-meanscoil"):
                 gr.Markdown(
                     "**Junior Cycle (12-15).** 18 NCCA subjects + 16 short "
                     "courses + 36 CBAs. The 2015 Framework for Junior Cycle "
-                    "is the source of truth. Wired in W12."
+                    "is the source of truth. The CertificatePipeline renders "
+                    "JC CBA certificates."
                 )
+                _build_certificate_operator(stage="meanscoil", accent_class="stage-meanscoil")
 
             with gr.Tab("Scoil Sinsearach (LC)", elem_classes="stage-scoil-sinsearach"):
                 gr.Markdown(
@@ -329,12 +528,15 @@ compose the certificate end-to-end.""",
                         f"_Stage picker:_ **{stage_picker.value}** · "
                         f"_Subject picker:_ **{subject_picker.value}**_"
                     )
+                _build_certificate_operator(stage="scoil_sinsearach", accent_class="stage-scoil-sinsearach")
 
             with gr.Tab("Ollscoil (Tertiary)", elem_classes="stage-ollscoil"):
                 gr.Markdown(
                     "**Tertiary — Phase 2.** University of Galway + 5 "
-                    "foundation programmes. Wired in W12."
+                    "foundation programmes. The CertificatePipeline renders "
+                    "tertiary-stage certificates."
                 )
+                _build_certificate_operator(stage="ollscoil", accent_class="stage-ollscoil")
 
         render_anam_bonneagar_footer(
             space_id="cianfhoghlaim/gemini-hackathon-editorial-studio",
