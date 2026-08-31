@@ -120,8 +120,6 @@ def _write_bytes(jurisdiction: str, subject: str, sha256_prefix: str, ext: str, 
 
     filename = f"{sha256_prefix}{ext}"
     try:
-        import os
-
         from google.cloud import storage  # noqa: PLC0415
 
         project_id = os.environ.get("GCP_PROJECT_ID")

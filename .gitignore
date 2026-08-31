@@ -122,6 +122,7 @@ data/bi_ep/*.sqlite-*
 # --- marimo + notebooks ------------------------------------------------------
 notebooks/__marimo__/
 notebooks/.marimo/
+notebooks/mlflow.db  # MLflow sqlite tracking DB — regenerated on every mlflow run; never commit
 *.marimo.ipynb
 .marimo/
 

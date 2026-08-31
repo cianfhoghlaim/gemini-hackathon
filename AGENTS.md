@@ -27,6 +27,7 @@ this repo. Load them before doing any work in this repo.
 |--:|-------|------|----------------|
 | 1 | **CCC** (CocoIndex Code) | `.agents/skills/ccc/SKILL.md` | Semantic code search — finds code by meaning, not just text |
 | 2 | **openspec** | `.agents/skills/openspec/SKILL.md` | OpenSpec workflow + the 14 priority specs + the spec-delta format |
+| 2.5 | **submission-scope** | [`docs/SUBMISSION_SCOPE.md`](docs/SUBMISSION_SCOPE.md) | What the demo runs on — 97 in-scope PDFs; 8 jurisdictions deferred for this submission |
 | 3 | **make** | (built-in) | The self-documenting `Makefile` — `make help` lists all 27 targets. Replaces the deprecated `mise.toml` |
 | 4 | **secrets-management** | `.agents/skills/secrets-management/SKILL.md` | Google Secret Manager + Workload Identity Federation (the GCP-first IaC refactor) |
 | 5 | **knowledge-sync-loop** | `.agents/skills/knowledge-sync-loop/SKILL.md` | The 6-layer pull-based sync architecture |

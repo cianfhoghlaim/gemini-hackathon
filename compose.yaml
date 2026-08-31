@@ -99,7 +99,12 @@ services:
       - ./baml_extracts:/app/baml_extracts:ro
       - ./dlt_pipelines:/app/dlt_pipelines:ro
     ports:
-      - "8080:8080"
+      # Host 8082 — this service and `llama-swap` both declared host 8080,
+      # which made `docker compose up` fail outright. llama-swap keeps 8080
+      # (see README §"curl http://localhost:8080/v1/models"); 8081 is taken
+      # by infisical-backend. The container still listens on 8080, the
+      # Cloud Run convention.
+      - "8082:8080"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -216,9 +221,17 @@ services:
         condition: service_started
     environment:
       DATABASE_URL: postgresql://langfuse:langfuse_dev_password@langfuse-postgres:5432/langfuse
-      CLICKHOUSE_URL: clickhouse://clickhouse:clickhouse_dev_password@langfuse-clickhouse:8123/langfuse
+      # Langfuse v3 wants the HTTP endpoint here and the native-protocol
+      # endpoint (port 9000) in CLICKHOUSE_MIGRATION_URL; credentials go in
+      # their own vars. Without CLICKHOUSE_MIGRATION_URL the container exits 1
+      # after applying the Postgres migrations.
+      CLICKHOUSE_URL: http://langfuse-clickhouse:8123
+      CLICKHOUSE_MIGRATION_URL: clickhouse://langfuse-clickhouse:9000
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: clickhouse_dev_password
+      CLICKHOUSE_CLUSTER_ENABLED: "false"
       REDIS_URL: redis://langfuse-redis:6379
-      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:3002
       NEXTAUTH_SECRET: dev-secret-change-me-in-production
       SALT: dev-salt-change-me-in-production
       TELEMETRY_ENABLED: "false"
@@ -228,7 +241,11 @@ services:
       LANGFUSE_INIT_USER_PASSWORD: langfuse
       LANGFUSE_INIT_USER_NAME: Admin
     ports:
-      - "3000:3000"
+      # Host 3002: 3000 is the `make web` dev server and 3001 is the
+      # already-running shared `langfuse-web` container. NOTE: that shared
+      # container already provides Langfuse on :3001 — prefer it over
+      # starting this duplicate.
+      - "3002:3000"
     networks:
       - gh-net
 
@@ -240,7 +257,11 @@ services:
         condition: service_started
     environment:
       DATABASE_URL: postgresql://langfuse:langfuse_dev_password@langfuse-postgres:5432/langfuse
-      CLICKHOUSE_URL: clickhouse://clickhouse:clickhouse_dev_password@langfuse-clickhouse:8123/langfuse
+      CLICKHOUSE_URL: http://langfuse-clickhouse:8123
+      CLICKHOUSE_MIGRATION_URL: clickhouse://langfuse-clickhouse:9000
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: clickhouse_dev_password
+      CLICKHOUSE_CLUSTER_ENABLED: "false"
       REDIS_URL: redis://langfuse-redis:6379
       SALT: dev-salt-change-me-in-production
     networks:
@@ -263,7 +284,11 @@ services:
     volumes:
       - mlflow-data:/mlflow
     ports:
-      - "5000:5000"
+      # Host 5051: 5000 is macOS AirPlay Receiver and 5050 is the
+      # already-running shared `mlflow` container. NOTE: that shared
+      # container already provides MLflow on :5050 — prefer it over
+      # starting this duplicate.
+      - "5051:5000"
     networks:
       - gh-net
 

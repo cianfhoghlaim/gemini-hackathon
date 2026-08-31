@@ -1,5 +1,7 @@
 # gemini_hackathon — The British Isles Education Platform
 
+> **Submission scope:** this demo runs on **97 in-scope PDFs** (5 NCCA policies + 5 NCCE artefacts + 87 English Leaving Cert syllabi + 1 sample). The full BIEP substrate (DLT + CocoIndex + BAML + Google ADK + Gemma 4 + Gemini 3.5 + A2UI + Gradio + Web SPA) is preserved. See [`docs/SUBMISSION_SCOPE.md`](docs/SUBMISSION_SCOPE.md) for the full scope and the 8 jurisdictions that are deferred for this submission.
+
 > **Google All Things Agentic 2026 Hackathon submission.** Built with
 > **Gemini 3.5** (Vertex AI) + **Gemma 4 26B-A4B** (Unsloth Studio) +
 > the **Google ADK 2** agent framework. Deployed on **Google Cloud
