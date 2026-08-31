@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import os
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -47,6 +48,7 @@ from dlt_pipelines._shared import (
     get_duckdb_destination,
     now_iso,
     with_retry,
+    write_pdf_to_gcs_or_local,
 )
 
 logger = logging.getLogger(__name__)
@@ -94,10 +96,28 @@ def _ext_for_content_type(content_type: str) -> str:
 
 
 def _write_bytes(jurisdiction: str, subject: str, sha256_prefix: str, ext: str, content: bytes) -> str:
-    """Write `content` to GCS (if `GCP_PROJECT_ID` is set) or local disk
-    (offline-dev fallback). Returns the storage URI (`gs://...` or a local
-    path string).
+    """Write `content` to GCS (Phase 2 — `GCS_RAW_BUCKET` env-var gated) or local disk.
+
+    The Phase 2 preferred path uses `write_pdf_to_gcs_or_local()` which
+    reads `GCS_RAW_BUCKET` for a fully-explicit bucket override. The
+    Phase 1 `GCP_PROJECT_ID` + `gcs_uri("raw", ...)` path is kept as a
+    fallback for any Cloud Run Job that sets `GCP_PROJECT_ID` but not
+    `GCS_RAW_BUCKET`. When neither is set, writes go to local disk.
+
+    Returns the storage URI (`gs://...` or a local path string).
     """
+    # Phase 2: prefer the explicit `GCS_RAW_BUCKET` mechanism (simpler,
+    # doesn't require the project-id derivation).
+    if os.environ.get("GCS_RAW_BUCKET"):
+        return write_pdf_to_gcs_or_local(
+            content,
+            source_key=jurisdiction,
+            subject=subject,
+            language="en",  # corpus_downloader is jurisdiction-level, not LC-level
+            sha256=sha256_prefix,
+            extension=ext,
+        )
+
     filename = f"{sha256_prefix}{ext}"
     try:
         import os

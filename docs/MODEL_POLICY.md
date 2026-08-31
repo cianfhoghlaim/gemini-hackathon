@@ -104,6 +104,63 @@ it downgrades from Tier 1 (Gemini 3.5) to Tier 2 (Gemma 4) automatically.
 The chat panel header shows the running total — judges see cost discipline
 in the live demo, not just in the docs.
 
+## Vertex AI Vector Search cost considerations
+
+`VECTOR_BACKEND=vertex` swaps the default Firestore FindNearest backend
+for Vertex AI Vector Search (ScaNN ANN). The Phase 2
+[`2026-08-31-gcp-data-plane-v1`](../../openspec/changes/2026-08-31-gcp-data-plane-v1/specs/gcp-data-plane/spec.md)
+change wires both backends behind a `DualWriteTarget` composite —
+`VECTOR_TARGET_DUAL_WRITE=1` fans writes out to both, but **only the
+primary serves reads**. For the demo path Firestore stays the primary
+(zero standing infra); flip the env var for production where Vertex
+becomes primary.
+
+**Pricing shape** (per GCP public docs, USD, europe-west1 as of 2026-08):
+
+| Component | Cost |
+|-----------|------|
+| Index management fee | ~$0.00 / hour for indexes < 5 GB; otherwise small hourly tier |
+| Index hosting (per shard hour) | ~$0.025–$0.30 per shard per hour (size-tiered) |
+| **Minimum index endpoint** | **~$0.70/hour (e2-standard-2 — $48/month standing)** when an endpoint is deployed, **independent of traffic** |
+| Query (MatchNeighbors) | **$0.06 per 1k queries** (first 10k free / month) |
+| Datapoint upsert | **$0.075 per 1M datapoints** (first 1M free / month) |
+| Batch size > 1k nodes | +$0.075 per 1k nodes |
+
+**Cost ceiling for the hackathon**: a Vertex endpoint that runs 24/7
+for a month costs **~$48 minimum** even at zero queries. For the
+hackathon's "ingestion jobs + dev demo" pattern this is wasteful — the
+**Phase 2 dual-write mode** uses Firestore as the primary (free per-read,
+no idle cost) and only fans writes to Vertex for the deployed Cloud
+Run path. Reads still hit Firestore. The Vertex endpoint stays
+provisioned but the demo never queries it.
+
+**Dual-write practical cost**: with `VECTOR_TARGET_DUAL_WRITE=1` set,
+writes double their Firestore datapoint cost (free) and add Vertex
+upsert cost ($0.075/1M). For a 100k-row corpus re-indexed weekly that's
+~$0.01/month — negligible. The big-ticket cost is the **endpoint
+standing fee**, which is on whether the endpoint is deployed, not on
+traffic.
+
+**When to flip to Vertex-primary**: when `read_qps > 100` or
+`recall@10 > 0.95` becomes the binding constraint. For everything below
+that, Firestore (zero standing infra) is the right default.
+
+## Install shape for the GCP-backed data plane
+
+The 3 GCP client libraries (`google-cloud-bigquery`,
+`google-cloud-aiplatform`, `google-cloud-storage`) live in the optional
+`[dependency-groups] gcp` group (added by Phase 2). Install:
+
+```bash
+uv sync --group gcp   # full GCP data plane + agent layer
+uv sync               # offline-only — DuckDB + LanceDB + Firestore stub
+```
+
+All GCP imports in `dlt_pipelines/` + `cocoindex_flows/` are wrapped in
+`try/except ImportError` graceful-degrade so a default `uv sync` install
+still imports every module — the GCP paths return empty results / log
+warnings rather than crashing.
+
 ---
 
 ## Observability

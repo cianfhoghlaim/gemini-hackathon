@@ -140,6 +140,86 @@ def _local_path_for(
     )
 
 
+def _output_path_for(
+    *,
+    source_key: str,
+    subject: str,
+    language: str,
+    sha256: str,
+    root: pathlib.Path,
+) -> str:
+    """Return either a `gs://` URI (when `GCS_RAW_BUCKET` is set) or the local path.
+
+    Phase 2 of the GCP-first refactor. The local-vs-GCS decision is
+    made by `write_pdf_to_gcs_or_local` (which performs the actual
+    upload when the env var is set). The function signature here
+    matches the Phase 2 task spec snippet.
+    """
+    from dlt_pipelines._shared import write_pdf_to_gcs_or_local  # noqa: PLC0415
+
+    # The Phase 2 helper writes bytes; this function is path-only so
+    # we delegate the actual upload to the caller (`_write_bytes`).
+    # When `GCS_RAW_BUCKET` is unset, return the local path only.
+    import os  # noqa: PLC0415
+
+    if os.environ.get("GCS_RAW_BUCKET"):
+        # Caller must pass bytes via write_pdf_to_gcs_or_local; we
+        # return the gs:// path the helper WOULD use.
+        return _gcs_path_for(
+            source_key=source_key,
+            subject=subject,
+            language=language,
+            sha256=sha256,
+        )
+    return str(_local_path_for(
+        source_key=source_key,
+        subject=subject,
+        language=language,
+        sha256=sha256,
+        root=root,
+    ))
+
+
+def _gcs_path_for(*, source_key: str, subject: str, language: str, sha256: str) -> str:
+    """Build the `gs://` URI without performing any network call.
+
+    Matches the layout documented in
+    `dlt_pipelines/_shared.write_pdf_to_gcs_or_local`:
+        gs://<bucket>/<source_key>/<subject>/<language>/<sha256>.pdf
+    """
+    import os  # noqa: PLC0415
+
+    bucket = os.environ["GCS_RAW_BUCKET"]
+    return f"gs://{bucket}/{source_key}/{subject}/{language}/{sha256}.pdf"
+
+
+def _write_pdf_bytes(
+    content: bytes,
+    *,
+    source_key: str,
+    subject: str,
+    language: str,
+    sha256: str,
+    root: pathlib.Path,
+) -> str:
+    """Write PDF `content` to GCS (when `GCS_RAW_BUCKET` is set) or local disk.
+
+    Returns the storage URI. Delegates to `dlt_pipelines._shared.write_pdf_to_gcs_or_local`
+    for the actual upload logic (so the lazy-import + fallback pattern
+    lives in one place).
+    """
+    from dlt_pipelines._shared import write_pdf_to_gcs_or_local  # noqa: PLC0415
+
+    return write_pdf_to_gcs_or_local(
+        content,
+        source_key=source_key,
+        subject=subject,
+        language=language,
+        sha256=sha256,
+        local_root=root,
+    )
+
+
 def _connect_duckdb(db_path: pathlib.Path) -> sqlite3.Connection:
     """Connect to the canonical DuckDB file via the bundled sqlite3 driver.
 
@@ -264,6 +344,21 @@ def run_downloader(
                         root=root,
                     )
                     page_count = _page_count(content)
+                    # Phase 2: when `GCS_RAW_BUCKET` is set, point the row
+                    # at the gs:// URI even on a skip (the bytes already
+                    # exist remotely).
+                    stored_uri: str = (
+                        _write_pdf_bytes(
+                            content,
+                            source_key=row["source_key"],
+                            subject=row["subject"],
+                            language=row["language"],
+                            sha256=sha,
+                            root=root,
+                        )
+                        if os.environ.get("GCS_RAW_BUCKET")
+                        else str(target)
+                    )
                     _upsert_downloaded_row(
                         conn,
                         source_key=row["source_key"],
@@ -272,7 +367,7 @@ def run_downloader(
                         level=row["level"],
                         language=row["language"],
                         subject=row["subject"],
-                        new_pdf_path=str(target),
+                        new_pdf_path=stored_uri,
                         file_size_bytes=len(content),
                         page_count=page_count,
                         sha256=sha,
@@ -290,6 +385,20 @@ def run_downloader(
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(content)
                 page_count = _page_count(content)
+                # Phase 2: when `GCS_RAW_BUCKET` is set, also upload to
+                # GCS and point the row at the gs:// URI.
+                stored_uri = (
+                    _write_pdf_bytes(
+                        content,
+                        source_key=row["source_key"],
+                        subject=row["subject"],
+                        language=row["language"],
+                        sha256=sha,
+                        root=root,
+                    )
+                    if os.environ.get("GCS_RAW_BUCKET")
+                    else str(target)
+                )
                 _upsert_downloaded_row(
                     conn,
                     source_key=row["source_key"],
@@ -298,7 +407,7 @@ def run_downloader(
                     level=row["level"],
                     language=row["language"],
                     subject=row["subject"],
-                    new_pdf_path=str(target),
+                    new_pdf_path=stored_uri,
                     file_size_bytes=len(content),
                     page_count=page_count,
                     sha256=sha,
@@ -307,7 +416,7 @@ def run_downloader(
                 stats["downloaded"] += 1
                 logger.info(
                     "pdf_downloader.downloaded path=%s sha256=%s bytes=%d pages=%s",
-                    target, sha, len(content), page_count,
+                    stored_uri, sha, len(content), page_count,
                 )
             except Exception as exc:  # noqa: BLE001 — keep going on failure
                 stats["failed"] += 1
@@ -332,6 +441,8 @@ if __name__ == "__main__":  # pragma: no cover
 __all__ = [
     "DUCKDB_PATH",
     "PDF_RAW_ROOT",
+    "_output_path_for",
+    "_write_pdf_bytes",
     "main",
     "run_downloader",
 ]

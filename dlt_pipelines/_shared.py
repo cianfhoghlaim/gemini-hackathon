@@ -14,7 +14,13 @@ Provides:
 - `now_iso()` — UTC ISO-8601 timestamp
 - `with_retry()` — exponential-backoff retry decorator
 - `safe_stat()` — pathlib.stat() with FileNotFoundError → None
-- `get_duckdb_destination()` — the canonical dlt duckdb destination factory
+- `get_duckdb_destination()` — the legacy dlt duckdb destination factory
+  (Phase 2 kept as a thin wrapper around `get_destination("duckdb")`
+  for backwards compat with every Phase 0/1 caller)
+- `get_destination()` — the Phase 2 polymorphic 4-backend factory
+  (`duckdb` / `ducklake` / `motherduck` / `bigquery`). The new
+  production-target entry point — BigQuery is selected by passing
+  `name="bigquery"` (or by setting `BIGQUERY_DATASET`).
 """
 
 from __future__ import annotations
@@ -27,10 +33,13 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from functools import wraps
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, TypeVar
 
 if TYPE_CHECKING:
     from dlt.destinations.impl.duckdb.factory import duckdb
+
+# Literal type alias for the 4 supported DLT destinations (Phase 2).
+DestinationName = Literal["duckdb", "ducklake", "motherduck", "bigquery"]
 
 logger = logging.getLogger(__name__)
 
@@ -357,30 +366,128 @@ def with_retry(
 
 
 # ---------------------------------------------------------------------------
-# DLT destination factory
+# DLT destination factory (Phase 2 — polymorphic 4-backend factory)
 # ---------------------------------------------------------------------------
 
+#: The default BigQuery dataset name. Overridden via the `BIGQUERY_DATASET`
+#: env var or the `bigquery_dataset=` kwarg to `get_destination()`.
+BIGQUERY_DEFAULT_DATASET: str = os.environ.get("BIGQUERY_DATASET", "biep")
 
-def get_duckdb_destination(database_path: Path | None = None) -> duckdb:
-    """Return the canonical dlt `duckdb` destination pointing at `database_path`.
 
-    Defaults to `DUCKDB_PATH` (the repo-root `gemini_hackathon.duckdb`).
-    Honourable to override via the env var `DUCKDB_PATH` for the CI runner.
+def get_destination(
+    name: DestinationName = "duckdb",
+    database_path: Path | None = None,
+    *,
+    bigquery_dataset: str | None = None,
+) -> Any:
+    """Return the canonical dlt destination for `name`.
+
+    Phase 2 of the GCP-first refactor. Polymorphic factory selecting
+    one of 4 backends:
+
+    - ``duckdb`` (default): local DuckDB at `DUCKDB_PATH` (or
+      `database_path` when provided). Offline-safe.
+    - ``ducklake``: DuckLake-backed DuckDB. Phase 2 keeps the local
+      DuckDB fallback (the real `ducklake:///...` URL lives behind
+      a Phase 3 follow-up — see KNOWN_ISSUES.md).
+    - ``motherduck``: MotherDuck cloud via
+      `duckdb.connect("md:...")`. Phase 2 keeps the local DuckDB
+      fallback (the real `md:...` connection string requires a
+      Phase 3 follow-up with `MOTHERDUCK_TOKEN`).
+    - ``bigquery``: Google Cloud BigQuery via
+      `dlt.destinations.bigquery(dataset_name=...)`. Requires the
+      `dlt[bigquery]` extra; the import is wrapped in
+      `try/except ImportError` so this module stays importable
+      without it (raises `ImportError` at call time when the extra
+      isn't installed — fail-fast, not silent).
+
+    Args:
+        name: One of ``"duckdb"``, ``"ducklake"``, ``"motherduck"``,
+            ``"bigquery"``. Anything else raises `ValueError`.
+        database_path: Optional override for the DuckDB file path
+            (only used by the `duckdb`/`ducklake`/`motherduck`
+            branches; ignored by `bigquery`).
+        bigquery_dataset: The BigQuery dataset name. Falls back to
+            the `BIGQUERY_DATASET` env var (default ``"biep"``).
+            Ignored by every non-BigQuery branch.
+
+    Returns:
+        The dlt destination instance (a `dlt.destinations` factory
+        product). Callers pass it to `dlt.pipeline(destination=...)`.
+
+    Raises:
+        ValueError: when `name` is not one of the 4 supported
+            backends.
+        ImportError: when `name="bigquery"` and `dlt[bigquery]` is
+            not installed.
     """
-    from dlt.destinations import duckdb  # noqa: PLC0415 — lazy for fast package import
+    if name not in ("duckdb", "ducklake", "motherduck", "bigquery"):
+        raise ValueError(
+            f"get_destination: unknown name {name!r}; "
+            "valid: 'duckdb' | 'ducklake' | 'motherduck' | 'bigquery'"
+        )
+
+    if name == "bigquery":
+        # Lazy import — the `dlt[bigquery]` extra is part of the
+        # optional `[dependency-groups] gcp` group (see pyproject.toml).
+        # Phase 2 keeps the default `uv sync` install GCP-free, so this
+        # import is the one that needs the guard.
+        try:
+            import dlt  # noqa: PLC0415 — lazy import
+            from dlt.destinations import bigquery as _bigquery  # noqa: PLC0415
+        except ImportError as exc:  # pragma: no cover — defensive
+            raise ImportError(
+                "get_destination('bigquery') requires the `dlt[bigquery]` "
+                "extra (the GCP data-plane group). Install with "
+                "`uv sync --group gcp` and retry."
+            ) from exc
+
+        dataset = bigquery_dataset or os.environ.get("BIGQUERY_DATASET", BIGQUERY_DEFAULT_DATASET)
+        logger.info(
+            "get_destination: using BigQuery dataset=%s (credentials via ADC)",
+            dataset,
+        )
+        return _bigquery(dataset_name=dataset)
+
+    # Local DuckDB branch (duckdb + ducklake + motherduck all share
+    # the local DuckDB file in Phase 2; Phase 3 splits them out).
+    from dlt.destinations import duckdb as _duckdb  # noqa: PLC0415
 
     if database_path is None:
         env_override = os.environ.get("DUCKDB_PATH")
         database_path = Path(env_override) if env_override else DUCKDB_PATH
 
-    # Ensure the parent dir exists (DLT doesn't mkdir for us).
     database_path.parent.mkdir(parents=True, exist_ok=True)
 
     logger.info(
-        "get_duckdb_destination: using DuckDB at %s (dataset_name supplied by caller)",
+        "get_destination: using DuckDB at %s (backend=%s, dataset_name supplied by caller)",
         database_path,
+        name,
     )
-    return duckdb(credentials=str(database_path))
+    # `ducklake` + `motherduck` share the local DuckDB file in Phase 2;
+    # Phase 3 splits them into their real URLs (`ducklake:///...` and
+    # `md:...`) without changing the call site.
+    return _duckdb(credentials=str(database_path))
+
+
+def get_duckdb_destination(database_path: Path | None = None) -> duckdb:
+    """Backwards-compat wrapper around `get_destination("duckdb", ...)`.
+
+    Phase 2 keeps this function as a thin alias so every Phase 0/1
+    caller (`corpus_downloader.py`, `pdf_downloader.py`, etc.) continues
+    to work without modification. New code SHOULD use
+    `get_destination()` directly so the backend selection is explicit
+    at the call site.
+
+    Defaults to `DUCKDB_PATH` (the repo-root `gemini_hackathon.duckdb`).
+    Override via the env var `DUCKDB_PATH` for the CI runner, or pass
+    `database_path=` explicitly.
+    """
+    result = get_destination("duckdb", database_path=database_path)
+    # The TYPE_CHECKING import is `duckdb` (the class); the runtime
+    # return value is a destination instance — duckdb in the type stub
+    # is the closest match. Cast via `Any` in callers if needed.
+    return result  # type: ignore[return-value]
 
 
 # ---------------------------------------------------------------------------
@@ -431,6 +538,96 @@ def gcs_uri(bucket: str, *parts: str) -> str:
     return f"gs://{GCS_BUCKETS[bucket]}/" + "/".join(p.strip("/") for p in parts)
 
 
+def write_pdf_to_gcs_or_local(
+    content: bytes,
+    *,
+    source_key: str,
+    subject: str,
+    language: str,
+    sha256: str,
+    extension: str = ".pdf",
+    local_root: Path | None = None,
+) -> str:
+    """Write PDF bytes to GCS (when `GCS_RAW_BUCKET` is set) or local disk.
+
+    Phase 2 of the GCP-first refactor. The Phase 1 `corpus_downloader`
+    already writes to GCS via `storage.Client` (gated on
+    `GCP_PROJECT_ID`); this helper introduces a **simpler**
+    `GCS_RAW_BUCKET`-only mechanism that doesn't require the project-id
+    derivation. Both call sites can use it; the Phase 1 wiring stays
+    for backwards compat with any Cloud Run Job that sets
+    `GCP_PROJECT_ID` but not `GCS_RAW_BUCKET`.
+
+    Path layout (matches the spec snippet at
+    `openspec/changes/2026-08-31-gcp-data-plane-v1/proposal.md`):
+
+        GCS set:     gs://<bucket>/<source_key>/<subject>/<language>/<sha256><ext>
+        GCS unset:   <local_root>/<source_key>/<subject>/<language>/<sha256><ext>
+                     (default local_root = REPO_ROOT/data/bi_ep/syllabi_raw/)
+
+    Args:
+        content: The PDF (or HTML) bytes to write.
+        source_key: The jurisdiction slug (`aqa.org.uk`, `ncca.ie`, ...).
+        subject: The subject slug (`mathematics`, `english`, ...).
+        language: The 2-letter language code (`en` / `ga`).
+        sha256: The content sha256 (used as the filename).
+        extension: File extension (`.pdf`, `.html`, `.txt`, `.bin`).
+        local_root: Override for the local-filesystem root. Defaults
+            to `<repo_root>/data/bi_ep/syllabi_raw/`.
+
+    Returns:
+        The storage URI:
+        - `gs://<bucket>/<rel>` when `GCS_RAW_BUCKET` is set + upload succeeds
+        - A local `Path` string when the env var is unset (or the GCS
+          upload fails for any reason — best-effort fallback)
+    """
+    bucket = os.environ.get("GCS_RAW_BUCKET")
+    rel = f"{source_key}/{subject}/{language}/{sha256}{extension}"
+
+    if bucket:
+        try:
+            from google.cloud import storage  # noqa: PLC0415 — lazy import
+            from google.cloud.exceptions import GoogleCloudError  # noqa: PLC0415 — lazy
+
+            client = storage.Client()
+            client_bucket = client.bucket(bucket)
+            blob = client_bucket.blob(rel)
+            blob.upload_from_string(content)
+            logger.info(
+                "write_pdf_to_gcs_or_local: uploaded %d bytes to gs://%s/%s",
+                len(content),
+                bucket,
+                rel,
+            )
+            return f"gs://{bucket}/{rel}"
+        except ImportError:
+            logger.warning(
+                "write_pdf_to_gcs_or_local: google-cloud-storage not installed, "
+                "falling back to local disk for %s/%s/%s/%s",
+                source_key,
+                subject,
+                language,
+                sha256,
+            )
+        except Exception as exc:  # noqa: BLE001 — best-effort fallback
+            logger.warning(
+                "write_pdf_to_gcs_or_local: GCS upload failed (%s), falling back to local",
+                exc,
+            )
+
+    if local_root is None:
+        local_root = REPO_ROOT / "data" / "bi_ep" / "syllabi_raw"
+    target = local_root / rel
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(content)
+    logger.info(
+        "write_pdf_to_gcs_or_local: wrote %d bytes to %s (local fallback)",
+        len(content),
+        target,
+    )
+    return str(target)
+
+
 def get_named_destination(name: str) -> str:
     """Resolve a named destination to its DLT credentials string.
 
@@ -467,6 +664,8 @@ __all__ = [
     # GCS (Phase 1 — GCP-first data substrate)
     "GCS_BUCKETS",
     "gcs_uri",
+    # GCS PDF substrate (Phase 2 — `GCS_RAW_BUCKET` env-var gated)
+    "write_pdf_to_gcs_or_local",
     # Registries
     "JURISDICTION_BOARDS",
     "JURISDICTION_DETAILS",
@@ -489,7 +688,11 @@ __all__ = [
     "SAFEGUARDING_POLICY_COLUMNS",
     # SHA256 read chunk
     "SHA256_CHUNK_BYTES",
-    # DLT destination factory
+    # DLT destination factory (Phase 2 — polymorphic 4-backend)
+    "BIGQUERY_DEFAULT_DATASET",
+    "DestinationName",
+    "get_destination",
+    # Legacy wrapper (kept for Phase 0/1 caller compatibility)
     "get_duckdb_destination",
     "now_iso",
     "safe_stat",

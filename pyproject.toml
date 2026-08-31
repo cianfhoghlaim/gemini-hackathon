@@ -54,17 +54,12 @@ dependencies = [
     "baml-py>=0.223.0",
     "litellm>=1.50",
     # GCP-first data + AI substrate (Phases 1-6 of the GCP-first refactor).
-    # `dlt[bigquery]` above brings google-cloud-bigquery transitively; listed
-    # extras here are the ones this repo imports directly.
-    "google-cloud-storage>=2.18",
-    "google-cloud-firestore>=2.19",
-    "google-cloud-aiplatform>=1.70",       # Vertex embeddings + Vector Search + Gemma on Model Garden
-    "google-cloud-documentai>=2.30",       # OCR ensemble path 1
-    "google-cloud-workflows>=1.16",
-    "google-cloud-scheduler>=2.13",
-    "google-cloud-pubsub>=2.23",
-    "google-cloud-trace>=1.13",
-    "google-cloud-logging>=3.11",
+    # The 3 client libs (`google-cloud-bigquery`, `google-cloud-aiplatform`,
+    # `google-cloud-storage`) are listed in the optional `[dependency-groups]
+    # gcp` group below so a fully-offline dev install doesn't need them. The
+    # runtime imports are wrapped in `try/except ImportError` throughout
+    # `dlt_pipelines/` and `cocoindex_flows/` so the modules stay importable
+    # even when the group isn't installed.
     # Vector + graph — Firestore FindNearest is the default VectorTarget;
     # LanceDB + FalkorDB kept as optional local cianfhoghlaim-parity backends
     # (see `[dependency-groups] cianfhoghlaim-parity` below).
@@ -134,6 +129,29 @@ dev = [
     "google-cloud-secret-manager>=2.20",
     "pyyaml>=6.0",
     "python-dotenv>=1.0",
+]
+# Phase 2 (2026-08-31-gcp-data-plane-v1) — the GCP data-plane client
+# libraries. Install with `uv sync --group gcp` for the GCP-backed
+# data plane (BigQuery + Vertex AI Vector Search + GCS); the default
+# `uv sync` install is local-only (DuckDB + LanceDB).
+#
+# All GCP imports in `dlt_pipelines/` + `cocoindex_flows/` are wrapped
+# in `try/except ImportError` graceful-degrade so the package remains
+# importable when this group isn't installed — the GCP-backed paths
+# return empty results / log warnings instead of crashing.
+gcp = [
+    "google-cloud-bigquery>=3.0",         # Phase 2 — DLT BigQuery destination
+    "google-cloud-aiplatform>=1.50",      # Phase 2 — Vertex AI Vector Search
+    "google-cloud-storage>=2.10",         # Phase 2 — GCS PDF corpus substrate
+    # Phase 0/1 — already-imported GCP client libs (kept in the same
+    # opt-in group so the default `uv sync` doesn't pull any GCP deps).
+    "google-cloud-firestore>=2.19",
+    "google-cloud-documentai>=2.30",      # OCR ensemble path 1
+    "google-cloud-workflows>=1.16",
+    "google-cloud-scheduler>=2.13",
+    "google-cloud-pubsub>=2.23",
+    "google-cloud-trace>=1.13",
+    "google-cloud-logging>=3.11",
 ]
 docs = [
     "marimo>=0.10",
