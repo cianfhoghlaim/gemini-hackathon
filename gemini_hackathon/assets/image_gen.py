@@ -22,13 +22,13 @@ import json
 import logging
 import os
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Protocol
 
 import httpx
 
+from ..model_registry import ModelProfile
 from .control_record import AssetControlRecord
-from ..model_registry import ModelProfile, model_for
 
 logger = logging.getLogger(__name__)
 
@@ -287,7 +287,6 @@ class _StubBackend:
         seed = record.seed or int(_stable_hash(record.to_dict())[:8], 16) % (1 << 31)
         # Generate a 1x1 PNG of the primary palette colour.
         # This is a deterministic placeholder — same record + seed → same PNG.
-        import struct
 
         # Minimal 1x1 PNG of #888888 (will be replaced when a real backend is wired)
         png = bytes.fromhex(
@@ -353,7 +352,7 @@ class ImageGenRouter:
                         "tried_backends": tried,
                     },
                 )
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 logger.warning("backend %s failed: %s", backend.name.value, e)
                 continue
 

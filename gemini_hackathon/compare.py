@@ -20,13 +20,17 @@ import hashlib
 import json
 import os
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
 from .call_llm import call_llm, reset_router
-from .model_registry import MODEL_REGISTRY, ModelFamily, ModelProfile, model_for
-from .model_registry import public_model_roster
+from .model_registry import (
+    MODEL_REGISTRY,
+    ModelFamily,
+    ModelProfile,
+    public_model_roster,
+)
 
 
 @dataclass(frozen=True)
@@ -94,7 +98,7 @@ def _extract_pdf_text(path: str, max_chars: int = 12_000) -> str:
             if total >= max_chars:
                 break
         return "".join(chunks)[:max_chars]
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return f"<text extraction failed: {type(e).__name__}: {e}>"
 
 
@@ -127,7 +131,7 @@ def _score_with_ragas(
     ]
     breakdown: dict[str, float] = {}
     if not content.strip():
-        return 0.0, {f: 0.0 for f in required}
+        return 0.0, dict.fromkeys(required, 0.0)
 
     # Try to extract the JSON object.
     parsed: dict[str, Any] = {}
@@ -192,7 +196,7 @@ def run_comparison(
                 family="text_llm",
                 role=entry.role,
             )
-        except Exception as e:  # noqa: BLE001
+        except Exception:
             continue
 
         score, breakdown = _score_with_ragas(response.content, ground_truth=None)

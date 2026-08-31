@@ -57,9 +57,11 @@ from .model_registry import (
     ModelFamily,
     ModelProfile,
     ModelRegistryEntry,
-    PublicModelEntry as _PublicModelEntry,
     active_profile,
     model_for,
+)
+from .model_registry import (
+    PublicModelEntry as _PublicModelEntry,
 )
 
 if TYPE_CHECKING:
@@ -798,7 +800,7 @@ def _attempt(
                 cost_usd=estimate_cost_usd(entry.key, tokens_in, tokens_out),
                 attempts=list(attempts),
             )
-        except Exception as e:  # noqa: BLE001 — any provider error retries/falls through
+        except Exception as e:
             attempt_ms = int((time.monotonic() - attempt_start) * 1000)
             error_msg = f"{type(e).__name__}: {e}"
             attempts.append(

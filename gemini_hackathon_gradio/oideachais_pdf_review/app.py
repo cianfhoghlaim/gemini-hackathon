@@ -23,9 +23,10 @@ from .._common import (
     GRADIO_CSS,
     apply_education_theme,
     render_anam_bonneagar_footer,
+)
+from .._common import (
     translate as t,
 )
-
 
 _log = logging.getLogger("oideachais_pdf_review.app")
 

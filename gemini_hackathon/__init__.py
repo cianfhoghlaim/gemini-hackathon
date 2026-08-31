@@ -11,25 +11,25 @@ Public API:
     backend: stdlib HTTP server exposing /api/chat/completions + /api/themes
 """
 
-from .theming import (
-    Palette,
-    load_palette,
-    list_all_palettes,
-    extract_source_palette_from_pdf,
-    JURISDICTIONS,
-    BOARDS,
-    SAFEGUARDING_BODIES,
-    SAFEGUARDING_SOURCES,
-    CANONICAL_TO_FILE,
-)
 from .model_registry import (
     MODEL_REGISTRY,
+    ModelFamily,
+    ModelProfile,
     ModelRegistry,
     ModelRegistryEntry,
-    ModelFamily,
     ModelRole,
-    ModelProfile,
     model_for,
+)
+from .theming import (
+    BOARDS,
+    CANONICAL_TO_FILE,
+    JURISDICTIONS,
+    SAFEGUARDING_BODIES,
+    SAFEGUARDING_SOURCES,
+    Palette,
+    extract_source_palette_from_pdf,
+    list_all_palettes,
+    load_palette,
 )
 
 # ─────────────────────────────────────────────────────────────────────
@@ -45,13 +45,25 @@ from .model_registry import (
 # own TIER 1 lift changes (openspec weeks 23-30).
 # ─────────────────────────────────────────────────────────────────────
 try:
-    from cianfhoghlaim.model_registry import (  # noqa: F401
+    from cianfhoghlaim.model_registry import (
         MODEL_REGISTRY as _CIANFHLOGHLAIM_MODEL_REGISTRY,
-        ModelRegistry as _ModelRegistry,
-        ModelRegistryEntry as _ModelRegistryEntry,
+    )
+    from cianfhoghlaim.model_registry import (
         ModelFamily as _ModelFamily,
-        ModelRole as _ModelRole,
+    )
+    from cianfhoghlaim.model_registry import (
         ModelProfile as _ModelProfile,
+    )
+    from cianfhoghlaim.model_registry import (
+        ModelRegistry as _ModelRegistry,
+    )
+    from cianfhoghlaim.model_registry import (
+        ModelRegistryEntry as _ModelRegistryEntry,
+    )
+    from cianfhoghlaim.model_registry import (
+        ModelRole as _ModelRole,
+    )
+    from cianfhoghlaim.model_registry import (
         model_for as _model_for,
     )
 
@@ -75,16 +87,32 @@ except ImportError:
 # openspec change). Mirrors the model-registry shim pattern.
 # ─────────────────────────────────────────────────────────────────────
 try:
-    from cianfhoghlaim.theming import (  # noqa: F401
-        Palette as _TIER1_Palette,
-        load_palette as _tier1_load_palette,
-        list_all_palettes as _tier1_list_all_palettes,
-        extract_source_palette_from_pdf as _tier1_extract_source_palette_from_pdf,
-        JURISDICTIONS as _TIER1_JURISDICTIONS,
+    from cianfhoghlaim.theming import (
         BOARDS as _TIER1_BOARDS,
-        SAFEGUARDING_BODIES as _TIER1_SAFEGUARDING_BODIES,
-        SAFEGUARDING_SOURCES as _TIER1_SAFEGUARDING_SOURCES,
+    )
+    from cianfhoghlaim.theming import (
         CANONICAL_TO_FILE as _TIER1_CANONICAL_TO_FILE,
+    )
+    from cianfhoghlaim.theming import (
+        JURISDICTIONS as _TIER1_JURISDICTIONS,
+    )
+    from cianfhoghlaim.theming import (
+        SAFEGUARDING_BODIES as _TIER1_SAFEGUARDING_BODIES,
+    )
+    from cianfhoghlaim.theming import (
+        SAFEGUARDING_SOURCES as _TIER1_SAFEGUARDING_SOURCES,
+    )
+    from cianfhoghlaim.theming import (
+        Palette as _TIER1_Palette,
+    )
+    from cianfhoghlaim.theming import (
+        extract_source_palette_from_pdf as _tier1_extract_source_palette_from_pdf,
+    )
+    from cianfhoghlaim.theming import (
+        list_all_palettes as _tier1_list_all_palettes,
+    )
+    from cianfhoghlaim.theming import (
+        load_palette as _tier1_load_palette,
     )
 
     Palette = _TIER1_Palette
@@ -150,20 +178,46 @@ __all__ = [
 # ---------------------------------------------------------------------------
 
 from .sources import (
-    JurisdictionMeta as _Sources_JurisdictionMeta,
-    BoardMeta as _Sources_BoardMeta,
-    Subject as _Sources_Subject,
-    JurisdictionCode as _Sources_JurisdictionCode,
-    BoardCode as _Sources_BoardCode,
-    JURISDICTIONS as sources_JURISDICTIONS,
     BOARDS as sources_BOARDS,
+)
+from .sources import (
+    JURISDICTIONS as sources_JURISDICTIONS,
+)
+from .sources import (
     SUBJECTS as sources_SUBJECTS,
-    list_jurisdictions as sources_list_jurisdictions,
-    list_boards as sources_list_boards,
-    get_jurisdiction_meta as sources_get_jurisdiction_meta,
+)
+from .sources import (
+    BoardCode as _Sources_BoardCode,
+)
+from .sources import (
+    BoardMeta as _Sources_BoardMeta,
+)
+from .sources import (
+    JurisdictionCode as _Sources_JurisdictionCode,
+)
+from .sources import (
+    JurisdictionMeta as _Sources_JurisdictionMeta,
+)
+from .sources import (
+    Subject as _Sources_Subject,
+)
+from .sources import (
     get_board_meta as sources_get_board_meta,
-    subjects_for as sources_subjects_for,
+)
+from .sources import (
+    get_jurisdiction_meta as sources_get_jurisdiction_meta,
+)
+from .sources import (
+    list_boards as sources_list_boards,
+)
+from .sources import (
+    list_jurisdictions as sources_list_jurisdictions,
+)
+from .sources import (
     public_roster as sources_public_roster,
+)
+from .sources import (
+    subjects_for as sources_subjects_for,
 )
 
 # Type aliases (re-export the Phase 3 types under their canonical names).
@@ -205,7 +259,7 @@ try:
     import os as _os
 
     if _os.environ.get("ADK_LOAD_SECRETS", "").strip().lower() in {"1", "true", "yes"}:
-        from .secrets_loader import inject_into_environ as _inject_secrets  # noqa: E402
+        from .secrets_loader import inject_into_environ as _inject_secrets
 
         _injected = _inject_secrets()
         _SECRETS_LOADED = True
@@ -229,8 +283,8 @@ else:
 
 
 __all__ += [
-    "_SECRETS_LOADED",
-    "_SECRETS_COUNT",
     "_SECRETS_BACKEND",
+    "_SECRETS_COUNT",
+    "_SECRETS_LOADED",
     "_SECRETS_LOAD_ERROR",
 ]

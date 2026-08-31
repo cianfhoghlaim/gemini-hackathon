@@ -201,7 +201,6 @@ if uv run python -c "
 import importlib
 modules = [
     'orchestration.defs',
-    'orchestration.defs._shared',
     'orchestration.defs.3_model_lifecycle',
     'orchestration.defs.3_model_lifecycle.uk_ncce_learning_graphs',
     'orchestration.defs.3_model_lifecycle.uk_ncce_learning_graph_equivalencies',

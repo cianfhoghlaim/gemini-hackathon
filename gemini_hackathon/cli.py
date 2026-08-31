@@ -56,19 +56,16 @@ import os
 import subprocess
 import sys
 from collections.abc import Sequence
-from pathlib import Path
-from typing import Any, NoReturn
+from typing import Any
 
 from gemini_hackathon.call_llm import (
     BACKOFF_BASE_SECONDS,
-    HACKATHON_TIERS,
     DEV_TIERS,
+    HACKATHON_TIERS,
     TIER_RETRY_BUDGETS,
 )
-from gemini_hackathon.model_registry import MODEL_REGISTRY, ModelProfile, model_for
+from gemini_hackathon.model_registry import ModelProfile, model_for
 from gemini_hackathon.theming import (
-    SAFEGUARDING_SOURCES,
-    Palette,
     list_all_palettes,
     load_palette,
 )

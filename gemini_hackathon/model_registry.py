@@ -545,7 +545,7 @@ def _ocr_vision_entries() -> dict[str, ModelRegistryEntry]:
 # ---------------------------------------------------------------------------
 
 
-def _learning_graph_entries() -> dict[str, "ModelRegistryEntry"]:
+def _learning_graph_entries() -> dict[str, ModelRegistryEntry]:
     """The NCCE learning-graph family — 5 PDF artefacts + 1 showcase composite."""
     return {
         # The 5 NCCE PDF artefacts (lifted verbatim from the upstream
@@ -815,7 +815,7 @@ def _image_gen_entries() -> dict[str, ModelRegistryEntry]:
 # ---------------------------------------------------------------------------
 
 
-def _embedder_entries() -> dict[str, "ModelRegistryEntry"]:
+def _embedder_entries() -> dict[str, ModelRegistryEntry]:
     """The embedder family — the canonical text-embedding backends."""
     return {
         "bge-m3": ModelRegistryEntry(
@@ -848,7 +848,7 @@ def _embedder_entries() -> dict[str, "ModelRegistryEntry"]:
 # ---------------------------------------------------------------------------
 
 
-def _rerank_entries() -> dict[str, "ModelRegistryEntry"]:
+def _rerank_entries() -> dict[str, ModelRegistryEntry]:
     """The rerank family — the cross-encoder rerankers."""
     return {
         "bge-reranker-v2-m3": ModelRegistryEntry(
@@ -878,7 +878,7 @@ def _rerank_entries() -> dict[str, "ModelRegistryEntry"]:
 # ---------------------------------------------------------------------------
 
 
-def _voice_entries() -> dict[str, "ModelRegistryEntry"]:
+def _voice_entries() -> dict[str, ModelRegistryEntry]:
     """The voice family — TTS models served from Unsloth Studio."""
     return {
         "orpheus-3b": ModelRegistryEntry(
@@ -922,7 +922,7 @@ def _voice_entries() -> dict[str, "ModelRegistryEntry"]:
 # ---------------------------------------------------------------------------
 
 
-def _translation_entries() -> dict[str, "ModelRegistryEntry"]:
+def _translation_entries() -> dict[str, ModelRegistryEntry]:
     """The translation family — multimodal translation backends."""
     return {
         "minicpm-o-4_5": ModelRegistryEntry(
@@ -959,7 +959,7 @@ def _translation_entries() -> dict[str, "ModelRegistryEntry"]:
 # ---------------------------------------------------------------------------
 
 
-def _text_llm_dev_tombstones() -> dict[str, "ModelRegistryEntry"]:
+def _text_llm_dev_tombstones() -> dict[str, ModelRegistryEntry]:
     """Dev-profile text_llm tombstones — NOT exposed in the hackathon profile."""
     return {
         "minimax-m3": ModelRegistryEntry(
@@ -1035,7 +1035,7 @@ def _text_llm_dev_tombstones() -> dict[str, "ModelRegistryEntry"]:
     }
 
 
-def _ocr_vision_dev_tombstones() -> dict[str, "ModelRegistryEntry"]:
+def _ocr_vision_dev_tombstones() -> dict[str, ModelRegistryEntry]:
     """Dev-profile ocr_vision tombstones — qwen3-vl-8b was the prior OCR primary."""
     return {
         # qwen3-vl-8b was the OCR workhorse pre-2026-08-30; replaced by
@@ -1273,16 +1273,16 @@ __all__ = [
     "PROFILES",
     "Backend",
     "ModelFamily",
+    "ModelPolicyError",
     "ModelProfile",
     "ModelRegistry",
     "ModelRegistryEntry",
     "ModelRole",
+    "PublicModelEntry",
     "active_profile",
     "filter_models",
     "model_for",
     "model_key_for",
-    "ModelPolicyError",
-    "PublicModelEntry",
     "public_model_roster",
     "public_tier_table",
 ]

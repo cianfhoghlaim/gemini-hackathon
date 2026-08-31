@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11,<3.13"
 license = { text = "MIT" }
 authors = [
-    { name = "Cian Mac An Deise", email = "[email protected]" },
+    { name = "Cian Mac An Deise", email = "cian@example.com" },
 ]
 keywords = [
     "hackathon",
@@ -41,7 +41,7 @@ dependencies = [
     "google-adk>=2.7.1,<3.0",
     # Gradio 5.28+ for gr.Workflow (editorial canvas), gr.mcp (Spaces-as-MCP),
     # ZeroGPU (@spaces.GPU), server-side rendering.
-    "gradio>=5.28.0,<6.0",
+    "gradio>=6.0,<7.0",
     # HuggingFace Hub — for gradio_client + the `hf` CLI + hf skills add
     "huggingface_hub>=0.30",
     # FastMCP for the per-subject MCP servers
@@ -152,9 +152,11 @@ lint = [
 # stack locally (`bonneagar/stacks/lakehouse`) instead.
 # NOTE: `ducklake>=0.10` is unresolvable as of 2026-08 (PyPI only ships up
 # to 0.1.1) — pinned to the highest real release.
+# NOTE: `motherduck>=0.10` is unresolvable as of 2026-08 (PyPI only ships 0.0.0).
+# MotherDuck is accessed via `duckdb.connect("md:motherduck")` (the DuckDB
+# extension), not a separate pip package. Removed from this optional group.
 cianfhoghlaim-parity = [
     "ducklake<=0.1.1",
-    "motherduck>=0.10",
     "lancedb>=0.10",
     # Phase 0 (GCP-first IaC refactor) — Lance namespace SDK.
     # The vector target wrapper in cocoindex_flows/_shared/_vector_target.py
