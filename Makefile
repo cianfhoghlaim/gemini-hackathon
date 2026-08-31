@@ -35,8 +35,23 @@ BAML     := $(UV) run baml-cli
 DAGSTER  := $(UV) run dagster
 DG       := $(UV) run dg
 
+# Cloud / deploy tooling — auto-detected from PATH; the `deploy` target
+# will surface a clear error message if any are missing.
+GCLOUD    ?= $(shell command -v gcloud 2>/dev/null)
+FIREBASE  ?= $(shell command -v firebase 2>/dev/null)
+HF        ?= $(shell command -v hf 2>/dev/null)
+HF_OWNER  ?= cianfhoghlaim
+GCP_PROJECT ?= $(shell $(GCLOUD) config get-value project 2>/dev/null || echo "")
+
 .DEFAULT_GOAL := help
-.PHONY: help
+# ============================================================================
+# Deploy — production Cloud Run + Firebase + HF Spaces
+# ============================================================================
+# These targets require external CLIs (gcloud, firebase, hf) and credentials.
+# They are guarded with a clear error message if anything is missing.
+# Full recipe: docs/DEPLOY_RUNBOOK.md
+
+REGION   ?= europe-west1
 help: ## show this help message (the default target)
 	@awk 'BEGIN {FS = ":.*##"; printf "\ngemini-hackathon \xe2\x80\x94 make targets\n\n"} \
 		/^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2 }' \
@@ -184,6 +199,26 @@ down: ## docker compose down -v (nuclear: wipes the duckdb volume)
 	docker compose down -v
 
 cloudbuild: ## gcloud builds submit --config=cloudbuild.yaml (the prod deploy)
+	@test -n "$(GCLOUD)" || { echo "ERROR: gcloud not on PATH. Install: https://cloud.google.com/sdk/docs/install"; exit 1; }
+	@test -n "$(GCP_PROJECT)" || { echo "ERROR: GCP_PROJECT not set. Run: gcloud config set project <PROJECT_ID>"; exit 1; }
+	$(GCLOUD) builds submit --config=cloudbuild.yaml --project=$(GCP_PROJECT) --substitutions=_IMAGE_URL=$(REGION)-dockerp.pkg.dev/$(GCP_PROJECT)/gemini-hackathon/backend:$(shell git rev-parse --short HEAD),_REGION=$(REGION),_SERVICE_NAME=gemini-hackathon-adk-dev
+
+firebase-deploy: ## firebase deploy --only functions,firestore:rules,firestore:indexes,hosting (the Firebase surface)
+	@test -n "$(FIREBASE)" || { echo "ERROR: firebase not on PATH. Install: npm install -g firebase-tools"; exit 1; }
+	@test -n "$(GCP_PROJECT)" || { echo "ERROR: GCP_PROJECT not set. Run: gcloud config set project <PROJECT_ID>"; exit 1; }
+	$(FIREBASE) deploy --only functions,firestore:rules,firestore:indexes,hosting --project=$(GCP_PROJECT)
+
+deploy: ## run the full deploy chain — Cloud Run + Firebase + HF Spaces (requires gcloud + firebase + hf CLIs)
+	@test -n "$(GCLOUD)" || { echo "ERROR: gcloud not on PATH. Install: https://cloud.google.com/sdk/docs/install"; exit 1; }
+	@test -n "$(FIREBASE)" || { echo "ERROR: firebase not on PATH. Install: npm install -g firebase-tools"; exit 1; }
+	@test -n "$(HF)" || { echo "ERROR: hf not on PATH. Install: uv tool install huggingface_hub[cli]"; exit 1; }
+	@echo "=== 1/3: Cloud Run via Cloud Build ==="
+	$(MAKE) cloudbuild
+	@echo "=== 2/3: Firebase Functions + Hosting + Firestore rules ==="
+	$(MAKE) firebase-deploy
+	@echo "=== 3/3: HF Spaces (all 6) ==="
+	$(MAKE) hf-publish-all
+	@echo "=== Deploy complete ==="
 	gcloud builds submit --config=cloudbuild.yaml --project=$$GCP_PROJECT
 
 # ============================================================================

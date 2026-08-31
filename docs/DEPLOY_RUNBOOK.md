@@ -1,7 +1,48 @@
 # Deployment runbook — gemini_hackathon
 
-End-to-end Cloud Run deployment. **Everything is env-driven.** No
+End-to-end Cloud Run + Firebase + HF Spaces deployment. **Everything is env-driven.** No
 hardcoded project IDs, regions, or service accounts.
+
+## One-shot deploy (recommended)
+
+If you have all 3 CLIs installed (`gcloud`, `firebase`, `hf`), use the
+orchestrator target:
+
+```bash
+# Prereqs (one-time)
+brew install --cask google-cloud-sdk    # or: https://cloud.google.com/sdk/docs/install
+npm install -g firebase-tools
+uv tool install "huggingface_hub[cli]"
+
+# Auth + project
+gcloud auth login
+gcloud auth application-default login
+gcloud config set project $GCP_PROJECT     # e.g. agentic-hackathon-august-26
+firebase login
+
+# Provision secrets (one-time per project)
+make seed-gsm   # uploads secrets.yaml entries to GSM (see GSM_README.md)
+
+# Deploy everything
+make deploy     # runs cloudbuild + firebase-deploy + hf-publish-all
+```
+
+`make deploy` runs the 3 deploy stages sequentially:
+1. **`cloudbuild`** — `gcloud builds submit --config=cloudbuild.yaml` → Cloud Run v2 service `gemini-hackathon-adk-dev`
+2. **`firebase-deploy`** — Functions (themesApi, duckdbAsset, stitchSync) + Hosting + Firestore rules + indexes
+3. **`hf-publish-all`** — All 6 Hugging Face Spaces (aistear, bunscoil, junior_cycle, leaving_certificate, learning_graphs, editorial_studio)
+
+Each stage guards its prerequisite CLI (gcloud / firebase / hf) and exits with a clear error if missing.
+
+## Per-stage deploy (advanced)
+
+If you only want one stage (e.g. deploy the backend without touching Firebase), use the individual targets:
+
+```bash
+make cloudbuild          # Cloud Run only
+make firebase-deploy     # Firebase only
+make hf-publish-all      # HF Spaces only
+```
 
 ## Prerequisites
 
