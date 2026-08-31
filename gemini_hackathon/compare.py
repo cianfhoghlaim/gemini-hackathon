@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any
 
 from .call_llm import call_llm, reset_router
-from .models import MODEL_REGISTRY, ModelFamily, ModelProfile, model_for
+from .model_registry import MODEL_REGISTRY, ModelFamily, ModelProfile, model_for
 from .model_registry import public_model_roster
 
 
@@ -98,7 +98,9 @@ def _extract_pdf_text(path: str, max_chars: int = 12_000) -> str:
         return f"<text extraction failed: {type(e).__name__}: {e}>"
 
 
-def _score_with_ragas(content: str, ground_truth: dict[str, Any] | None) -> tuple[float, dict[str, float]]:
+def _score_with_ragas(
+    content: str, ground_truth: dict[str, Any] | None
+) -> tuple[float, dict[str, float]]:
     """RAGAS-style fidelity scoring.
 
     A full RAGAS eval requires an LLM judge. For the hackathon harness we
@@ -111,9 +113,17 @@ def _score_with_ragas(content: str, ground_truth: dict[str, Any] | None) -> tupl
         (overall_score, breakdown_dict)
     """
     required = [
-        "source_key", "source_name", "jurisdiction", "level",
-        "primary", "secondary", "accent", "background", "text",
-        "heading_font", "body_font",
+        "source_key",
+        "source_name",
+        "jurisdiction",
+        "level",
+        "primary",
+        "secondary",
+        "accent",
+        "background",
+        "text",
+        "heading_font",
+        "body_font",
     ]
     breakdown: dict[str, float] = {}
     if not content.strip():
@@ -170,9 +180,7 @@ def run_comparison(
     document_text = _extract_pdf_text(pdf_path)
     prompt = COMPARISON_PROMPT_TEMPLATE.format(document_text=document_text)
 
-    text_entries = [
-        e for e in MODEL_REGISTRY.for_profile(active) if e.family == "text_llm"
-    ]
+    text_entries = [e for e in MODEL_REGISTRY.for_profile(active) if e.family == "text_llm"]
 
     rows: list[ComparisonRow] = []
     for entry in text_entries:
@@ -188,33 +196,40 @@ def run_comparison(
             continue
 
         score, breakdown = _score_with_ragas(response.content, ground_truth=None)
-        rows.append(ComparisonRow(
-            pdf_sha256=pdf_sha,
-            pdf_path=pdf_path,
-            prompt_template=COMPARISON_PROMPT_TEMPLATE,
-            model_key=entry.key,
-            model_alias=response.model,
-            backend=response.backend,
-            profile=active,
-            family=response.family,
-            role=response.role,
-            content=response.content,
-            latency_ms=response.latency_ms,
-            tokens_in=response.tokens_in,
-            tokens_out=response.tokens_out,
-            cost_usd=response.cost_usd,
-            ragas_score=score,
-            ragas_breakdown=breakdown,
-            captured_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        ))
+        rows.append(
+            ComparisonRow(
+                pdf_sha256=pdf_sha,
+                pdf_path=pdf_path,
+                prompt_template=COMPARISON_PROMPT_TEMPLATE,
+                model_key=entry.key,
+                model_alias=response.model,
+                backend=response.backend,
+                profile=active,
+                family=response.family,
+                role=response.role,
+                content=response.content,
+                latency_ms=response.latency_ms,
+                tokens_in=response.tokens_in,
+                tokens_out=response.tokens_out,
+                cost_usd=response.cost_usd,
+                ragas_score=score,
+                ragas_breakdown=breakdown,
+                captured_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            )
+        )
 
     _write_to_duckdb(rows, duckdb_path)
 
     # The public roster is always the hackathon profile, regardless of
     # what was actually compared. This is what docs and UI render.
     public = [
-        {"key": e.key, "family": e.family, "backend": e.backend,
-         "tier": e.tier, "display_name": e.display_name}
+        {
+            "key": e.key,
+            "family": e.family,
+            "backend": e.backend,
+            "tier": e.tier,
+            "display_name": e.display_name,
+        }
         for e in public_model_roster()
     ]
     return {
@@ -278,10 +293,23 @@ def _write_to_duckdb(rows: list[ComparisonRow], duckdb_path: str) -> None:
             con.execute(
                 f"INSERT INTO model_comparisons ({cols}) VALUES ({placeholders})",
                 [
-                    r.pdf_sha256, r.pdf_path, r.prompt_template, r.model_key,
-                    r.model_alias, r.backend, r.profile, r.family, r.role,
-                    r.content, r.latency_ms, r.tokens_in, r.tokens_out,
-                    r.cost_usd, r.ragas_score, r.ragas_breakdown, r.captured_at,
+                    r.pdf_sha256,
+                    r.pdf_path,
+                    r.prompt_template,
+                    r.model_key,
+                    r.model_alias,
+                    r.backend,
+                    r.profile,
+                    r.family,
+                    r.role,
+                    r.content,
+                    r.latency_ms,
+                    r.tokens_in,
+                    r.tokens_out,
+                    r.cost_usd,
+                    r.ragas_score,
+                    r.ragas_breakdown,
+                    r.captured_at,
                 ],
             )
     finally:

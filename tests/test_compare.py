@@ -18,6 +18,7 @@ import pytest
 
 def test_comparison_row_serialisable_to_dict():
     from gemini_hackathon.compare import ComparisonRow
+
     row = ComparisonRow(
         pdf_sha256="a" * 64,
         pdf_path="/tmp/example.pdf",
@@ -44,6 +45,7 @@ def test_comparison_row_serialisable_to_dict():
 
 def test_comparison_prompt_template_includes_the_document_text():
     from gemini_hackathon.compare import COMPARISON_PROMPT_TEMPLATE
+
     assert "{document_text}" in COMPARISON_PROMPT_TEMPLATE
     assert "json" in COMPARISON_PROMPT_TEMPLATE.lower() or "JSON" in COMPARISON_PROMPT_TEMPLATE
 
@@ -62,14 +64,14 @@ def test_run_comparison_returns_dict_with_summary(monkeypatch, tmp_path):
     from gemini_hackathon import call_llm as call_llm_mod
     from gemini_hackathon import compare as compare_mod
     from gemini_hackathon.call_llm import LLMResponse, TierAttempt
-    from gemini_hackathon.models import MODEL_REGISTRY
+    from gemini_hackathon.model_registry import MODEL_REGISTRY
 
     class _StubResponse(LLMResponse):
         def __init__(self, alias: str, backend: str):
             super().__init__(
                 content='{"primary":"#00733B","secondary":"#0E2D5C",'
-                        '"accent":"#F7B81C","background":"#FFFFFF","text":"#1A1A1A",'
-                        '"heading_font":"Merriweather","body_font":"Inter"}',
+                '"accent":"#F7B81C","background":"#FFFFFF","text":"#1A1A1A",'
+                '"heading_font":"Merriweather","body_font":"Inter"}',
                 model=alias,
                 backend=backend,
                 tier=1,
@@ -79,10 +81,17 @@ def test_run_comparison_returns_dict_with_summary(monkeypatch, tmp_path):
                 tokens_in=10,
                 tokens_out=20,
                 cost_usd=0.0001,
-                attempts=[TierAttempt(
-                    tier=1, family="text_llm", role="default",
-                    model=alias, backend=backend, latency_ms=100, succeeded=True,
-                )],
+                attempts=[
+                    TierAttempt(
+                        tier=1,
+                        family="text_llm",
+                        role="default",
+                        model=alias,
+                        backend=backend,
+                        latency_ms=100,
+                        succeeded=True,
+                    )
+                ],
             )
 
     def _stub(messages, **kwargs):
@@ -99,7 +108,9 @@ def test_run_comparison_returns_dict_with_summary(monkeypatch, tmp_path):
     monkeypatch.setenv("UNSLOTH_API_KEY", "sk-x")
 
     # Need a real PDF file. Use the canonical sample.
-    sample_pdf = Path(__file__).resolve().parent.parent / "data" / "syllabi" / "sample_lc_maths_2024.pdf"
+    sample_pdf = (
+        Path(__file__).resolve().parent.parent / "data" / "syllabi" / "sample_lc_maths_2024.pdf"
+    )
     if not sample_pdf.exists():
         pytest.skip(f"sample PDF missing: {sample_pdf}")
 
@@ -125,9 +136,18 @@ def test_run_comparison_returns_dict_with_summary(monkeypatch, tmp_path):
     if result["rows"]:
         first = result["rows"][0]
         for key in (
-            "model_key", "model_alias", "backend", "family", "role",
-            "ragas_score", "latency_ms", "tokens_in", "tokens_out",
-            "cost_usd", "pdf_sha256", "pdf_path",
+            "model_key",
+            "model_alias",
+            "backend",
+            "family",
+            "role",
+            "ragas_score",
+            "latency_ms",
+            "tokens_in",
+            "tokens_out",
+            "cost_usd",
+            "pdf_sha256",
+            "pdf_path",
         ):
             assert key in first, f"missing key {key!r} in result row"
 
@@ -147,13 +167,24 @@ def test_run_comparison_summary_includes_public_roster(monkeypatch, tmp_path):
             content='{"primary":"#000","secondary":"#000"}',
             model="vertex_ai/gemini-3.5-flash",
             backend="vertex",
-            tier=1, family="text_llm", role="default",
-            latency_ms=10, tokens_in=1, tokens_out=2, cost_usd=0.0,
-            attempts=[TierAttempt(
-                tier=1, family="text_llm", role="default",
-                model="vertex_ai/gemini-3.5-flash", backend="vertex",
-                latency_ms=10, succeeded=True,
-            )],
+            tier=1,
+            family="text_llm",
+            role="default",
+            latency_ms=10,
+            tokens_in=1,
+            tokens_out=2,
+            cost_usd=0.0,
+            attempts=[
+                TierAttempt(
+                    tier=1,
+                    family="text_llm",
+                    role="default",
+                    model="vertex_ai/gemini-3.5-flash",
+                    backend="vertex",
+                    latency_ms=10,
+                    succeeded=True,
+                )
+            ],
         )
 
     monkeypatch.setattr(call_llm_mod, "call_llm", _stub)
@@ -162,13 +193,17 @@ def test_run_comparison_summary_includes_public_roster(monkeypatch, tmp_path):
     monkeypatch.setenv("GEMINI_API_KEY", "sk-x")
     monkeypatch.setenv("UNSLOTH_API_KEY", "sk-x")
 
-    sample_pdf = Path(__file__).resolve().parent.parent / "data" / "syllabi" / "sample_lc_maths_2024.pdf"
+    sample_pdf = (
+        Path(__file__).resolve().parent.parent / "data" / "syllabi" / "sample_lc_maths_2024.pdf"
+    )
     if not sample_pdf.exists():
         pytest.skip("sample PDF missing")
 
     db = tmp_path / "compare.duckdb"
     result = compare_mod.run_comparison(
-        pdf_path=str(sample_pdf), duckdb_path=str(db), profile="hackathon",
+        pdf_path=str(sample_pdf),
+        duckdb_path=str(db),
+        profile="hackathon",
     )
     # Public roster is always the hackathon profile regardless of what
     # was actually compared (which may be a subset if a tier was skipped).
@@ -195,13 +230,26 @@ def test_run_comparison_dev_profile_includes_dev_only(monkeypatch, tmp_path):
     def _stub(messages, **kwargs):
         return LLMResponse(
             content='{"primary":"#000"}',
-            model="minimax-m3", backend="minimax",
-            tier=3, family="text_llm", role="dev_primary",
-            latency_ms=10, tokens_in=1, tokens_out=2, cost_usd=0.0,
-            attempts=[TierAttempt(
-                tier=3, family="text_llm", role="dev_primary",
-                model="minimax-m3", backend="minimax", latency_ms=10, succeeded=True,
-            )],
+            model="minimax-m3",
+            backend="minimax",
+            tier=3,
+            family="text_llm",
+            role="dev_primary",
+            latency_ms=10,
+            tokens_in=1,
+            tokens_out=2,
+            cost_usd=0.0,
+            attempts=[
+                TierAttempt(
+                    tier=3,
+                    family="text_llm",
+                    role="dev_primary",
+                    model="minimax-m3",
+                    backend="minimax",
+                    latency_ms=10,
+                    succeeded=True,
+                )
+            ],
         )
 
     monkeypatch.setattr(call_llm_mod, "call_llm", _stub)
@@ -210,12 +258,16 @@ def test_run_comparison_dev_profile_includes_dev_only(monkeypatch, tmp_path):
     monkeypatch.setenv("GEMINI_API_KEY", "sk-x")
     monkeypatch.setenv("UNSLOTH_API_KEY", "sk-x")
 
-    sample_pdf = Path(__file__).resolve().parent.parent / "data" / "syllabi" / "sample_lc_maths_2024.pdf"
+    sample_pdf = (
+        Path(__file__).resolve().parent.parent / "data" / "syllabi" / "sample_lc_maths_2024.pdf"
+    )
     if not sample_pdf.exists():
         pytest.skip("sample PDF missing")
 
     db = tmp_path / "compare.duckdb"
-    result = compare_mod.run_comparison(pdf_path=str(sample_pdf), duckdb_path=str(db), profile="dev")
+    result = compare_mod.run_comparison(
+        pdf_path=str(sample_pdf), duckdb_path=str(db), profile="dev"
+    )
     # At least one of the dev models appeared in the comparison.
     keys = [r["model_key"] for r in result["rows"]]
     assert any(k in keys for k in ("minimax-m3", "gemma-4-26b-a4b-dev", "gemini-3.5-flash-dev"))

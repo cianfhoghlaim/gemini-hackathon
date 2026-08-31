@@ -50,11 +50,9 @@ call.
 from __future__ import annotations
 
 import argparse
-import http.server
 import json
 import logging
 import os
-import socketserver
 import subprocess
 import sys
 from collections.abc import Sequence
@@ -67,7 +65,7 @@ from gemini_hackathon.call_llm import (
     DEV_TIERS,
     TIER_RETRY_BUDGETS,
 )
-from gemini_hackathon.models import MODEL_REGISTRY, ModelProfile, model_for
+from gemini_hackathon.model_registry import MODEL_REGISTRY, ModelProfile, model_for
 from gemini_hackathon.theming import (
     SAFEGUARDING_SOURCES,
     Palette,
@@ -90,7 +88,7 @@ def _format_banner(profile: ModelProfile) -> str:
         "================================================================",
         "  gemini_hackathon — model policy (active profile: "
         f"{profile}{'' if profile == 'hackathon' else ' (NOT exposed in submission)'})",
-        "  Source of truth: gemini_hackathon.models.MODEL_REGISTRY",
+        "  Source of truth: gemini_hackathon.model_registry.MODEL_REGISTRY",
         "================================================================",
     ]
     for i, (family, role) in enumerate(tier_pairs, start=1):
@@ -101,16 +99,18 @@ def _format_banner(profile: ModelProfile) -> str:
         model_str = f"{entry.key:<30} ({entry.display_name})"
         backend_str = entry.backend
         lines.append(f"  {tier_label:24s} : {model_str} [{backend_str}]")
-    lines.extend([
-        "----------------------------------------------------------------",
-        f"  Retries per tier    : {dict(TIER_RETRY_BUDGETS)}",
-        f"  Backoff base        : {BACKOFF_BASE_SECONDS}s (exponential)",
-        "----------------------------------------------------------------",
-        "  Excluded (hard-coded rejection):",
-        "    * Cloudflare Workers AI  (@cf/* model strings)",
-        "    * Qwen3-coder-*          (all model strings)",
-        "================================================================",
-    ])
+    lines.extend(
+        [
+            "----------------------------------------------------------------",
+            f"  Retries per tier    : {dict(TIER_RETRY_BUDGETS)}",
+            f"  Backoff base        : {BACKOFF_BASE_SECONDS}s (exponential)",
+            "----------------------------------------------------------------",
+            "  Excluded (hard-coded rejection):",
+            "    * Cloudflare Workers AI  (@cf/* model strings)",
+            "    * Qwen3-coder-*          (all model strings)",
+            "================================================================",
+        ]
+    )
     return "\n".join(lines)
 
 
@@ -206,7 +206,9 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     pipeline_sub = pipeline_parser.add_subparsers(dest="pipeline_action", metavar="ACTION")
     pipeline_run = pipeline_sub.add_parser("run", help="Run one pipeline by name.")
-    pipeline_run.add_argument("name", choices=["official_doc_fetcher", "safeguarding_fetcher", "pdf_page_metadata", "all"])
+    pipeline_run.add_argument(
+        "name", choices=["official_doc_fetcher", "safeguarding_fetcher", "pdf_page_metadata", "all"]
+    )
 
     # ---- baml ------------------------------------------------------------
     baml_parser = subparsers.add_parser(
@@ -226,13 +228,21 @@ def _build_parser() -> argparse.ArgumentParser:
         description="Runs the same BAML extraction under Gemini 3.5 and Gemma 4, scores with RAGAS, writes to DuckDB.",
     )
     compare_parser.add_argument("--pdf", required=True, help="Path to the PDF to compare on.")
-    compare_parser.add_argument("--duckdb", default="./data/gemini.duckdb", help="DuckDB output path.")
+    compare_parser.add_argument(
+        "--duckdb", default="./data/gemini.duckdb", help="DuckDB output path."
+    )
 
     # ---- serve -----------------------------------------------------------
     serve_parser = subparsers.add_parser(
         "serve",
-        help="Start the Hono + oRPC backend on port 8000.",
-        description="Python backend that fronts the TanStack Start frontend.",
+        help="Spawn the Python backend (python -m gemini_hackathon.backend) on the given port.",
+        description=(
+            "Spawn the canonical Python backend (`python -m gemini_hackathon.backend`) "
+            "and stream its stdout/stderr to the parent process. The backend serves "
+            "/api/health, /api/models, /api/chat/completions, /api/themes, "
+            "/api/observability/health, and the /api/agents/* + /api/assets/* "
+            "session-tool routes."
+        ),
     )
     serve_parser.add_argument("--port", type=int, default=8000, help="Port to bind.")
     serve_parser.add_argument("--host", default="127.0.0.1", help="Host to bind.")
@@ -278,6 +288,7 @@ def _cmd_theme(args: argparse.Namespace) -> int:
 
 def _cmd_extract(args: argparse.Namespace) -> int:
     from gemini_hackathon.theming import extract_source_palette_from_pdf
+
     result = extract_source_palette_from_pdf(args.pdf_path, args.source_name)
     print(json.dumps(result, indent=2))
     return 0
@@ -287,7 +298,8 @@ def _cmd_pipeline(args: argparse.Namespace) -> int:
     if args.pipeline_action == "run":
         targets = (
             ["official_doc_fetcher", "safeguarding_fetcher", "pdf_page_metadata"]
-            if args.name == "all" else [args.name]
+            if args.name == "all"
+            else [args.name]
         )
         for t in targets:
             print(f"Running pipeline: {t}")
@@ -310,22 +322,52 @@ def _cmd_baml(args: argparse.Namespace) -> int:
 def _cmd_compare(args: argparse.Namespace) -> int:
     """Run the Gemini-vs-Gemma4 comparison harness."""
     from gemini_hackathon.compare import run_comparison
+
     result = run_comparison(pdf_path=args.pdf, duckdb_path=args.duckdb)
     print(json.dumps(result, indent=2, default=str))
     return 0
 
 
 def _cmd_serve(args: argparse.Namespace) -> int:
-    """Start a minimal HTTP server that proxies /api/* to the Python backend.
+    """Spawn the canonical Python backend (``python -m gemini_hackathon.backend``).
 
-    In production this is replaced by a Hono + oRPC server; for the demo
-    a stdlib http.server is sufficient.
+    Per :mod:`gemini_hackathon.backend`'s docstring (line 27), the
+    canonical invocation is ``python -m gemini_hackathon.backend`` which
+    serves ``/api/health``, ``/api/models``, ``/api/chat/completions``,
+    ``/api/themes``, ``/api/observability/health``, and the
+    ``/api/agents/*`` + ``/api/assets/*`` session-tool routes.
+
+    The previous implementation used ``http.server.SimpleHTTPRequestHandler``
+    which only serves static files — none of the ``/api/*`` routes were
+    reachable. This wrapper spawns the real backend as a subprocess with
+    stdout/stderr piped to the parent so the operator sees the backend's
+    logs in their terminal.
     """
-    handler = http.server.SimpleHTTPRequestHandler
-    with socketserver.TCPServer((args.host, args.port), handler) as httpd:
-        print(f"gemini-hackathon backend listening on http://{args.host}:{args.port}")
-        httpd.serve_forever()
-    return 0
+    cmd = [
+        sys.executable,
+        "-m",
+        "gemini_hackathon.backend",
+        "--host",
+        args.host,
+        "--port",
+        str(args.port),
+    ]
+    print(f"gemini-hackathon backend spawning: {' '.join(cmd)}")
+    proc = subprocess.Popen(cmd)
+    try:
+        return proc.wait()
+    except KeyboardInterrupt:
+        print(
+            "\ngemini-hackathon: KeyboardInterrupt — terminating backend subprocess",
+            file=sys.stderr,
+        )
+        proc.terminate()
+        try:
+            proc.wait(timeout=5.0)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait()
+        return 130
 
 
 # ---------------------------------------------------------------------------

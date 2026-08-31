@@ -62,10 +62,32 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-ModelFamily = Literal["text_llm", "ocr_vision", "image_gen", "learning_graph"]
-"""The 4 families this project routes. The ``learning_graph`` family was
-added in the 2026-08-31-uk-ncce-learning-graph-showcase-v1 change (the
-canonical NCCE showcase). Upstream defines 7."""
+ModelFamily = Literal[
+    "text_llm",
+    "ocr_vision",
+    "image_gen",
+    "learning_graph",
+    "embedder",
+    "rerank",
+    "voice",
+    "translation",
+]
+"""The families this project routes.
+
+The ``learning_graph`` family was added in the
+2026-08-31-uk-ncce-learning-graph-showcase-v1 change (the canonical NCCE
+showcase). The ``embedder`` / ``rerank`` / ``voice`` / ``translation``
+families were lifted from the previously-duplicate
+``gemini_hackathon/models/__init__.py`` registry (deleted in the
+2026-08-31-fix-critical-import-bugs-v1 Phase 0 change) so this module
+is the **single** canonical model registry for the project.
+
+Upstream defines 7 of these; the docstring at lines 19-23 is now stale
+and the ``text_llm`` / ``ocr_vision`` / ``image_gen`` only claim is
+no longer accurate — every family listed here is real and routable
+either via ``call_llm`` (text_llm / ocr_vision) or via the
+domain-specific consumer (image_gen / learning_graph / embedder /
+rerank / voice / translation)."""
 
 
 ModelRole = str
@@ -494,7 +516,7 @@ def _ocr_vision_entries() -> dict[str, ModelRegistryEntry]:
             mlx_id=None,
             upstream_id="google/gemma-3n-E4B-it",
             backend="llama_swap",
-            available=False,    # gated: verify HF id before activating
+            available=False,  # gated: verify HF id before activating
             litellm_alias="openai/gemma-3n-E4B-vision",
             profile="hackathon",
             env_var="LLAMA_SWAP_BASE_URL",
@@ -710,6 +732,7 @@ def _image_gen_entries() -> dict[str, ModelRegistryEntry]:
             notes="Quality flagship, used for subject illustrations.",
             capabilities=("text_to_image", "image_to_image"),
         ),
+        # kept invokeai variant per Phase 0 critical-fix #1; llama_swap variant removed
         "z-image-turbo": ModelRegistryEntry(
             key="z-image-turbo",
             family="image_gen",
@@ -731,11 +754,11 @@ def _image_gen_entries() -> dict[str, ModelRegistryEntry]:
             family="image_gen",
             role="bilingual",
             display_name="Qwen-Image 2512 (Unsloth Studio) — REMOVED 2026-08-30",
-            unsloth_id=None,    # was "unsloth/Qwen-Image-2512-GGUF"
+            unsloth_id=None,  # was "unsloth/Qwen-Image-2512-GGUF"
             mlx_id=None,
             upstream_id="Qwen/Qwen-Image-2512",
             backend="unsloth_studio",
-            available=False,    # REMOVED in the 2026-08-30 Gemma+Gemini refocus
+            available=False,  # REMOVED in the 2026-08-30 Gemma+Gemini refocus
             litellm_alias=None,
             profile="both",
             env_var=None,
@@ -755,7 +778,7 @@ def _image_gen_entries() -> dict[str, ModelRegistryEntry]:
             mlx_id=None,
             upstream_id="Qwen/Qwen-Image",
             backend="invokeai",
-            available=False,    # REMOVED
+            available=False,  # REMOVED
             litellm_alias=None,
             profile="both",
             env_var=None,
@@ -771,33 +794,292 @@ def _image_gen_entries() -> dict[str, ModelRegistryEntry]:
             mlx_id=None,
             upstream_id="stabilityai/stable-diffusion-xl-base-1.0",
             backend="invokeai",
-            available=False,    # REMOVED
+            available=False,  # REMOVED
             litellm_alias=None,
             profile="both",
             env_var=None,
             notes="Removed 2026-08-30; the speed tier is z-image-turbo now.",
             capabilities=(),
         ),
-        "z-image-turbo": ModelRegistryEntry(
-            key="z-image-turbo",
-            family="image_gen",
-            role="fast",
-            display_name="Z-Image-Turbo (llama-swap GGUF, 4-step iteration)",
+    }
+
+
+# ---------------------------------------------------------------------------
+# Family 5 — embedder (the canonical text-embedding backends).
+#
+# Added in the 2026-08-31-fix-critical-import-bugs-v1 change (Phase 0):
+# lifted from the deleted ``gemini_hackathon/models/__init__.py``. Only
+# ``bge-m3`` is routable today; ``gemini-embedding-2-preview`` lives in
+# the ``text_llm`` family because LiteLLM surfaces it through the chat
+# router with an ``embed`` role.
+# ---------------------------------------------------------------------------
+
+
+def _embedder_entries() -> dict[str, "ModelRegistryEntry"]:
+    """The embedder family — the canonical text-embedding backends."""
+    return {
+        "bge-m3": ModelRegistryEntry(
+            key="bge-m3",
+            family="embedder",
+            role="default",
+            display_name="BAAI/bge-m3 (multilingual, 1024-dim)",
             unsloth_id=None,
             mlx_id=None,
-            upstream_id="stabilityai/z-image-turbo",
+            upstream_id="BAAI/bge-m3",
+            backend="local",
+            available=True,
+            litellm_alias="openai/bge-m3",
+            profile="both",
+            env_var=None,
+            notes=(
+                "Canonical multilingual embedder for the BIEP substrate. "
+                "1024-dim vectors; supports EN / GA / CY / GD. Used by every "
+                "CocoIndex flow in ``cocoindex_flows/`` + the LanceDB hybrid "
+                "search in ``knowledge_graph/hybrid_search.py``."
+            ),
+            languages=("en", "ga", "cy", "gd"),
+            capabilities=("embed", "multilingual", "long_context"),
+        ),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Family 6 — rerank (cross-encoder rerankers).
+# ---------------------------------------------------------------------------
+
+
+def _rerank_entries() -> dict[str, "ModelRegistryEntry"]:
+    """The rerank family — the cross-encoder rerankers."""
+    return {
+        "bge-reranker-v2-m3": ModelRegistryEntry(
+            key="bge-reranker-v2-m3",
+            family="rerank",
+            role="default",
+            display_name="BAAI/bge-reranker-v2-m3",
+            unsloth_id=None,
+            mlx_id=None,
+            upstream_id="BAAI/bge-reranker-v2-m3",
+            backend="local",
+            available=True,
+            litellm_alias=None,
+            profile="both",
+            env_var=None,
+            notes=(
+                "Cross-encoder reranker for CocoIndex hybrid search. Pair-scores "
+                "(query, candidate) pairs for the second-stage retrieval pipeline."
+            ),
+            capabilities=("rerank", "cross_encoder"),
+        ),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Family 7 — voice (TTS models via Unsloth Studio).
+# ---------------------------------------------------------------------------
+
+
+def _voice_entries() -> dict[str, "ModelRegistryEntry"]:
+    """The voice family — TTS models served from Unsloth Studio."""
+    return {
+        "orpheus-3b": ModelRegistryEntry(
+            key="orpheus-3b",
+            family="voice",
+            role="tts",
+            display_name="Orpheus 3B (Unsloth Studio TTS)",
+            unsloth_id="unsloth/orpheus-3b-0.1-ft-GGUF",
+            mlx_id=None,
+            upstream_id="canopyai/Orpheus-3b-0.1-ft",
+            backend="unsloth_studio",
+            available=True,
+            litellm_alias="openai/unsloth/orpheus-3b",
+            profile="both",
+            env_var="UNSLOTH_BASE_URL",
+            notes="TTS for the Irish / English / Celtic asset narration.",
+            capabilities=("tts", "multilingual"),
+            languages=("en", "ga", "cy", "gd"),
+        ),
+        "sesame-csm-1b": ModelRegistryEntry(
+            key="sesame-csm-1b",
+            family="voice",
+            role="tts_conversational",
+            display_name="Sesame CSM 1B (Unsloth Studio)",
+            unsloth_id="unsloth/sesame-csm-1b-GGUF",
+            mlx_id=None,
+            upstream_id="sesame/csm-1b",
+            backend="unsloth_studio",
+            available=True,
+            litellm_alias="openai/unsloth/sesame-csm-1b",
+            profile="both",
+            env_var="UNSLOTH_BASE_URL",
+            notes="Conversational TTS for the agent chat surface.",
+            capabilities=("tts", "conversational"),
+        ),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Family 8 — translation (multimodal translation models).
+# ---------------------------------------------------------------------------
+
+
+def _translation_entries() -> dict[str, "ModelRegistryEntry"]:
+    """The translation family — multimodal translation backends."""
+    return {
+        "minicpm-o-4_5": ModelRegistryEntry(
+            key="minicpm-o-4_5",
+            family="translation",
+            role="multimodal",
+            display_name="MiniCPM-o 4.5 (multimodal translation)",
+            unsloth_id=None,
+            mlx_id=None,
+            upstream_id="openbmb/MiniCPM-o-4_5",
             backend="llama_swap",
             available=True,
-            litellm_alias="openai/z-image-turbo",
+            litellm_alias=None,
             profile="both",
             env_var="LLAMA_SWAP_BASE_URL",
             notes=(
-                "Fast 4-step image-gen tier served as a GGUF via "
-                "llama-swap. Added 2026-08-30 as part of the 4-way "
-                "Gradio comparison workflow (with diffusiongemma, "
-                "FLUX.2-dev + fibo)."
+                "Multimodal translation. Registry entry only — Phase-11 "
+                "tie-in for the bilingual LC/JC certificate pipeline."
             ),
-            capabilities=("text_to_image",),
+            capabilities=("translation", "multimodal", "bilingual"),
+            languages=("en", "ga"),
+        ),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Stranded entries from the deleted ``gemini_hackathon/models/__init__.py``.
+#
+# These were registered with ``profile="dev"`` only — they are tombstones
+# (available=False) under the canonical hackathon profile. They exist so
+# old callers that hardcoded ``minimax-m3`` / ``qwen3.8-27b`` etc. get
+# back the right ``ModelRegistryEntry`` (with ``available=False``) instead
+# of an unknown-key error from ``model_for()``.
+# ---------------------------------------------------------------------------
+
+
+def _text_llm_dev_tombstones() -> dict[str, "ModelRegistryEntry"]:
+    """Dev-profile text_llm tombstones — NOT exposed in the hackathon profile."""
+    return {
+        "minimax-m3": ModelRegistryEntry(
+            key="minimax-m3",
+            family="text_llm",
+            role="dev_primary",
+            display_name="minimax M3 (dev profile primary) — TOMBSTONE",
+            unsloth_id=None,
+            mlx_id=None,
+            upstream_id="minimax-m3",
+            backend="minimax",
+            available=False,
+            litellm_alias="minimax-m3",
+            profile="dev",
+            env_var="MINIMAX_BASE_URL",
+            notes=(
+                "Dev-profile Tier 1 tombstone. Lifted from the deleted "
+                "gemini_hackathon/models/__init__.py; lives here so old "
+                "callers that hardcoded minimax-m3 get a registry hit "
+                "(with available=False) instead of an unknown-key error. "
+                "NOT exposed in the public hackathon profile roster."
+            ),
+            capabilities=("chat", "function_calling"),
+        ),
+        "qwen3.8-27b": ModelRegistryEntry(
+            key="qwen3.8-27b",
+            family="text_llm",
+            role="dev_strong",
+            display_name="Qwen 3.8 27B (Unsloth Studio) — TOMBSTONE",
+            unsloth_id="unsloth/qwen3.8-27b-it-GGUF",
+            mlx_id=None,
+            upstream_id="Qwen/Qwen3-8-27B",
+            backend="unsloth_studio",
+            available=False,
+            litellm_alias="openai/unsloth/qwen3.8-27b",
+            profile="dev",
+            env_var="UNSLOTH_BASE_URL",
+            notes="Dev-profile tombstone; dev-only Qwen flagship for harness comparisons.",
+            capabilities=("chat",),
+        ),
+        "deepseek-v4-flash": ModelRegistryEntry(
+            key="deepseek-v4-flash",
+            family="text_llm",
+            role="dev_fast",
+            display_name="DeepSeek V4 Flash (Unsloth Studio) — TOMBSTONE",
+            unsloth_id="unsloth/deepseek-v4-flash-GGUF",
+            mlx_id=None,
+            upstream_id="deepseek-ai/DeepSeek-V4-Flash",
+            backend="unsloth_studio",
+            available=False,
+            litellm_alias="openai/unsloth/deepseek-v4-flash",
+            profile="dev",
+            env_var="UNSLOTH_BASE_URL",
+            notes="Dev-profile tombstone; dev-only fast tier for harness comparisons.",
+            capabilities=("chat",),
+        ),
+        "kimi-k2.6": ModelRegistryEntry(
+            key="kimi-k2.6",
+            family="text_llm",
+            role="dev_alt",
+            display_name="Kimi K2.6 (Unsloth Studio) — TOMBSTONE",
+            unsloth_id="unsloth/kimi-k2.6-GGUF",
+            mlx_id=None,
+            upstream_id="moonshotai/Kimi-K2.6",
+            backend="unsloth_studio",
+            available=False,
+            litellm_alias="openai/unsloth/kimi-k2.6",
+            profile="dev",
+            env_var="UNSLOTH_BASE_URL",
+            notes="Dev-profile tombstone; dev-only long-context comparison.",
+            capabilities=("chat", "long_context"),
+        ),
+    }
+
+
+def _ocr_vision_dev_tombstones() -> dict[str, "ModelRegistryEntry"]:
+    """Dev-profile ocr_vision tombstones — qwen3-vl-8b was the prior OCR primary."""
+    return {
+        # qwen3-vl-8b was the OCR workhorse pre-2026-08-30; replaced by
+        # gemma-4-26b-a4b-vision in the Gemma+Gemini refocus. Marked as a
+        # tombstone (available=False) under the hackathon profile so it
+        # no longer leaks into the public roster, but the entry still
+        # exists so old callers (tests, cocoindex flows) get a registry
+        # hit with available=False instead of an unknown-key error.
+        "qwen3-vl-8b": ModelRegistryEntry(
+            key="qwen3-vl-8b",
+            family="ocr_vision",
+            role="default",
+            display_name="Qwen 3-VL 8B (llama-swap, OCR workhorse) — TOMBSTONE",
+            unsloth_id=None,
+            mlx_id=None,
+            upstream_id="Qwen/Qwen3-VL-8B-Instruct",
+            backend="llama_swap",
+            available=False,
+            litellm_alias="openai/qwen3-vl-8b",
+            profile="hackathon",
+            env_var="LLAMA_SWAP_BASE_URL",
+            notes=(
+                "Pre-2026-08-30 OCR primary. Replaced by "
+                "gemma-4-26b-a4b-vision in the Gemma+Gemini refocus. "
+                "Kept as a tombstone (available=False) so the entry still "
+                "exists for old callers."
+            ),
+            capabilities=("ocr", "figure_caption", "multilingual"),
+        ),
+        "qwen3-vl-4b": ModelRegistryEntry(
+            key="qwen3-vl-4b",
+            family="ocr_vision",
+            role="vision_fast",
+            display_name="Qwen 3-VL 4B (llama-swap) — TOMBSTONE",
+            unsloth_id=None,
+            mlx_id=None,
+            upstream_id="Qwen/Qwen3-VL-4B-Instruct",
+            backend="llama_swap",
+            available=False,
+            litellm_alias="openai/qwen3-vl-4b",
+            profile="dev",
+            env_var="LLAMA_SWAP_BASE_URL",
+            notes="Dev-profile tombstone; dev-only fast vision tier for the comparison harness.",
+            capabilities=("ocr", "figure_caption"),
         ),
     }
 
@@ -822,6 +1104,15 @@ class ModelRegistry:
             _ocr_vision_entries(),
             _image_gen_entries(),
             _learning_graph_entries(),
+            _embedder_entries(),
+            _rerank_entries(),
+            _voice_entries(),
+            _translation_entries(),
+            # Stranded entries from the deleted gemini_hackathon/models/__init__.py.
+            # These are tombstones (available=False) for the hackathon profile;
+            # they keep the registry hit-count stable for old callers.
+            _text_llm_dev_tombstones(),
+            _ocr_vision_dev_tombstones(),
         ):
             for key, entry in family_entries.items():
                 if key in self._entries:
@@ -930,9 +1221,7 @@ def active_profile() -> ModelProfile:
     """
     raw = os.environ.get("MODEL_PROFILE", DEFAULT_PROFILE).strip().lower()
     if raw not in PROFILES:
-        logger.warning(
-            "Unknown MODEL_PROFILE %r; falling back to %r", raw, DEFAULT_PROFILE
-        )
+        logger.warning("Unknown MODEL_PROFILE %r; falling back to %r", raw, DEFAULT_PROFILE)
         return DEFAULT_PROFILE
     return raw  # type: ignore[return-value]
 
@@ -975,9 +1264,7 @@ def filter_models(
     profile: ModelProfile | None = None,
 ) -> list[ModelRegistryEntry]:
     """Convenience wrapper around :meth:`ModelRegistry.filter`."""
-    return MODEL_REGISTRY.filter(
-        family, role=role, available=available, profile=profile
-    )
+    return MODEL_REGISTRY.filter(family, role=role, available=available, profile=profile)
 
 
 __all__ = [
@@ -1027,24 +1314,24 @@ class PublicModelEntry:
 
 _PUBLIC_TIER_INDEX: dict[tuple[str, str], int] = {
     # Tier 1 (Gemini API — Vertex / AI Studio)
-    ("text_llm", "default"):     1,
-    ("text_llm", "aistudio"):    1,
-    ("text_llm", "lite"):        1,
-    ("text_llm", "pro"):         1,
-    ("text_llm", "alt"):         1,
-    ("text_llm", "embedder"):    1,
+    ("text_llm", "default"): 1,
+    ("text_llm", "aistudio"): 1,
+    ("text_llm", "lite"): 1,
+    ("text_llm", "pro"): 1,
+    ("text_llm", "alt"): 1,
+    ("text_llm", "embedder"): 1,
     # Tier 2 (Unsloth Studio — Gemma 4 + Gemma 3/2 benchmarks + T5Gemma-2)
-    ("text_llm", "fallback"):          2,
-    ("text_llm", "fallback_light"):    2,
-    ("text_llm", "local_fallback"):    2,
+    ("text_llm", "fallback"): 2,
+    ("text_llm", "fallback_light"): 2,
+    ("text_llm", "local_fallback"): 2,
     ("text_llm", "local_fallback_old"): 2,
     ("text_llm", "dev_encoder_decoder"): 2,
     # Tier 2/3 (llama-swap — Gemma-only vision + text)
-    ("ocr_vision", "default"):         2,
-    ("ocr_vision", "vision_medium"):    2,
-    ("ocr_vision", "vision_light"):     2,
+    ("ocr_vision", "default"): 2,
+    ("ocr_vision", "vision_medium"): 2,
+    ("ocr_vision", "vision_light"): 2,
     ("ocr_vision", "vision_prior_gen"): 3,
-    ("ocr_vision", "vision_mobile"):    2,
+    ("ocr_vision", "vision_mobile"): 2,
 }
 
 
@@ -1061,26 +1348,24 @@ def public_model_roster(
     roster: list[PublicModelEntry] = []
     for entry in entries:
         if entry.profile == "dev":
-            raise ModelPolicyError(
-                f"Dev-only model {entry.key!r} reached the public roster."
+            raise ModelPolicyError(f"Dev-only model {entry.key!r} reached the public roster.")
+        roster.append(
+            PublicModelEntry(
+                key=entry.key,
+                family=entry.family,
+                role=entry.role,
+                display_name=entry.display_name,
+                backend=entry.backend,
+                upstream_id=entry.upstream_id,
+                litellm_alias=entry.litellm_alias,
+                tier=_PUBLIC_TIER_INDEX.get((entry.family, entry.role)),
+                notes=entry.notes,
             )
-        roster.append(PublicModelEntry(
-            key=entry.key,
-            family=entry.family,
-            role=entry.role,
-            display_name=entry.display_name,
-            backend=entry.backend,
-            upstream_id=entry.upstream_id,
-            litellm_alias=entry.litellm_alias,
-            tier=_PUBLIC_TIER_INDEX.get((entry.family, entry.role)),
-            notes=entry.notes,
-        ))
+        )
     roster.sort(key=lambda e: (e.tier is None, e.tier or 0, e.key))
     return tuple(roster)
 
 
 def public_tier_table() -> tuple[PublicModelEntry, ...]:
     """Tiered text_llm entries in tier order — for the docs table."""
-    return tuple(
-        e for e in public_model_roster(family="text_llm") if e.tier is not None
-    )
+    return tuple(e for e in public_model_roster(family="text_llm") if e.tier is not None)

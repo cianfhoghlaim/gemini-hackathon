@@ -28,7 +28,7 @@ from typing import Any, Protocol
 import httpx
 
 from .control_record import AssetControlRecord
-from ..models import model_for, ModelProfile
+from ..model_registry import ModelProfile, model_for
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,9 @@ class _ComfyUiFiboBackend:
     model_key = "fibo"
 
     def __init__(self, base_url: str | None = None, api_key: str | None = None):
-        self.base_url = (base_url or os.environ.get("COMFYUI_BASE_URL") or "http://127.0.0.1:8188").rstrip("/")
+        self.base_url = (
+            base_url or os.environ.get("COMFYUI_BASE_URL") or "http://127.0.0.1:8188"
+        ).rstrip("/")
         self.api_key = api_key or os.environ.get("COMFYUI_API_KEY") or "not-required"
 
     def is_available(self) -> bool:
@@ -114,8 +116,12 @@ class _ComfyUiFiboBackend:
 class _InvokeAiBackend:
     name = ImageGenBackend.INVOKEAI
 
-    def __init__(self, base_url: str | None = None, api_key: str | None = None, model: str = "flux2-dev"):
-        self.base_url = (base_url or os.environ.get("INVOKEAI_BASE_URL") or "http://127.0.0.1:9090/v1").rstrip("/")
+    def __init__(
+        self, base_url: str | None = None, api_key: str | None = None, model: str = "flux2-dev"
+    ):
+        self.base_url = (
+            base_url or os.environ.get("INVOKEAI_BASE_URL") or "http://127.0.0.1:9090/v1"
+        ).rstrip("/")
         self.api_key = api_key or os.environ.get("INVOKEAI_API_KEY") or "not-required"
         self.model_key = model
 
@@ -151,8 +157,12 @@ class _InvokeAiBackend:
 class _UnslothStudioBackend:
     name = ImageGenBackend.UNSLOTH_STUDIO
 
-    def __init__(self, base_url: str | None = None, api_key: str | None = None, model_key: str | None = None):
-        self.base_url = (base_url or os.environ.get("UNSLOTH_BASE_URL") or "http://127.0.0.1:8888/v1").rstrip("/")
+    def __init__(
+        self, base_url: str | None = None, api_key: str | None = None, model_key: str | None = None
+    ):
+        self.base_url = (
+            base_url or os.environ.get("UNSLOTH_BASE_URL") or "http://127.0.0.1:8888/v1"
+        ).rstrip("/")
         self.api_key = api_key or os.environ.get("UNSLOTH_API_KEY") or "sk-unsloth-placeholder"
         # Default to DiffusionGemma 26B-A4B (Gemma-consistent with text Tier 2)
         self.model_key = model_key or "diffusiongemma-26b-a4b"
@@ -198,6 +208,7 @@ class _LiteLLMImageBackend:
     when the call fails (no API key, no network, etc.) — the router never
     lets the user see an error.
     """
+
     name = ImageGenBackend.LITELLM
     model_key = "gemini-2.5-flash-image"
 
@@ -207,13 +218,13 @@ class _LiteLLMImageBackend:
     # No Veo (video) or Lyria (music) per user request.
     ALLOWED_MODELS: set[str] = {
         # --- existing ---
-        "gemini-2.5-flash-image",            # Nano-Banana; text+image → image
-        "imagen-3.0-generate-002",          # Vertex Imagen 3
+        "gemini-2.5-flash-image",  # Nano-Banana; text+image → image
+        "imagen-3.0-generate-002",  # Vertex Imagen 3
         # --- added for Phase 2 ---
-        "imagen-4.0-generate-preview-06-06", # Vertex Imagen 4 (preview)
-        "gemini-3.5-flash",                  # the VLM extractor / primary
-        "gemini-2.5-flash",                  # VLM fallback
-        "vertex_ai/imagen-4",                # explicit Vertex routing
+        "imagen-4.0-generate-preview-06-06",  # Vertex Imagen 4 (preview)
+        "gemini-3.5-flash",  # the VLM extractor / primary
+        "gemini-2.5-flash",  # VLM fallback
+        "vertex_ai/imagen-4",  # explicit Vertex routing
         "vertex_ai/imagen-3.0-generate-002",
         "vertex_ai/gemini-3.5-flash",
     }
@@ -237,11 +248,16 @@ class _LiteLLMImageBackend:
 
     def generate(self, record: AssetControlRecord) -> tuple[str, int]:
         from .litellm_image import LiteLLMImageRequest, generate_with_litellm
+
         prompt = _control_to_prompt(record)
         seed = record.seed or int(time.time() * 1000) % (1 << 31)
-        result = generate_with_litellm(LiteLLMImageRequest(
-            prompt=prompt, model=self.model, seed=seed,
-        ))
+        result = generate_with_litellm(
+            LiteLLMImageRequest(
+                prompt=prompt,
+                model=self.model,
+                seed=seed,
+            )
+        )
         if not result.b64_images:
             raise RuntimeError("litellm returned no images")
         # Take the first image; prefer b64_json, fall back to URL.
@@ -253,12 +269,16 @@ class _LiteLLMImageBackend:
 
 
 class _StubBackend:
-    name = ImageGenBackend.STUB
-    model_key = "deterministic-stub-v1"
+    """The deterministic offline fallback.
 
-class _StubBackend:
+    Used when every real backend (LiteLLM / ComfyUI / InvokeAI / Unsloth
+    Studio) is unreachable or fails. The same record + seed always
+    returns the same 1x1 PNG so the UI can render offline.
+    """
+
     name = ImageGenBackend.STUB
     model_key = "deterministic-stub-v1"
+    metadata = {"stub": True, "reason": "deterministic_offline"}
 
     def is_available(self) -> bool:
         return True
@@ -268,6 +288,7 @@ class _StubBackend:
         # Generate a 1x1 PNG of the primary palette colour.
         # This is a deterministic placeholder — same record + seed → same PNG.
         import struct
+
         # Minimal 1x1 PNG of #888888 (will be replaced when a real backend is wired)
         png = bytes.fromhex(
             "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489"
@@ -287,10 +308,10 @@ class ImageGenRouter:
     def __init__(self, profile: ModelProfile = "hackathon"):
         self.profile = profile
         self.backends: list[_Backend] = [
-            _LiteLLMImageBackend(),   # canonical Google path (Phase 8)
-            _ComfyUiFiboBackend(),    # provenance-critical certificates
-            _InvokeAiBackend(),       # quality flagship
-            _UnslothStudioBackend(),   # Gemma-consistent image gen
+            _LiteLLMImageBackend(),  # canonical Google path (Phase 8)
+            _ComfyUiFiboBackend(),  # provenance-critical certificates
+            _InvokeAiBackend(),  # quality flagship
+            _UnslothStudioBackend(),  # Gemma-consistent image gen
             _StubBackend(),
         ]
 

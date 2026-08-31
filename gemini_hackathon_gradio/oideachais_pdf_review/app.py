@@ -29,6 +29,7 @@ from .._common import (
 
 _log = logging.getLogger("oideachais_pdf_review.app")
 
+
 # Default Space env vars (overridden by HuggingFace Space settings).
 # The two model strings are resolved via MODEL_REGISTRY (the
 # centralized-model-registry openspec change). The SUGGESTION_MODEL
@@ -38,7 +39,7 @@ def _suggestion_model() -> str:
     if override:
         return override
     try:
-        from gemini_hackathon.models import MODEL_REGISTRY
+        from gemini_hackathon.model_registry import MODEL_REGISTRY
 
         return MODEL_REGISTRY.resolve("text_llm", "pdf_review_suggestion")
     except Exception:
@@ -50,7 +51,7 @@ def _explanation_model() -> str:
     if override:
         return override
     try:
-        from gemini_hackathon.models import MODEL_REGISTRY
+        from gemini_hackathon.model_registry import MODEL_REGISTRY
 
         return MODEL_REGISTRY.resolve("text_llm", "pdf_review_explanation")
     except Exception:
@@ -71,8 +72,7 @@ def build_app():
     """
     if gr is None:
         raise ImportError(
-            "Gradio is required for build_app(); install with "
-            "`pip install gradio>=5.28.0,<6.0`"
+            "Gradio is required for build_app(); install with `pip install gradio>=5.28.0,<6.0`"
         )
     with gr.Blocks(
         title="Oideachais PDF Review",

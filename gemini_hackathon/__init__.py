@@ -2,7 +2,7 @@
 
 Public API:
     theming: palette loading + per-source palette extraction (BAML stub)
-    models:  registry of every model the project routes through
+    model_registry:  registry of every model the project routes through
     call_llm: dual-profile LiteLLM router with model-exclusion guard
     ocr:     capability-dispatched OCR/VLM pipeline (Phase 2)
     assets:  generative asset pipeline (Phase 8)
@@ -22,7 +22,7 @@ from .theming import (
     SAFEGUARDING_SOURCES,
     CANONICAL_TO_FILE,
 )
-from .models import (
+from .model_registry import (
     MODEL_REGISTRY,
     ModelRegistry,
     ModelRegistryEntry,
@@ -54,6 +54,7 @@ try:
         ModelProfile as _ModelProfile,
         model_for as _model_for,
     )
+
     # When the parent package is installed, replace the wholesale
     # copy with the canonical TIER 1 implementation.
     MODEL_REGISTRY = _CIANFHLOGHLAIM_MODEL_REGISTRY
@@ -85,6 +86,7 @@ try:
         SAFEGUARDING_SOURCES as _TIER1_SAFEGUARDING_SOURCES,
         CANONICAL_TO_FILE as _TIER1_CANONICAL_TO_FILE,
     )
+
     Palette = _TIER1_Palette
     load_palette = _tier1_load_palette
     list_all_palettes = _tier1_list_all_palettes
@@ -201,13 +203,18 @@ __all__ += [
 # ---------------------------------------------------------------------------
 try:
     import os as _os
+
     if _os.environ.get("ADK_LOAD_SECRETS", "").strip().lower() in {"1", "true", "yes"}:
         from .secrets_loader import inject_into_environ as _inject_secrets  # noqa: E402
 
         _injected = _inject_secrets()
         _SECRETS_LOADED = True
         _SECRETS_COUNT = len(_injected)
-        _SECRETS_BACKEND = "gsm" if _os.environ.get("ADK_LOCAL_SECRETS", "").strip().lower() not in {"1", "true", "yes"} else "dotenv"
+        _SECRETS_BACKEND = (
+            "gsm"
+            if _os.environ.get("ADK_LOCAL_SECRETS", "").strip().lower() not in {"1", "true", "yes"}
+            else "dotenv"
+        )
     else:
         _SECRETS_LOADED = False
         _SECRETS_COUNT = 0

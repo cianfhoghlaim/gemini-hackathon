@@ -57,6 +57,7 @@ from .model_registry import (
     ModelFamily,
     ModelProfile,
     ModelRegistryEntry,
+    PublicModelEntry as _PublicModelEntry,
     active_profile,
     model_for,
 )
@@ -74,8 +75,7 @@ logger = structlog.get_logger(__name__)
 _CF_PREFIX: str = "@cf/"
 _QWEN_CODER_PREFIX: str = "qwen3-coder-"
 _EXCLUDED_HELP: str = (
-    "is explicitly excluded by the gemini_hackathon model policy. "
-    "See docs/MODEL_POLICY.md"
+    "is explicitly excluded by the gemini_hackathon model policy. See docs/MODEL_POLICY.md"
 )
 
 
@@ -104,19 +104,21 @@ def _assert_model_allowed(model: str) -> None:
 # Secrets hygiene — ALLOW-LIST, never a deny-list.
 # ---------------------------------------------------------------------------
 
-SAFE_ENV_KEYS: frozenset[str] = frozenset({
-    "APP_ENV",
-    "COMFYUI_BASE_URL",
-    "GEMINI_BACKEND",
-    "GOOGLE_CLOUD_LOCATION",
-    "GOOGLE_CLOUD_PROJECT",
-    "INVOKEAI_BASE_URL",
-    "LLAMA_SWAP_BASE_URL",
-    "LOG_LEVEL",
-    "MINIMAX_BASE_URL",
-    "MODEL_PROFILE",
-    "UNSLOTH_BASE_URL",
-})
+SAFE_ENV_KEYS: frozenset[str] = frozenset(
+    {
+        "APP_ENV",
+        "COMFYUI_BASE_URL",
+        "GEMINI_BACKEND",
+        "GOOGLE_CLOUD_LOCATION",
+        "GOOGLE_CLOUD_PROJECT",
+        "INVOKEAI_BASE_URL",
+        "LLAMA_SWAP_BASE_URL",
+        "LOG_LEVEL",
+        "MINIMAX_BASE_URL",
+        "MODEL_PROFILE",
+        "UNSLOTH_BASE_URL",
+    }
+)
 """Environment variables whose **values** may be logged.
 
 Every entry here is a non-secret: a profile name, a backend selector, a
@@ -189,12 +191,12 @@ PUBLIC_PROFILE: ModelProfile = "hackathon"
 
 HACKATHON_TIERS: tuple[tuple[ModelFamily, str], ...] = (
     # Per the 2026-08-30 Gemma+Gemini refocus:
-    ("text_llm", "default"),       # Tier 1: gemini-3.5-flash via Vertex AI
-    ("text_llm", "aistudio"),      # Tier 1: gemini-3.5-flash via AI Studio (auto-fallback)
-    ("text_llm", "fallback"),      # Tier 2: gemma-4-26b-a4b via Unsloth Studio
-    ("text_llm", "fallback_light"), # Tier 2 light: gemma-4-e4b via Unsloth Studio
-    ("text_llm", "local_fallback"),# Tier 2 benchmark: gemma-3-27b-it via Unsloth Studio
-    ("text_llm", "local_fallback_old"), # Tier 2 baseline: gemma-2-9b via Unsloth Studio
+    ("text_llm", "default"),  # Tier 1: gemini-3.5-flash via Vertex AI
+    ("text_llm", "aistudio"),  # Tier 1: gemini-3.5-flash via AI Studio (auto-fallback)
+    ("text_llm", "fallback"),  # Tier 2: gemma-4-26b-a4b via Unsloth Studio
+    ("text_llm", "fallback_light"),  # Tier 2 light: gemma-4-e4b via Unsloth Studio
+    ("text_llm", "local_fallback"),  # Tier 2 benchmark: gemma-3-27b-it via Unsloth Studio
+    ("text_llm", "local_fallback_old"),  # Tier 2 baseline: gemma-2-9b via Unsloth Studio
 )
 
 DEV_TIERS: tuple[tuple[ModelFamily, str], ...] = (
@@ -356,27 +358,18 @@ def _resolve_tier_entry(
 # ---------------------------------------------------------------------------
 # Public surface — the ONLY roster docs and the UI may read.
 # ---------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class PublicModelEntry:
-    """A model the project is allowed to talk about publicly."""
-
-    key: str
-    family: ModelFamily
-    role: str
-    display_name: str
-    backend: str
-    upstream_id: str
-    litellm_alias: str | None
-    tier: int | None
-    notes: str
+#
+# NOTE: _PublicModelEntry is the canonical dataclass defined in
+# gemini_hackathon.model_registry (imported above). The legacy duplicate
+# definition that used to live here was removed in the
+# 2026-08-31-fix-critical-import-bugs-v1 change so there is exactly one
+# _PublicModelEntry in the codebase.
 
 
 def public_model_roster(
     *,
     family: ModelFamily | None = None,
-) -> tuple[PublicModelEntry, ...]:
+) -> tuple[_PublicModelEntry, ...]:
     """The public model roster — always the ``hackathon`` profile.
 
     This function deliberately ignores ``MODEL_PROFILE``. Running the process
@@ -388,7 +381,7 @@ def public_model_roster(
         family: Optional family filter.
 
     Returns:
-        A tuple of :class:`PublicModelEntry`, ordered by tier (untiered
+        A tuple of :class:`_PublicModelEntry`, ordered by tier (untiered
         entries last, then by key).
 
     Raises:
@@ -397,7 +390,7 @@ def public_model_roster(
     """
     entries = MODEL_REGISTRY.filter(family, profile=PUBLIC_PROFILE, available=True)
 
-    roster: list[PublicModelEntry] = []
+    roster: list[_PublicModelEntry] = []
     for entry in entries:
         # `filter(profile="hackathon")` already excludes dev-only entries.
         # This second check is the belt to that braces: profile containment is
@@ -408,31 +401,31 @@ def public_model_roster(
                 "public_model_roster() must never expose MODEL_PROFILE=dev "
                 "entries; fix the registry entry's `profile` field."
             )
-        roster.append(PublicModelEntry(
-            key=entry.key,
-            family=entry.family,
-            role=entry.role,
-            display_name=entry.display_name,
-            backend=entry.backend,
-            upstream_id=entry.upstream_id,
-            litellm_alias=entry.litellm_alias,
-            tier=_PUBLIC_TIER_INDEX.get((entry.family, entry.role)),
-            notes=entry.notes,
-        ))
+        roster.append(
+            _PublicModelEntry(
+                key=entry.key,
+                family=entry.family,
+                role=entry.role,
+                display_name=entry.display_name,
+                backend=entry.backend,
+                upstream_id=entry.upstream_id,
+                litellm_alias=entry.litellm_alias,
+                tier=_PUBLIC_TIER_INDEX.get((entry.family, entry.role)),
+                notes=entry.notes,
+            )
+        )
 
     roster.sort(key=lambda e: (e.tier is None, e.tier or 0, e.key))
     return tuple(roster)
 
 
-def public_tier_table() -> tuple[PublicModelEntry, ...]:
+def public_tier_table() -> tuple[_PublicModelEntry, ...]:
     """Just the tiered text_llm entries, in tier order — for the docs table.
 
     Derived from :func:`public_model_roster`, so it inherits the same
     containment guarantee.
     """
-    return tuple(
-        e for e in public_model_roster(family="text_llm") if e.tier is not None
-    )
+    return tuple(e for e in public_model_roster(family="text_llm") if e.tier is not None)
 
 
 # ---------------------------------------------------------------------------
@@ -466,10 +459,12 @@ def build_model_list(
             )
             continue
         _assert_model_allowed(entry.litellm_alias)
-        model_list.append({
-            "model_name": f"tier-{i}",
-            "litellm_params": _build_litellm_params(entry),
-        })
+        model_list.append(
+            {
+                "model_name": f"tier-{i}",
+                "litellm_params": _build_litellm_params(entry),
+            }
+        )
         fallback_list.append({"model": f"tier-{i}"})
 
     return model_list, fallback_list
@@ -485,8 +480,7 @@ def _build_router() -> Router:
         from litellm import Router  # type: ignore[import-not-found]
     except ImportError as e:  # pragma: no cover
         raise ImportError(
-            "litellm is required by gemini_hackathon.call_llm. "
-            "Install with `uv add litellm`."
+            "litellm is required by gemini_hackathon.call_llm. Install with `uv add litellm`."
         ) from e
 
     model_list, fallback_list = build_model_list()
@@ -538,20 +532,17 @@ def _build_litellm_params(entry: ModelRegistryEntry) -> dict[str, Any]:
         params["api_key"] = _require_key("GEMINI_API_KEY", backend="aistudio")
     elif entry.backend == "unsloth_studio":
         params["api_base"] = (
-            os.environ.get("UNSLOTH_BASE_URL", "").strip()
-            or "http://127.0.0.1:8888/v1"
+            os.environ.get("UNSLOTH_BASE_URL", "").strip() or "http://127.0.0.1:8888/v1"
         )
         params["api_key"] = _require_key("UNSLOTH_API_KEY", backend="unsloth_studio")
     elif entry.backend == "llama_swap":
         params["api_base"] = (
-            os.environ.get("LLAMA_SWAP_BASE_URL", "").strip()
-            or "http://127.0.0.1:8080/v1"
+            os.environ.get("LLAMA_SWAP_BASE_URL", "").strip() or "http://127.0.0.1:8080/v1"
         )
         params["api_key"] = os.environ.get("LLAMASWAP_API_KEY", "").strip() or "not-required"
     elif entry.backend == "minimax":
         params["api_base"] = (
-            os.environ.get("MINIMAX_BASE_URL", "").strip()
-            or "https://api.minimax.io/v1"
+            os.environ.get("MINIMAX_BASE_URL", "").strip() or "https://api.minimax.io/v1"
         )
         params["api_key"] = _require_key("MINIMAX_API_KEY", backend="minimax")
     elif entry.backend == "agent_garden":
@@ -565,8 +556,7 @@ def _build_litellm_params(entry: ModelRegistryEntry) -> dict[str, Any]:
         )
     elif entry.backend == "invokeai":
         params["api_base"] = (
-            os.environ.get("INVOKEAI_BASE_URL", "").strip()
-            or "http://127.0.0.1:9090/v1"
+            os.environ.get("INVOKEAI_BASE_URL", "").strip() or "http://127.0.0.1:9090/v1"
         )
     elif entry.backend == "comfyui":
         params["api_base"] = (
@@ -690,8 +680,7 @@ def call_llm(
         entry = _resolve_tier_entry(family, role, resolved_profile)
         if entry is None or entry.litellm_alias is None:
             raise ValueError(
-                f"No registry entry for ({family}, {role}) under "
-                f"profile={resolved_profile!r}"
+                f"No registry entry for ({family}, {role}) under profile={resolved_profile!r}"
             )
         _assert_model_allowed(entry.litellm_alias)
         return _attempt(
@@ -775,15 +764,17 @@ def _attempt(
             tokens_in = int(getattr(usage, "prompt_tokens", 0) or 0) if usage else 0
             tokens_out = int(getattr(usage, "completion_tokens", 0) or 0) if usage else 0
             attempt_ms = int((time.monotonic() - attempt_start) * 1000)
-            attempts.append(TierAttempt(
-                tier=tier_idx,
-                family=entry.family,
-                role=role,
-                model=entry.litellm_alias or entry.key,
-                backend=entry.backend,
-                latency_ms=attempt_ms,
-                succeeded=True,
-            ))
+            attempts.append(
+                TierAttempt(
+                    tier=tier_idx,
+                    family=entry.family,
+                    role=role,
+                    model=entry.litellm_alias or entry.key,
+                    backend=entry.backend,
+                    latency_ms=attempt_ms,
+                    succeeded=True,
+                )
+            )
             total_ms = int((time.monotonic() - overall_start) * 1000)
             _emit_invocation_log(
                 tier=tier_idx,
@@ -810,16 +801,18 @@ def _attempt(
         except Exception as e:  # noqa: BLE001 — any provider error retries/falls through
             attempt_ms = int((time.monotonic() - attempt_start) * 1000)
             error_msg = f"{type(e).__name__}: {e}"
-            attempts.append(TierAttempt(
-                tier=tier_idx,
-                family=entry.family,
-                role=role,
-                model=entry.litellm_alias or entry.key,
-                backend=entry.backend,
-                latency_ms=attempt_ms,
-                error=error_msg,
-                succeeded=False,
-            ))
+            attempts.append(
+                TierAttempt(
+                    tier=tier_idx,
+                    family=entry.family,
+                    role=role,
+                    model=entry.litellm_alias or entry.key,
+                    backend=entry.backend,
+                    latency_ms=attempt_ms,
+                    error=error_msg,
+                    succeeded=False,
+                )
+            )
             logger.warning(
                 "llm.invocation_failed",
                 llm_tier=str(tier_idx),
@@ -832,7 +825,7 @@ def _attempt(
                 **log_metadata,
             )
             if attempt_no + 1 < retry_budget:
-                time.sleep(BACKOFF_BASE_SECONDS * (2 ** attempt_no))
+                time.sleep(BACKOFF_BASE_SECONDS * (2**attempt_no))
                 continue
             break
 
@@ -931,7 +924,6 @@ __all__ = [
     "Message",
     "ModelExcludedError",
     "ModelPolicyError",
-    "PublicModelEntry",
     "TierAttempt",
     "TierTimeoutError",
     "build_model_list",
