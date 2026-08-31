@@ -28,7 +28,6 @@ import marimo
 __generated_with = "0.10.0"
 app = marimo.App(width="medium")
 
-
 @app.cell
 def _intro() -> None:
     import marimo as mo
@@ -45,14 +44,10 @@ def _intro() -> None:
         **Run the cells below** to see the pipeline execute end-to-end.
         """
     )
-    return (mo,)
-
 
 @app.cell
 def _step1_inspect_pdfs(mo) -> None:
     mo.md("## Step 1 — inspect the lifted PDFs")
-    return
-
 
 @app.cell
 def _step1_list(mo) -> None:
@@ -60,7 +55,6 @@ def _step1_list(mo) -> None:
     raw_root = pathlib.Path("data/bi_ep/syllabi_raw/uk_ncce/curriculum")
     if not raw_root.exists():
         mo.md(f"**No NCCE artefacts found at `{raw_root}`.** Run `mise run data:ncce:download` first.")
-        return
     artefacts = sorted(raw_root.iterdir())
     md_lines = ["| Path | Size | Kind |", "|---|---|---|"]
     for p in artefacts:
@@ -68,8 +62,6 @@ def _step1_list(mo) -> None:
         size = p.stat().st_size if p.is_file() else 0
         md_lines.append(f"| `{p.name}` | {size} | {kind} |")
     mo.md("\n".join(md_lines))
-    return (artefacts, raw_root)
-
 
 @app.cell
 def _step2_dlt(mo) -> None:
@@ -82,8 +74,6 @@ def _step2_dlt(mo) -> None:
         ``gemini_hackathon.duckdb`` (5 PDF rows + 6 per-subject rows).
         """
     )
-    return
-
 
 @app.cell
 def _step2_run(mo) -> None:
@@ -95,8 +85,6 @@ def _step2_run(mo) -> None:
         mo.md(f"**DLT load complete.** {load_info}")
     except Exception as exc:
         mo.md(f"**DLT failed:** `{exc}`")
-    return (load_info,)
-
 
 @app.cell
 def _step3_cocoindex(mo) -> None:
@@ -110,8 +98,6 @@ def _step3_cocoindex(mo) -> None:
         structure of the learning-graph PDFs as Markdown tables.
         """
     )
-    return
-
 
 @app.cell
 def _step3_run(mo) -> None:
@@ -123,8 +109,6 @@ def _step3_run(mo) -> None:
         mo.md(f"**CocoIndex run complete.** {stats}")
     except Exception as exc:
         mo.md(f"**CocoIndex failed:** `{exc}`")
-    return (stats,)
-
 
 @app.cell
 def _step4_sqlite(mo) -> None:
@@ -137,8 +121,6 @@ def _step4_sqlite(mo) -> None:
         ``uk_ncce_learning_graphs`` table.
         """
     )
-    return
-
 
 @app.cell
 def _step4_query(mo) -> None:
@@ -147,7 +129,6 @@ def _step4_query(mo) -> None:
     db_path = pathlib.Path("data/bi_ep/extracted_syllabi.sqlite")
     if not db_path.exists():
         mo.md(f"**No SQLite DB at `{db_path}`.** Run the Dagster assets first.")
-        return
     with sqlite3.connect(str(db_path)) as con:
         rows = list(con.execute(
             "SELECT slug, kind, subject, year_level, sha256_hash "
@@ -157,8 +138,6 @@ def _step4_query(mo) -> None:
     for slug, kind, subject, year_level, sha in rows:
         md_lines.append(f"| `{slug}` | {kind} | {subject or ''} | {year_level or ''} | `{sha[:12]}…` |")
     mo.md("\n".join(md_lines))
-    return (db_path, rows)
-
 
 @app.cell
 def _step5_render(mo) -> None:
@@ -171,8 +150,6 @@ def _step5_render(mo) -> None:
         prerequisite edges overlaid.
         """
     )
-    return
-
 
 @app.cell
 def _step5_plot(mo) -> None:
@@ -181,14 +158,12 @@ def _step5_plot(mo) -> None:
     graph_path = pathlib.Path("data/bi_ep/learning_graphs/uk_ncce_computer_science_y8.json")
     if not graph_path.is_file():
         mo.md(f"**No extracted graph at `{graph_path}`.** Run the Dagster asset first.")
-        return
     graph = json.loads(graph_path.read_text(encoding="utf-8"))
     rows = graph.get("rows", [])
     cols = graph.get("columns", [])
     cells = graph.get("cells", [])
     if not rows or not cols:
         mo.md("Empty graph — no cells to render.")
-        return
     import plotly.graph_objects as go
     row_labels = [r.get("label", r.get("id", "")) for r in rows]
     col_labels = [c.get("label", c.get("id", "")) for c in cols]
@@ -207,8 +182,6 @@ def _step5_plot(mo) -> None:
     )
     mo.mpl.figure(fig) if False else fig  # marimo doesn't have plotly renderer here, just print
     mo.md(f"**Rendered {len(rows)} rows × {len(cols)} columns.** (See the Plotly figure in the Gradio studio for the interactive view.)")
-    return (fig, graph)
-
 
 @app.cell
 def _outro(mo) -> None:
@@ -229,8 +202,6 @@ def _outro(mo) -> None:
         See ``docs/LEARNING_GRAPH_SHOWCASE.md`` for the full canonical guide.
         """
     )
-    return
-
 
 if __name__ == "__main__":
     app.run()

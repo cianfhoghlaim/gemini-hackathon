@@ -1,0 +1,12 @@
+{
+  "slug": "uk_ncce_learning_graph_y6_variables",
+  "kind": "learning_graph",
+  "jurisdiction": "uk_ncce",
+  "jurisdiction_display": "United Kingdom (NCCE)",
+  "subject": "computer_science",
+  "year_level": 6,
+  "source_pdf": "/Users/cianmacandeisigh/dev/gemini_hackathon/data/bi_ep/syllabi_raw/uk_ncce/curriculum/learning_graph_variables_in_games_y6.pdf",
+  "source_sha256": "31deb5c10bbc8569ca41c662dd28b840e7742eee600a5154154099e977da548b",
+  "extracted_via": "baml_extracts.learning_graph",
+  "generated_at": "2026-08-31T13:18:38Z"
+}

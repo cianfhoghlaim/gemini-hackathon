@@ -1,0 +1,12 @@
+{
+  "slug": "uk_ncce_learning_graph_y7_scratch",
+  "kind": "learning_graph",
+  "jurisdiction": "uk_ncce",
+  "jurisdiction_display": "United Kingdom (NCCE)",
+  "subject": "computer_science",
+  "year_level": 7,
+  "source_pdf": "/Users/cianmacandeisigh/dev/gemini_hackathon/data/bi_ep/syllabi_raw/uk_ncce/curriculum/learning_graph_programming_essentials_in_scratch_parts_i_ii_y7.pdf",
+  "source_sha256": "ed969799db3df7e73f58debf4516ce5672fbfd799396d05dc71dc4ef7fa38170",
+  "extracted_via": "baml_extracts.learning_graph",
+  "generated_at": "2026-08-31T13:18:38Z"
+}

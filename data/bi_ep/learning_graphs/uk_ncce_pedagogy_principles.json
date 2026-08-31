@@ -1,0 +1,12 @@
+{
+  "slug": "uk_ncce_pedagogy_principles",
+  "kind": "pedagogy_principles",
+  "jurisdiction": "uk_ncce",
+  "jurisdiction_display": "United Kingdom (NCCE)",
+  "subject": null,
+  "year_level": null,
+  "source_pdf": "/Users/cianmacandeisigh/dev/gemini_hackathon/data/bi_ep/syllabi_raw/uk_ncce/curriculum/pedagogy_principles.pdf",
+  "source_sha256": "d2c46712b830f49030892a7dbc157788396eb811b8da421c3b961277842d01b9",
+  "extracted_via": "baml_extracts.learning_graph",
+  "generated_at": "2026-08-31T13:18:38Z"
+}

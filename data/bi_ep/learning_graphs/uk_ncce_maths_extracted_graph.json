@@ -1,0 +1,13 @@
+{
+  "slug": "uk_ncce_maths_extracted_graph",
+  "kind": "extracted_learning_graph",
+  "jurisdiction": "uk_ncce",
+  "jurisdiction_display": "United Kingdom (NCCE)",
+  "subject": "mathematics",
+  "year_level": 8,
+  "source_pdf": "/Users/cianmacandeisigh/dev/gemini_hackathon/data/bi_ep/syllabi_raw/uk_ncce/curriculum/learning_graph_intro_to_python_programming_y8.pdf",
+  "source_sha256": "f1816520151eb0333eee860689476e603797fcbdae1ab6894529e1fac3ed2bc3",
+  "extracted_via": "ExtractMathsLearningGraph",
+  "extracted_via_backend": "baml_extracts.learning_graph",
+  "generated_at": "2026-08-31T13:18:38Z"
+}

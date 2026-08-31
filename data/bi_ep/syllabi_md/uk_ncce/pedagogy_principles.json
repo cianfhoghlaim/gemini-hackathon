@@ -1,0 +1,117 @@
+{
+  "fetched_at": "2026-08-31T13:29:58Z",
+  "principles": [
+    {
+      "examples": [
+        "trace a `for` loop",
+        "predict recursion result"
+      ],
+      "how_to_apply": "Show a code snippet; ask students to predict the output before running it, then investigate, modify, and create their own variant.",
+      "id": "primm",
+      "name": "PRIMM",
+      "summary": "Predict \u2192 Run \u2192 Investigate \u2192 Modify \u2192 Make"
+    },
+    {
+      "examples": [
+        "Pupil A types, Pupil B reads aloud"
+      ],
+      "how_to_apply": "Rotate driver/navigator roles every 15-20 minutes; navigator talks through intent, driver types.",
+      "id": "pair_programming",
+      "name": "Pair programming",
+      "summary": "Two students at one keyboard, driver + navigator"
+    },
+    {
+      "examples": [
+        "unplugged activity \u2192 pseudo-code \u2192 Python"
+      ],
+      "how_to_apply": "Alternate hands-on demos with formal notation; never stay abstract for >15 minutes without grounding.",
+      "id": "semantic_waves",
+      "name": "Semantic waves",
+      "summary": "Cycle between concrete examples and abstract notation"
+    },
+    {
+      "examples": [
+        "binary = on/off switches they already use"
+      ],
+      "how_to_apply": "Anchor new CS concepts in mathematics or everyday language; build up to formal syntax.",
+      "id": "lead_with_concepts",
+      "name": "Lead with concepts",
+      "summary": "Introduce a new idea using concepts students already know"
+    },
+    {
+      "examples": [
+        "build a function step by step"
+      ],
+      "how_to_apply": "Verbalise intent while typing; deliberately hit bugs and fix them in the open.",
+      "id": "live_coding",
+      "name": "Live coding",
+      "summary": "Teacher writes code in front of the class"
+    },
+    {
+      "examples": [
+        "sorting algorithm step-through"
+      ],
+      "how_to_apply": "Fade the worked-example scaffolding gradually; transition to independent practice.",
+      "id": "worked_examples",
+      "name": "Worked examples",
+      "summary": "Show a fully worked solution before students attempt"
+    },
+    {
+      "examples": [
+        "show 3 code blocks, ask which prints 42"
+      ],
+      "how_to_apply": "Use mini-whiteboards, exit tickets, or thumbs-up polls; re-teach misconceptions the same lesson.",
+      "id": "formative_assessment",
+      "name": "Formative assessment",
+      "summary": "Mini-checks for understanding after every 10-15 min"
+    },
+    {
+      "examples": [
+        "'Would you use a list or a tuple here?'"
+      ],
+      "how_to_apply": "Use sentence starters ('I think\u2026 because\u2026', 'I disagree because\u2026') to make reasoning audible.",
+      "id": "talking_points",
+      "name": "Talking points",
+      "summary": "Structured partner-talk prompts to surface thinking"
+    },
+    {
+      "examples": [
+        "binary with 5-bit cards",
+        "sorting by dance"
+      ],
+      "how_to_apply": "Use physical objects / games to ground abstract CS ideas before any syntax.",
+      "id": "unplugged_first",
+      "name": "Unplugged first",
+      "summary": "Introduce concepts without a computer first"
+    },
+    {
+      "examples": [
+        "5-min starter quiz on last week's loops"
+      ],
+      "how_to_apply": "Schedule 1-week, 1-month, 1-term recalls of every new vocabulary + syntax construct.",
+      "id": "spaced_retrieval",
+      "name": "Spaced retrieval",
+      "summary": "Revisit prior topics at increasing intervals"
+    },
+    {
+      "examples": [
+        "stack frame drawing next to recursive call"
+      ],
+      "how_to_apply": "Annotate every code example with a sketch of its memory state or control flow.",
+      "id": "dual_coding",
+      "name": "Dual coding",
+      "summary": "Pair verbal explanations with visual diagrams"
+    },
+    {
+      "examples": [
+        "2 loop + 1 conditional + 1 recursion question"
+      ],
+      "how_to_apply": "Mix loops + conditionals + functions in practice sets; avoid single-topic drills.",
+      "id": "interleaving",
+      "name": "Interleaving",
+      "summary": "Mix problem types rather than blocking by topic"
+    }
+  ],
+  "source": "live_pdf",
+  "source_pdf_sha256": "d2c46712b830f49030892a7dbc157788396eb811b8da421c3b961277842d01b9"
+}
