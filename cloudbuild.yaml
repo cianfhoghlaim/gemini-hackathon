@@ -10,21 +10,8 @@
 #       --substitutions=_REGION=europe-west1,_REPO=$GCP_PROJECT/gemini-hackathon
 
 steps:
-  # 0. Install uv + regenerate the BAML client. Ensures the image always
-  #    has the up-to-date baml_client/ generated from baml_extracts/*.baml.
-  - name: "python:3.12-slim"
-    id: "baml-generate"
-    entrypoint: "bash"
-    args:
-      - "-c"
-      - |
-        set -euo pipefail
-        pip install --quiet uv
-        uv sync --all-extras --frozen
-        uv run baml-cli generate
-
-  # 1. Build the Python backend image (multi-stage; uv for dependency
-  #    resolution, runtime image is distroless).
+  # 0. Build the Python backend image (multi-stage; uv for dependency
+  #    resolution + baml-cli generate; runtime image is python:3.11-slim).
   - name: "gcr.io/cloud-builders/docker:latest"
     id: "build"
     entrypoint: "bash"
@@ -38,13 +25,13 @@ steps:
           -f Dockerfile \
           .
 
-  # 2. Push to Artifact Registry.
+  # 1. Push to Artifact Registry.
   - name: "gcr.io/cloud-builders/docker:latest"
     id: "push"
     entrypoint: "bash"
     args: ["-c", "docker push $_IMAGE_URL"]
 
-  # 3. Deploy to Cloud Run. Env vars + secret refs.
+  # 2. Deploy to Cloud Run. Env vars + secret refs.
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk:latest"
     id: "deploy-cloud-run"
     entrypoint: "gcloud"

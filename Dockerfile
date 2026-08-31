@@ -37,7 +37,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Now install the project itself (includes themes/, baml_extracts/, etc).
 COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --no-group docs
+    uv sync --frozen --no-dev --no-group docs && \
+    uv run baml-cli generate
 
 # ---------------------------------------------------------------------------
 # Stage 2 — runtime
