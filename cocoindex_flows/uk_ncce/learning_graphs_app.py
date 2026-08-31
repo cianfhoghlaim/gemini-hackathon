@@ -183,7 +183,7 @@ def run(
     if not raw.exists():
         logger.warning(
             "uk_ncce.learning_graphs_app: raw_root_missing path=%s "
-            "— run `mise run data:ncce:download` first",
+            "— place the 5 NCCE source PDFs there, then re-run `make ncce-extract`",
             raw,
         )
         return {"discovered": 0, "converted": 0, "failed": 0}

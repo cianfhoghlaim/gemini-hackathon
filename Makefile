@@ -13,7 +13,7 @@
 # Usage:
 #   make help            # the canonical Google `help` target
 #   make                 # alias for `make help`
-#   make install         # uv sync --all-extras
+#   make install         # uv sync --all-groups
 #   make baml            # regenerate + test the BAML client
 #   make verify          # the 8-tick verify gate (calls scripts/verify.sh)
 #   make dev             # docker compose up --build (the local stack)
@@ -47,8 +47,8 @@ help: ## show this help message (the default target)
 # Setup — bootstrap a fresh checkout
 # ============================================================================
 .PHONY: install baml setup
-install: ## uv sync --all-extras (deps + dev + docs + lint groups)
-	$(UV) sync --all-extras
+install: ## uv sync --all-groups (deps + every dependency group)
+	$(UV) sync --all-groups
 
 baml: ## regenerate the BAML client + run BAML tests
 	$(BAML) generate
@@ -123,6 +123,7 @@ shell: ## drop into a uv-managed Python REPL (project on PYTHONPATH)
 # Data plane — DLT pipelines + CocoIndex Apps + NCCE showcase
 # ============================================================================
 .PHONY: dlt-smoke-all cocoindex-update ncce-extract ncce-visualise compare-demo \
+        lift-lc-pdfs extract-ondisk-pdfs \
         llama-swap-download-models
 dlt-smoke-all: ## run every DLT pipeline (offline-safe; writes to DuckDB)
 	$(PY) -m dlt_pipelines.official_doc_fetcher
@@ -151,6 +152,12 @@ compare-demo: ## run the Gemini-vs-Gemma4 comparison harness (writes to DuckDB)
 
 llama-swap-download-models: ## download the 7 active llama-swap GGUFs from HuggingFace (Gemma+Gemini refocus)
 	./scripts/llama_swap_download_models.sh
+
+lift-lc-pdfs: ## lift the 134-PDF LC corpus from cianfhoghlaim worktree (Phase 4)
+	$(PY) scripts/lift_lc_pdfs.py
+
+extract-ondisk-pdfs: ## extract structured BAML data from the 10 on-disk PDFs (writes to extracted_syllabi.sqlite)
+	$(PY) scripts/extract_ondisk_pdfs.py
 
 # ============================================================================
 # Cloud — Cloud Run + Cloud Build + Hugging Face

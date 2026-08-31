@@ -10,7 +10,6 @@ runs on Cloud Run (see `gemini_hackathon_gradio/editorial_studio/deploy.py`)
 from __future__ import annotations
 
 import logging
-import os
 
 import gradio as gr
 
@@ -19,7 +18,7 @@ _log = logging.getLogger(__name__)
 
 def build_app():
     """Build the bunscoil Gradio app."""
-    return gr.Blocks(
+    with gr.Blocks(
         title="Bunscoil — Primary (4-12)",
         theme=gr.themes.Soft(primary_hue="blue", secondary_hue="indigo"),
     ) as demo:

@@ -3,13 +3,9 @@
 from __future__ import annotations
 
 import json
-import os
-import sys
-import tempfile
 from pathlib import Path
 
 import pytest
-
 
 # ---------------------------------------------------------------------------
 # Core shape + contract
@@ -64,7 +60,6 @@ def test_run_comparison_returns_dict_with_summary(monkeypatch, tmp_path):
     from gemini_hackathon import call_llm as call_llm_mod
     from gemini_hackathon import compare as compare_mod
     from gemini_hackathon.call_llm import LLMResponse, TierAttempt
-    from gemini_hackathon.model_registry import MODEL_REGISTRY
 
     class _StubResponse(LLMResponse):
         def __init__(self, alias: str, backend: str):
@@ -160,7 +155,6 @@ def test_run_comparison_summary_includes_public_roster(monkeypatch, tmp_path):
     from gemini_hackathon import call_llm as call_llm_mod
     from gemini_hackathon import compare as compare_mod
     from gemini_hackathon.call_llm import LLMResponse, TierAttempt
-    from gemini_hackathon.model_registry import public_model_roster
 
     def _stub(messages, **kwargs):
         return LLMResponse(

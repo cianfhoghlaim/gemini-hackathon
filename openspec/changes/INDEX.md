@@ -2,7 +2,7 @@
 
 > **Note:** the original INDEX header reads "26 changes"; with the
 > 3 NEW 2026-08-31 Learning Graph era changes (this one + Change B +
-> Change C) **plus** the new `2026-08-31-replace-mise-with-make-v1` (Phase D — drops `mise.toml`, replaces with `Makefile` + `scripts/dev.sh` + `scripts/verify.sh` + `docs/LOCAL_DEV.md`), the working surface is **29 changes**. The header is
+> Change C) **plus** the new `2026-08-31-replace-mise-with-make-v1` (Phase D — drops `mise.toml`, replaces with `Makefile` + `scripts/dev.sh` + `scripts/verify.sh` + `docs/LOCAL_DEV.md`), the working surface is **30 changes**. The header is
 > preserved verbatim for canonical-row parity with the generator; the
 > "Total" row below is the source of truth.
 
@@ -51,14 +51,15 @@ changes whose files already exist).
 | `2026-08-27-defer-ni-wales-scotland-iom-v1` | deferred | The 4 Phase 2 subnations (NI + Wales + Scotland + IoM) — live scraping + DLT + BAML deferred to post-hackathon |
 | `2026-08-27-deferred-jersey-guernsey-v1` | deferred | The 2 expansion-pack subnations (Jersey + Guernsey) — awarding-body palettes + DLT deferred |
 
-## The 4 NEW 2026-08-30 changes (GCP-first era)
+## The 5 NEW 2026-08-30 / 2026-08-31 changes (GCP-first era)
 
 | Change | Phase | Status | One-line |
 |---|---|---|---|
-| `2026-08-30-retire-letta-wire-vertex-memory-bank-v1` | Phase 0 (memory) | closed | Replace Letta with `VertexAiMemoryBankService` + `MarkdownMemoryService` + `InMemoryMemoryService` |
-| `2026-08-30-observability-otel-completeness-v1` | Phase 1 (OTLP) | closed | ADK OTel OTLP path + OpenInference Langfuse instrumentor + 6 Stackdriver env vars |
-| `2026-08-30-cocoindex-pdf-pipeline-v1` | Phase 2 (PDF→Markdown) | closed | pdf_to_markdown App (Docling converter) + Dagster asset + MLflow benchmark |
+| `2026-08-30-retire-letta-wire-vertex-memory-bank-v1` | Phase 0 (memory) | **archived** (2026-08-31) | Replace Letta with `VertexAiMemoryBankService` + `MarkdownMemoryService` + `InMemoryMemoryService` |
+| `2026-08-30-observability-otel-completeness-v1` | Phase 1 (OTLP) | **archived** (2026-08-31) | ADK OTel OTLP path + OpenInference Langfuse instrumentor + 6 Stackdriver env vars |
+| `2026-08-30-cocoindex-pdf-pipeline-v1` | Phase 2 (PDF→Markdown) | **archived** (2026-08-31) | pdf_to_markdown App (Docling converter) + Dagster asset + MLflow benchmark |
 | `2026-08-30-gcp-first-iac-refactor-v1` | Phase 0 IaC | closed | Drops Komodo/Pangolin/Locket/Infisical for Cloud Run + Secret Manager + WIF + 11 Terraform modules |
+| `2026-08-31-gcp-infra-secrets-v1` | Phase 3 IaC | **archived** (2026-08-31) | GCP-first IaC completion — adds 8 module instantiations (`firestore`, `workflows`, `tasks`, `scheduler`, `kms`, `vpc`, `artifact-registry`, `cloud-build`) at `cloud/terraform/envs/dev/main.tf:168-260` + spec delta `gcp-infra` |
 
 ## The 4 NEW 2026-08-31 changes (Learning Graph era + task-runner swap)
 
@@ -67,7 +68,7 @@ changes whose files already exist).
 | `2026-08-31-uk-ncce-learning-graph-showcase-v1` | Phase A | **active** | **The NCCE learning graph SHOWCASE** — lift 5 NCCE PDFs, build BAML `learning_graph.baml` (8 classes + 9 functions), 11 Dagster assets, 4-tab Gradio studio + HF Space |
 | `2026-08-31-learning-graph-equivalency-graph-v1` | Phase B | **active** | Cell-level cross-jurisdiction equivalencies — `ExtractCellEquivalencies` + 42 Dagster assets (7 jurisdictions × 6 subjects) + FalkorDB `:CellEquivalentEdge` graph |
 | `2026-08-31-pedagogy-overlay-renderer-v1` | Phase C | **active** | Dynamic extraction of 12 NCCE pedagogy principles + disk + Cognee cache + 6 Dagster assets + annotated SVG renderer |
-| `2026-08-31-replace-mise-with-make-v1` | Phase D | **active** | **Drops `mise.toml`** (357 LOC, 47 tasks). Replaces with `Makefile` (27 phony targets) + `scripts/dev.sh` + `scripts/verify.sh` (8-tick gate) + `docs/LOCAL_DEV.md` (5-step recipe). Aligns with `docs/cocoindex_examples/*` + `docs/adk-examples/*` shape. |
+| `2026-08-31-replace-mise-with-make-v1` | Phase D | **archived** (2026-08-31) | **Drops `mise.toml`** (357 LOC, 47 tasks). Replaces with `Makefile` (27 phony targets) + `scripts/dev.sh` + `scripts/verify.sh` (8-tick gate) + `docs/LOCAL_DEV.md` (5-step recipe). Aligns with `docs/cocoindex_examples/*` + `docs/adk-examples/*` shape. |
 
 ## Generation
 
@@ -102,6 +103,6 @@ consolidation).
 | Pre-refactor | 2 | closed |
 | W0–W14 refactor | 16 + 1 deferred-tuatha | closed |
 | Phase 2/expansion-pack deferred | 2 | deferred |
-| 2026-08-30 GCP-first era | 4 | closed |
-| 2026-08-31 Learning Graph era + task-runner swap | 4 | 1 complete + 3 active |
-| **Total** | **29** | 26 completed + 2 active + 1 complete (this) |
+| 2026-08-30 GCP-first era | 4 | closed (4/4 archived) |
+| 2026-08-31 Learning Graph era + task-runner swap | 4 | 3 active + 1 archived |
+| **Total** | **30** | 27 completed + 3 active |

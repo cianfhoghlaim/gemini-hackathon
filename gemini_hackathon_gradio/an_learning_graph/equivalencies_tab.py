@@ -335,7 +335,7 @@ def _on_walk(
         return (
             None,
             (
-                "_No SQLite mirror yet — run `mise run dagster:launch --assets "
+                "_No SQLite mirror yet — run `dg launch --assets "
                 "uk_ncce_learning_graph_equivalencies` to populate the "
                 "`prerequisiteEdges` collection._"
             ),

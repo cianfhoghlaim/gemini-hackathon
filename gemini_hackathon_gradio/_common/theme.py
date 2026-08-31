@@ -260,12 +260,12 @@ def apply_education_theme():
     if gr is None:
         raise ImportError(
             "Gradio is required for apply_education_theme(); install with "
-            "`pip install gradio>=5.28.0,<6.0`"
+            "`pip install gradio>=6.0,<7.0`"
         )
     theme = gr.themes.Soft(
         primary_hue="orange",  # Aistear dawn-orange
         secondary_hue="green",  # MeanScoil meadow-green
-        neutral_hue="dark",
+        neutral_hue="slate",  # the Hades Shadow-First dark neutral
     )
     # Override specific tokens via the .set() method if available
     try:

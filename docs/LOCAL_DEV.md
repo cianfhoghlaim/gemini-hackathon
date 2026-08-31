@@ -16,7 +16,7 @@ $ make help
 gemini-hackathon — make targets
 
   help              show this help message (the default target)
-  install           uv sync --all-extras (deps + dev + docs + lint groups)
+  install           uv sync --all-groups (deps + every dependency group)
   baml              regenerate the BAML client + run BAML tests
   setup             full bootstrap — uv install + sync + .env + baml + verify
   lint              ruff check + ruff format --check
@@ -52,7 +52,7 @@ gemini-hackathon — make targets
 ### Clone + uv sync
 ```bash
 git clone https://github.com/cianfhoghlaim/gemini_hackathon && cd gemini_hackathon
-make install            # = uv sync --all-extras
+make install            # = uv sync --all-groups
 ```
 
 The first time you run `make install`, `uv` resolves ~250 packages
@@ -292,7 +292,7 @@ make ncce-extract         # the canonical NCCE DLT + CocoIndex batch
 make compare-demo         # writes a comparison run to a tmp DuckDB
 ```
 
-All 4 targets exit 0 on a fresh clone (after `uv sync --all-extras
+All 4 targets exit 0 on a fresh clone (after `uv sync --all-groups
 --group cianfhoghlaim-parity`). The 3 integration tests under
 `tests/{dlt,cocoindex,baml}/` exercise the full data plane end-to-end.
 
@@ -422,9 +422,9 @@ hf upload cianfhoghlaim/gemini_hackathon_learning_graphs . --repo-type space
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `make baml` fails: `from datetime import UTC` is a Python 3.11+ feature | System Python is 3.9/3.10 | `uv python install 3.12 && uv sync --all-extras --python 3.12` |
+| `make baml` fails: `from datetime import UTC` is a Python 3.11+ feature | System Python is 3.9/3.10 | `uv python install 3.12 && uv sync --all-groups --python 3.12` |
 | `make baml` fails: `pydantic` version conflict between `google-adk` and `gradio` | Pre-existing dep conflict (visible across the whole BIEP) | Pin via `uv add 'pydantic>=2.12,<2.13'` (resolves the `google-adk` requirement without breaking `gradio`) |
-| `make dlt-smoke-all` errors: `ModuleNotFoundError: dlt` | `uv sync --all-extras` didn't run | `make install` |
+| `make dlt-smoke-all` errors: `ModuleNotFoundError: dlt` | `uv sync --all-groups` didn't run | `make install` |
 | `make cocoindex-update` does nothing | `cocoindex` not installed | `uv add 'cocoindex[docling,sentence_transformers]'` |
 | `make ncce-visualise` opens blank tabs | `data/bi_ep/extracted_syllabi.sqlite` is empty | `make ncce-extract` |
 | `make dev` won't start | Docker not running | `open -a Docker` (macOS) or `systemctl start docker` (Linux) |

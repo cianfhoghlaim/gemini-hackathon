@@ -194,10 +194,49 @@ def _baml_extract_stub(md_text: str, *, subject_slug: str, language: str) -> dic
 # Dev storage (SQLite when no Postgres available)
 # ---------------------------------------------------------------------------
 
+#: The columns `_upsert_sqlite_row` writes. A pre-existing `extracted_syllabi`
+#: table missing any of these makes `CREATE TABLE IF NOT EXISTS` a silent
+#: no-op and every subsequent insert fail one-by-one, which reads as
+#: "extracted: 0, failed: N" with no obvious cause.
+_REQUIRED_COLUMNS: frozenset[str] = frozenset(
+    {
+        "subnation",
+        "stage",
+        "subject_slug",
+        "language",
+        "source_pdf",
+        "syllabus_json",
+        "exam_paper_json",
+        "marking_json",
+        "concepts_json",
+        "diagrams_json",
+        "fetched_at",
+    }
+)
+
+
 def _ensure_sqlite_table(path: pathlib.Path) -> None:
-    """Create the dev extracted_syllabi table if it doesn't exist."""
+    """Create the dev extracted_syllabi table if it doesn't exist.
+
+    Raises:
+        RuntimeError: If an ``extracted_syllabi`` table already exists with an
+            incompatible schema (e.g. written by a different producer). Left
+            unchecked this degrades into a silent all-rows-failed run.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(str(path)) as conn:
+        existing = {
+            row[1] for row in conn.execute("PRAGMA table_info(extracted_syllabi)")
+        }
+        if existing and not _REQUIRED_COLUMNS.issubset(existing):
+            missing = ", ".join(sorted(_REQUIRED_COLUMNS - existing))
+            raise RuntimeError(
+                f"{path}: table 'extracted_syllabi' exists but is missing "
+                f"column(s): {missing}. It was most likely written by a "
+                f"different producer. Rename it out of the way "
+                f"(ALTER TABLE extracted_syllabi RENAME TO "
+                f"extracted_syllabi_legacy) and re-run."
+            )
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS extracted_syllabi (

@@ -46,7 +46,7 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
 
       - name: Sync dependencies
-        run: uv sync --all-extras --python ${{ matrix.python-version }}
+        run: uv sync --all-groups --python ${{ matrix.python-version }}
 
       - name: ruff check
         run: uv run ruff check .
@@ -78,7 +78,7 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
 
       - name: Sync dependencies
-        run: uv sync --all-extras --python ${{ matrix.python-version }}
+        run: uv sync --all-groups --python ${{ matrix.python-version }}
 
       - name: Generate BAML client
         run: uv run baml-cli generate
@@ -110,7 +110,7 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
 
       - name: Sync dependencies
-        run: uv sync --all-extras --python ${{ matrix.python-version }}
+        run: uv sync --all-groups --python ${{ matrix.python-version }}
 
       - name: Generate BAML client
         run: uv run baml-cli generate
@@ -148,7 +148,7 @@ jobs:
         run: uv python install 3.12
 
       - name: Sync dependencies (with baml[testing])
-        run: uv sync --all-extras --python 3.12
+        run: uv sync --all-groups --python 3.12
 
       - name: baml-cli test
         env:

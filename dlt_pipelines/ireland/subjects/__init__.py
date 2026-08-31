@@ -21,7 +21,7 @@ from typing import Any
 
 import dlt
 
-from ...._subject_base import (
+from ..._subject_base import (
     CrawledPage,
     PDFResource,
     classify_document_type,
@@ -29,7 +29,7 @@ from ...._subject_base import (
     crawl_subject,
     extract_pdfs_from_subject,
 )
-from ...._base.jurisdiction_pipeline_base import IrelandJurisdictionPipeline
+from ..._base.jurisdiction_pipeline_base import IrelandJurisdictionPipeline
 
 
 _NCCA_CODE_BY_SUBJECT: dict[str, str] = {

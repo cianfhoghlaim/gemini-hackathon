@@ -7,12 +7,20 @@ fresh on each `@spaces.GPU` call).
 
 The full app implementation is in W12. For W3, we provide the
 scaffolding + the @spaces.GPU decorator pattern.
+
+This W3 update adds the 4 real operator widgets: PDF upload,
+suggestion generator (via the ncca_panel `_baml_extract_or_stub`
+pattern), Approve button + reviewer-notes textbox. The Approve
+button writes a JSON line to `/tmp/pdf_review_log.jsonl` (the real
+Firestore write is wired in W12).
 """
 
 from __future__ import annotations
 
+import json
 import logging
 import os
+from pathlib import Path
 
 try:
     import gradio as gr
@@ -29,6 +37,8 @@ from .._common import (
 )
 
 _log = logging.getLogger("oideachais_pdf_review.app")
+
+_REVIEW_LOG = Path("/tmp/pdf_review_log.jsonl")
 
 
 # Default Space env vars (overridden by HuggingFace Space settings).
@@ -65,6 +75,48 @@ SUGGESTION_DURATION = int(os.getenv("SUGGESTION_DURATION", "60"))  # seconds
 EXPLANATION_DURATION = int(os.getenv("EXPLANATION_DURATION", "120"))
 
 
+def _baml_extract_or_stub(pdf_text: str, subject: str = "") -> dict:
+    """Run the BAML ExtractCurriculumSyllabus call when available; otherwise
+    return a deterministic stub dict that matches the LCSyllabusDocument shape.
+
+    Mirrors `gemini_hackathon_backend/agents/ncca_panel.py:_baml_extract_or_stub`
+    so the suggestion generator stays consistent with the ADK agent's
+    fallback chain.
+    """
+    try:
+        from baml_client.sync_client import b  # type: ignore
+
+        return b.ExtractCurriculumSyllabus(
+            pdf_text=pdf_text, subject=subject, language="en"
+        ).model_dump()
+    except Exception as exc:  # noqa: BLE001 — offline-path fallback
+        return {
+            "_stub": True,
+            "_stub_reason": str(exc)[:200],
+            "subject": subject,
+            "language": "en",
+            "module_topics": [
+                {"title": f"(stub) Module 1 — {subject}", "learning_outcomes": []},
+            ],
+            "total_learning_outcomes": 0,
+        }
+
+
+def _persist_review_event(pdf_name: str, approved: bool, suggestion: str, notes: str) -> str:
+    """Append one review event to /tmp/pdf_review_log.jsonl (placeholder for Firestore)."""
+    _REVIEW_LOG.parent.mkdir(parents=True, exist_ok=True)
+    event = {
+        "pdf_name": pdf_name,
+        "approved": approved,
+        "suggestion": suggestion[:500],
+        "notes": notes[:500],
+        "ts": "now",
+    }
+    with _REVIEW_LOG.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(event, ensure_ascii=False) + "\n")
+    return str(_REVIEW_LOG)
+
+
 def build_app():
     """Build the Oideachais PDF Review Gradio app.
 
@@ -73,7 +125,7 @@ def build_app():
     """
     if gr is None:
         raise ImportError(
-            "Gradio is required for build_app(); install with `pip install gradio>=5.28.0,<6.0`"
+            "Gradio is required for build_app(); install with `pip install gradio>=6.0,<7.0`"
         )
     with gr.Blocks(
         title="Oideachais PDF Review",
@@ -105,10 +157,72 @@ The 2 in-app LLM features run on the ZeroGPU backing card via the
             elem_classes="stage-meanscoil",
         )
 
-        # Stub UI: real implementation is in W12.
-        gr.Markdown(
-            "_W3 scaffolding only. The full review interface (Approve / "
-            "Reject / Correct / Notes / Export) lands in W12._"
+        # ---- 4 real operator widgets ----
+        with gr.Row():
+            with gr.Column():
+                pdf_upload = gr.File(
+                    label="Upload PDF",
+                    file_types=[".pdf"],
+                    type="filepath",
+                )
+                subject_box = gr.Textbox(
+                    value="mathematics",
+                    label="Subject slug (used by the suggestion generator)",
+                )
+                approve_btn = gr.Button("Approve", variant="primary")
+                notes_box = gr.Textbox(
+                    value="",
+                    label="Reviewer notes",
+                    lines=4,
+                    placeholder="Add anything the next reviewer should know…",
+                )
+            with gr.Column():
+                suggestion_box = gr.Textbox(
+                    value="",
+                    label="Suggestion (from the BAML extractor + stub fallback)",
+                    lines=8,
+                    interactive=True,
+                )
+                suggest_btn = gr.Button("Generate suggestion", variant="secondary")
+                log_path_box = gr.Textbox(
+                    value=str(_REVIEW_LOG),
+                    label="Review log path",
+                    interactive=False,
+                )
+
+        def _on_generate_suggestion(pdf_path: str | None, subject: str) -> str:
+            """Read the PDF (when pypdf is installed) and call the extractor."""
+            if not pdf_path:
+                return "(upload a PDF first)"
+            text = ""
+            try:
+                from pypdf import PdfReader  # type: ignore
+
+                reader = PdfReader(pdf_path)
+                text = "\n".join((page.extract_text() or "") for page in reader.pages[:5])
+            except Exception as exc:  # noqa: BLE001 — surfaces in UI
+                text = f"(pypdf not available: {exc})"
+            extraction = _baml_extract_or_stub(pdf_text=text[:4000], subject=subject)
+            return json.dumps(extraction, indent=2, ensure_ascii=False)
+
+        def _on_approve(pdf_path: str | None, suggestion: str, notes: str) -> str:
+            pdf_name = Path(pdf_path).name if pdf_path else "(no pdf)"
+            return _persist_review_event(
+                pdf_name=pdf_name,
+                approved=True,
+                suggestion=suggestion,
+                notes=notes,
+            )
+
+        suggest_btn.click(
+            fn=_on_generate_suggestion,
+            inputs=[pdf_upload, subject_box],
+            outputs=[suggestion_box],
+        )
+        approve_btn.click(
+            fn=_on_approve,
+            inputs=[pdf_upload, suggestion_box, notes_box],
+            outputs=[log_path_box],
         )
 
         render_anam_bonneagar_footer(

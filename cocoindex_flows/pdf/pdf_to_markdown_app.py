@@ -121,11 +121,24 @@ def run(
     *,
     raw_root: pathlib.Path | None = None,
     md_root: pathlib.Path | None = None,
+    extra_roots: list[pathlib.Path] | None = None,
 ) -> dict[str, int]:
-    """Run the markdown extraction over all PDFs under ``raw_root``.
+    """Run the markdown extraction over all PDFs under ``raw_root`` (+ extras).
+
+    Phase 2 also walks the additional canonical roots the BIEP substrate
+    uses outside of ``data/bi_ep/syllabi_raw/``:
+
+      - ``data/ireland/ncca_policy`` — the 5 NCCA policy PDFs (the
+        certificate source-of-truth lifted in W2 of the refactor)
+      - ``data/syllabi`` — the 1 sample LC Maths PDF used by the
+        ``notebooks/16_baml_extraction_visualisation.py`` smoke test
+
+    Outputs from extra roots are written under ``<md_root>/extra/<rel>``
+    so the canonical layout under ``<md_root>/uk_ncce/...`` stays
+    untouched. Pass ``extra_roots=[]`` to skip the extra scan.
 
     Returns a stats dict:
-        ``discovered`` — number of PDFs seen under ``raw_root``
+        ``discovered`` — number of PDFs seen (raw_root + extras)
         ``converted`` — number of .md files written
         ``failed`` — number that raised during read or extract
     """
@@ -133,30 +146,72 @@ def run(
     md = md_root or MD_ROOT
     md.mkdir(parents=True, exist_ok=True)
 
-    if not raw.exists():
+    stats = {"discovered": 0, "converted": 0, "failed": 0}
+
+    if raw.exists():
+        pdfs = sorted(raw.rglob("*.pdf"))
+        stats["discovered"] += len(pdfs)
+        for pdf_path in pdfs:
+            try:
+                result = _process_one_pdf(pdf_path, raw_root=raw, md_root=md)
+            except Exception as exc:  # noqa: BLE001 — keep going on failure
+                logger.warning(
+                    "pdf_to_markdown.unhandled_failure path=%s reason=%s",
+                    pdf_path, exc,
+                )
+                stats["failed"] += 1
+                continue
+            if result is None:
+                stats["failed"] += 1
+            else:
+                stats["converted"] += 1
+    else:
         logger.warning(
             "pdf_to_markdown_app.raw_root_missing path=%s "
             "— run `python -m dlt_pipelines.pdf_downloader` first",
             raw,
         )
-        return {"discovered": 0, "converted": 0, "failed": 0}
 
-    pdfs = sorted(raw.rglob("*.pdf"))
-    stats = {"discovered": len(pdfs), "converted": 0, "failed": 0}
-    for pdf_path in pdfs:
-        try:
-            result = _process_one_pdf(pdf_path, raw_root=raw, md_root=md)
-        except Exception as exc:  # noqa: BLE001 — keep going on failure
-            logger.warning(
-                "pdf_to_markdown.unhandled_failure path=%s reason=%s",
-                pdf_path, exc,
-            )
-            stats["failed"] += 1
+    # Extra canonical roots (Phase 2): NCCA policy + sample LC Maths.
+    if extra_roots is None:
+        extra_roots = [
+            pathlib.Path.cwd() / "data" / "ireland" / "ncca_policy",
+            pathlib.Path.cwd() / "data" / "syllabi",
+        ]
+    for extra_root in extra_roots:
+        if not extra_root.exists():
             continue
-        if result is None:
-            stats["failed"] += 1
-        else:
-            stats["converted"] += 1
+        for pdf_path in sorted(extra_root.rglob("*.pdf")):
+            stats["discovered"] += 1
+            target = md / "extra" / pdf_path.relative_to(extra_root.parent)
+            target = target.with_suffix(".md")
+            try:
+                content = pdf_path.read_bytes()
+                try:
+                    from ._shared import extract_markdown  # noqa: PLC0415
+                except ImportError:  # pragma: no cover — standalone-load fallback
+                    import importlib.util as _iu
+                    _spec = _iu.spec_from_file_location(
+                        "_shared_mod",
+                        pathlib.Path(__file__).resolve().parent / "_shared.py",
+                    )
+                    _shared_mod = _iu.module_from_spec(_spec)  # type: ignore[arg-type]
+                    _spec.loader.exec_module(_shared_mod)  # type: ignore[union-attr]
+                    extract_markdown = _shared_mod.extract_markdown
+                md_text = extract_markdown(content)
+                if not md_text:
+                    stats["failed"] += 1
+                    continue
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(md_text, encoding="utf-8")
+                stats["converted"] += 1
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "pdf_to_markdown.extra_failed path=%s reason=%s",
+                    pdf_path, exc,
+                )
+                stats["failed"] += 1
+
     return stats
 
 

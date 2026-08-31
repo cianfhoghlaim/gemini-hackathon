@@ -142,7 +142,7 @@ def build_app():
     if gr is None:
         raise ImportError(
             "Gradio is required for build_app(); install with "
-            "`pip install gradio>=5.28.0,<6.0`"
+            "`pip install gradio>=6.0,<7.0`"
         )
     with gr.Blocks(
         theme=apply_education_theme(), css=GRADIO_CSS, title="An Scrudu"

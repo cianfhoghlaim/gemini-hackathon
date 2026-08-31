@@ -38,6 +38,10 @@ from gemini_hackathon_backend.observability import (
     log_mlflow_metric,
     record_generation,
 )
+from gemini_hackathon_backend.catalog.a2ui_emitter import (
+    record_a2ui_raw_event,
+    wrap_a2ui_in_raw_event,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -118,6 +122,12 @@ def cite_pdf(pdf_id: str, page: int, snippet: str, tool_context) -> dict[str, An
     journey orchestrator's before_agent_callback can include the citation
     count in the system prompt on the next turn.
 
+    In addition to the normal JSON return, the tool appends a single A2UI
+    v0.9 Raw event to `tool_context.state["a2ui_raw_events"]` carrying a
+    `NccaPdfCard` surface so the frontend can render the citation as a
+    clickable card. The session-end helper `_flush_a2ui_surfaces` drains
+    that buffer.
+
     Args:
         pdf_id: The PDF identifier (one of `_NCCA_PDFS[*].pdf_id`).
         page: The 1-indexed page number within the PDF.
@@ -142,6 +152,41 @@ def cite_pdf(pdf_id: str, page: int, snippet: str, tool_context) -> dict[str, An
     tool_context.state["active_pdf"] = pdf_id
     log_mlflow_metric("ncca_panel.cite_pdf.invocations", 1)
     logger.info("tool.cite_pdf", pdf_id=pdf_id, page=page, session_citations=len(citations))
+
+    # Emit an A2UI v0.9 surface so the frontend's a2ui-renderer can paint a
+    # `NccaPdfCard` next to the citation. The `data` field binds the
+    # `CitationPill` props to a JSON-Pointer-resolved data model so future
+    # `updateDataModel` operations can patch the snippet without having to
+    # resend the whole tree.
+    surface_id = f"ncca-citation-{pdf_id}"
+    components = [
+        {"id": "root", "component": "Column", "children": ["title", "card", "pill"]},
+        {"id": "title", "component": "Text", "text": "Citation recorded", "variant": "h3"},
+        {
+            "id": "card",
+            "component": "NccaPdfCard",
+            "pdf_id": {"path": "pdf_id"},
+            "title": {"path": "title"},
+            "blurb": {"path": "blurb"},
+        },
+        {
+            "id": "pill",
+            "component": "CitationPill",
+            "pdf_id": {"path": "pill_pdf_id"},
+            "page": {"path": "pill_page"},
+            "snippet": {"path": "pill_snippet"},
+        },
+    ]
+    data = {
+        "pdf_id": pdf_id,
+        "title": pdf["title"],
+        "blurb": pdf["blurb"],
+        "pill_pdf_id": pdf_id,
+        "pill_page": page,
+        "pill_snippet": snippet[:200],
+    }
+    record_a2ui_raw_event(tool_context, wrap_a2ui_in_raw_event(surface_id, components, data))
+
     return {
         "status": "success",
         "recorded": {
@@ -184,6 +229,10 @@ def fetch_highlight(pdf_id: str, page: int, tool_context) -> dict[str, Any]:
 def list_ncca_pdfs(tool_context) -> dict[str, Any]:
     """List all 5 NCCA policy PDFs the agent can cite.
 
+    Emits a `ncca-overview` A2UI surface so the frontend can show the
+    complete policy corpus as a `NccaPdfCard` gallery in one go (rather
+    than waiting for the model to call `cite_pdf` 5 times).
+
     Args:
         tool_context: Injected by ADK.
 
@@ -193,6 +242,25 @@ def list_ncca_pdfs(tool_context) -> dict[str, Any]:
     tool_context.state["last_pdf_list_query_ts"] = "now"
     log_mlflow_metric("ncca_panel.list_ncca_pdfs.invocations", 1)
     logger.info("tool.list_ncca_pdfs", pdf_count=len(_NCCA_PDFS))
+
+    # Emit the canonical "ncca-overview" surface — mirrors
+    # `catalog/ncca_v1.json:examples.overview_surface`.
+    surface_id = "ncca-overview"
+    components = [
+        {"id": "root", "component": "Column", "children": ["title", "pdf-list"]},
+        {"id": "title", "component": "Text", "text": "NCCA Senior Cycle policy corpus", "variant": "h1"},
+        {"id": "pdf-list", "component": "List", "children": ["pdf-card-template"], "direction": "vertical"},
+        {
+            "id": "pdf-card-template",
+            "component": "NccaPdfCard",
+            "title": {"path": "title"},
+            "blurb": {"path": "blurb"},
+            "pdf_id": {"path": "pdf_id"},
+        },
+    ]
+    data = {"pdfs": list(_NCCA_PDFS)}
+    record_a2ui_raw_event(tool_context, wrap_a2ui_in_raw_event(surface_id, components, data))
+
     return {"count": len(_NCCA_PDFS), "pdfs": _NCCA_PDFS}
 
 
@@ -319,12 +387,31 @@ async def _persist_session_to_memory(callback_context) -> object:
     return None
 
 
+def _flush_a2ui_surfaces(tool_context) -> list[dict[str, Any]]:
+    """Drain the per-turn A2UI Raw-event buffer from `tool_context.state`.
+
+    Re-export of `gemini_hackathon_backend.catalog.a2ui_emitter.flush_a2ui_surfaces`
+    so the agent module owns the public surface (callers don't have to
+    import the catalog submodule directly).
+
+    Args:
+        tool_context: ADK `ToolContext` (or anything with a `.state` dict).
+
+    Returns:
+        A list of AG-UI `Raw` events recorded during the turn.
+    """
+    from gemini_hackathon_backend.catalog.a2ui_emitter import flush_a2ui_surfaces
+
+    return flush_a2ui_surfaces(tool_context)
+
+
 __all__ = [
     "NCCA_PANEL_INSTRUCTION",
     "NccaPanelAgent",
     "_NCCA_PDFS",
     "_baml_extract_or_stub",
     "_find_pdf",
+    "_flush_a2ui_surfaces",
     "_reinject_state_into_prompt",
     "_seed_participant_state",
     "_persist_session_to_memory",

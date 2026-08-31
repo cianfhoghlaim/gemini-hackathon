@@ -109,7 +109,11 @@ def test_output_path_for_canonical_shape() -> None:
 
 def test_run_no_raw_root(tmp_path: pathlib.Path) -> None:
     """Missing raw_root -> empty stats, no crash."""
-    stats = app_mod.run(raw_root=tmp_path / "missing", md_root=tmp_path / "md")
+    stats = app_mod.run(
+        raw_root=tmp_path / "missing",
+        md_root=tmp_path / "md",
+        extra_roots=[],
+    )
     assert stats == {"discovered": 0, "converted": 0, "failed": 0}
 
 
@@ -127,7 +131,7 @@ def test_run_writes_md_per_pdf(tmp_path: pathlib.Path) -> None:
         d.mkdir(parents=True)
         (d / f"{sha}.pdf").write_bytes(_minimal_pdf_bytes(page_count=2))
 
-    stats = app_mod.run(raw_root=raw, md_root=md)
+    stats = app_mod.run(raw_root=raw, md_root=md, extra_roots=[])
     assert stats["discovered"] == 3
     assert stats["converted"] == 3
     assert stats["failed"] == 0
@@ -161,7 +165,7 @@ def test_run_increments_failed_for_corrupt_pdf(
     invalid.mkdir(parents=True)
     (invalid / "i.pdf").write_bytes(b"not a pdf at all")
 
-    stats = app_mod.run(raw_root=raw, md_root=md)
+    stats = app_mod.run(raw_root=raw, md_root=md, extra_roots=[])
     assert stats["discovered"] == 2
     assert stats["converted"] == 1
     assert stats["failed"] == 1
@@ -172,7 +176,7 @@ def test_run_handles_empty_raw_root(tmp_path: pathlib.Path) -> None:
     raw = tmp_path / "raw"
     md = tmp_path / "md"
     raw.mkdir()
-    stats = app_mod.run(raw_root=raw, md_root=md)
+    stats = app_mod.run(raw_root=raw, md_root=md, extra_roots=[])
     assert stats == {"discovered": 0, "converted": 0, "failed": 0}
 
 

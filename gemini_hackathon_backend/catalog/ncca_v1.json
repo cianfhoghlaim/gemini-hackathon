@@ -50,6 +50,15 @@
         "page": "integer",
         "snippet": "string (≤ 200 chars)"
       }
+    },
+    "NCCEHeatmap": {
+      "description": "An MxN heatmap grid (rows × columns) of float values, rendered as a cool→warm SVG grid.",
+      "props": {
+        "rows": "string[] (length M, row labels)",
+        "columns": "string[] (length N, column labels)",
+        "values": "number[][] (M × N float matrix)",
+        "title": "string (optional heading)"
+      }
     }
   },
   "examples": {

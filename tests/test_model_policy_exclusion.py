@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # call_llm._assert_model_allowed
 # ---------------------------------------------------------------------------
@@ -27,7 +26,7 @@ import pytest
     ],
 )
 def test_excluded_model_strings_rejected(bad):
-    from gemini_hackathon.call_llm import _assert_model_allowed, ModelExcludedError
+    from gemini_hackathon.call_llm import ModelExcludedError, _assert_model_allowed
 
     with pytest.raises(ModelExcludedError) as exc:
         _assert_model_allowed(bad)

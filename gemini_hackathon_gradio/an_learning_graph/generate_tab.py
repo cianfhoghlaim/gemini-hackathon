@@ -114,7 +114,7 @@ def _on_generate(
         return (
             f"### PDF text preview (first 2000 chars)\n\n```\n{pdf_text[:2000]}\n```",
             "_BAML client not available — falling back to text preview._\n\n"
-            "Run `mise run baml:generate` and re-upload to trigger a real extraction.",
+            "Run `make baml` and re-upload to trigger a real extraction.",
             f"**Saved stub to** `{out}` (BAML client unavailable).",
         )
 

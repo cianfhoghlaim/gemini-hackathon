@@ -10,7 +10,6 @@ runs on Cloud Run (see `gemini_hackathon_gradio/editorial_studio/deploy.py`)
 from __future__ import annotations
 
 import logging
-import os
 
 import gradio as gr
 
@@ -19,7 +18,7 @@ _log = logging.getLogger(__name__)
 
 def build_app():
     """Build the leaving_certificate Gradio app."""
-    return gr.Blocks(
+    with gr.Blocks(
         title="Scoil Sinsearach — Leaving Certificate (15-19)",
         theme=gr.themes.Soft(primary_hue="orange", secondary_hue="yellow"),
     ) as demo:

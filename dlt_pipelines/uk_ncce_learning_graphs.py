@@ -224,7 +224,7 @@ def uk_ncce_learning_graphs_documents() -> Iterator[dict[str, Any]]:
     if not RAW_ROOT.exists():
         logger.warning(
             "uk_ncce_learning_graphs_documents: RAW_ROOT does not exist: %s "
-            "(copy the NCCE PDFs via `mise run data:ncce:download`)",
+            "(place the 5 NCCE source PDFs there, then re-run `make ncce-extract`)",
             RAW_ROOT,
         )
         return

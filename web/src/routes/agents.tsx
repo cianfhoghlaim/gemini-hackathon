@@ -24,9 +24,32 @@
  * in src/routes/__root.tsx.
  */
 
-import { useRef, useState } from "react";
+import { Component, type ErrorInfo, type ReactNode, useRef, useState } from "react";
 import { useAgent } from "@copilotkit/react-core/v2";
+import { A2UIRenderer, DEFAULT_SURFACE_ID } from "@copilotkit/a2ui-renderer";
 import { useSession } from "../components/session/SessionContext";
+
+/**
+ * Defensive error boundary so a missing A2UI runtime / unrecognised catalog
+ * schema doesn't crash the whole chat page — the chat surface still renders
+ * even if the JSONL → React bridge is unavailable.
+ */
+class A2UIErrorBoundary extends Component<
+  { children: ReactNode; fallback: ReactNode },
+  { error: Error | null }
+> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.warn("[A2UI] renderer error:", error, info);
+  }
+  render() {
+    if (this.state.error) return this.props.fallback;
+    return this.props.children;
+  }
+}
 
 export default function AgentChatPage(): React.ReactNode {
   const { subnation } = useSession();
@@ -99,6 +122,18 @@ export default function AgentChatPage(): React.ReactNode {
             {subnation.awardingBodyShort} is thinking…
           </div>
         )}
+      </section>
+
+      <section data-testid="a2ui-surface-mount" className="mt-4">
+        <A2UIErrorBoundary
+          fallback={
+            <div className="text-xs text-[var(--color-text)]/40 italic">
+              A2UI panel unavailable — chat continues above.
+            </div>
+          }
+        >
+          <A2UIRenderer surfaceId={DEFAULT_SURFACE_ID} />
+        </A2UIErrorBoundary>
       </section>
 
       {error && (

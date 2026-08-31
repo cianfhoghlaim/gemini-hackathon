@@ -25,8 +25,9 @@ readonly C_BLUE=$'\033[34m'
 readonly C_BOLD=$'\033[1m'
 
 _t=0
+_f=0
 _ok()    { printf '  %s[OK]%s    %s\n' "$C_GREEN" "$C_RESET" "$1"; _t=$((_t+1)); }
-_fail()  { printf '  %s[FAIL]%s  %s\n' "$C_RED"   "$C_RESET" "$1"; }
+_fail()  { printf '  %s[FAIL]%s  %s\n' "$C_RED"   "$C_RESET" "$1"; _f=$((_f+1)); }
 _skip()  { printf '  %s[SKIP]%s  %s\n' "$C_BLUE"  "$C_RESET" "$1"; }
 _section() { printf '\n%s%s%s\n' "$C_BOLD" "$1" "$C_RESET"; }
 
@@ -223,10 +224,11 @@ fi
 # ---------------------------------------------------------------------------
 
 printf '\n'
-if [[ "$_t" -eq 8 ]]; then
+if [[ "$_f" -eq 0 ]]; then
     printf '%s✓ 8/8 verify ticks green%s\n' "$C_GREEN" "$C_RESET"
     exit 0
 else
-    printf '%s✗ %d/8 verify ticks failed%s — see docs/LOCAL_DEV.md §'\\''What to do when something breaks'\\''\n' "$C_RED" "$((8 - _t))" "$C_RESET"
+    printf "%s✗ %d check(s) failed, %d passed%s — see docs/LOCAL_DEV.md \"What to do when something breaks\"\n" \
+        "$C_RED" "$_f" "$_t" "$C_RESET"
     exit 1
 fi

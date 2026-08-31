@@ -13,10 +13,33 @@
  * its `content` field and surface the list.
  */
 
-import { useEffect, useState } from "react";
+import { Component, type ErrorInfo, type ReactNode, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAgent } from "@copilotkit/react-core/v2";
+import { A2UIRenderer, DEFAULT_SURFACE_ID } from "@copilotkit/a2ui-renderer";
 import { useSession } from "../components/session/SessionContext";
+
+/**
+ * Defensive error boundary so a missing A2UI runtime / unrecognised catalog
+ * schema doesn't crash the whole find-resources page — the results list
+ * still renders even if the JSONL → React bridge is unavailable.
+ */
+class A2UIErrorBoundary extends Component<
+  { children: ReactNode; fallback: ReactNode },
+  { error: Error | null }
+> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.warn("[A2UI] renderer error:", error, info);
+  }
+  render() {
+    if (this.state.error) return this.props.fallback;
+    return this.props.children;
+  }
+}
 
 interface FindResourceResult {
   source_subnation: string;
@@ -167,6 +190,18 @@ export default function FindResourcesPage(): React.ReactNode {
           No results yet. Enter a topic above and click Find resources.
         </p>
       )}
+
+      <section data-testid="a2ui-surface-mount" className="mt-6">
+        <A2UIErrorBoundary
+          fallback={
+            <div className="text-xs text-[var(--color-text)]/40 italic">
+              A2UI panel unavailable — results list above still applies.
+            </div>
+          }
+        >
+          <A2UIRenderer surfaceId={DEFAULT_SURFACE_ID} />
+        </A2UIErrorBoundary>
+      </section>
     </div>
   );
 }

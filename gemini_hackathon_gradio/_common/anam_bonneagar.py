@@ -85,7 +85,7 @@ def render_anam_bonneagar_footer(
     if gr is None:
         raise ImportError(
             "Gradio is required for render_anam_bonneagar_footer(); install with "
-            "`pip install gradio>=5.28.0,<6.0`"
+            "`pip install gradio>=6.0,<7.0`"
         )
     sha = _resolve_git_sha()
     space = space_id or os.environ.get("SPACE_ID", "gemini-hackathon-editorial-studio")

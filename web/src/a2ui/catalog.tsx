@@ -120,6 +120,129 @@ function CitationPill({ pdf_id, page, snippet }: { pdf_id: string; page: number;
   );
 }
 
+/**
+ * NCCEHeatmap — the 7th A2UI component in the NCCA catalog.
+ *
+ * Renders a `(rows × columns)` heatmap of `values[i][j]` floats as a small
+ * SVG grid. The colour ramp runs from a cool blue (low) through cream to
+ * a warm red (high). We keep this in pure SVG (no recharts dep) so the
+ * surface stays dependency-free; the heavier viz layers live in the
+ * marimo notebooks (notebooks/10*, 17*, 18*, 19*).
+ *
+ * Props:
+ *   - rows:     row labels (length = M)
+ *   - columns:  column labels (length = N)
+ *   - values:   2-D float matrix (M × N)
+ *   - title?:   optional heading rendered above the grid
+ */
+function NCCEHeatmap({
+  rows,
+  columns,
+  values,
+  title,
+}: {
+  rows: string[];
+  columns: string[];
+  values: number[][];
+  title?: string;
+}): ReactNode {
+  const cell = 26;
+  const padLeft = 110;
+  const padTop = 38;
+  const W = padLeft + columns.length * cell + 12;
+  const H = padTop + rows.length * cell + 12;
+
+  // Flatten to compute the colour ramp range.
+  const flat = values.flat();
+  const min = flat.length ? Math.min(...flat) : 0;
+  const max = flat.length ? Math.max(...flat) : 1;
+  const span = max - min || 1;
+
+  // Cool→warm: hsl interp 220° (blue) → 50° (red) via cream (60°) at 0.5.
+  function colorFor(v: number): string {
+    const t = (v - min) / span;
+    const hue = 220 - 170 * t;
+    const sat = 60;
+    const light = 92 - 32 * t;
+    return `hsl(${hue.toFixed(0)} ${sat}% ${light}%)`;
+  }
+
+  return (
+    <figure className="rounded-lg border border-[var(--color-secondary)]/30 bg-[var(--color-background)] p-3 my-2">
+      {title && (
+        <figcaption className="font-[var(--font-heading)] text-sm text-[var(--color-primary)] mb-2">
+          {title}
+        </figcaption>
+      )}
+      <div className="overflow-x-auto">
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          width={W}
+          height={H}
+          role="img"
+          aria-label={`Heatmap ${rows.length} × ${columns.length}`}
+          style={{ display: "block", maxWidth: "100%" }}
+        >
+          {/* column headers */}
+          <g>
+            {columns.map((c, j) => (
+              <text
+                key={`col-${j}`}
+                x={padLeft + j * cell + cell / 2}
+                y={padTop - 8}
+                fontSize={9}
+                textAnchor="middle"
+                fill="var(--color-text)"
+                opacity={0.7}
+              >
+                {c}
+              </text>
+            ))}
+          </g>
+          {/* row labels + cells */}
+          <g>
+            {rows.map((r, i) => (
+              <g key={`row-${i}`}>
+                <text
+                  x={padLeft - 6}
+                  y={padTop + i * cell + cell / 2 + 3}
+                  fontSize={9}
+                  textAnchor="end"
+                  fill="var(--color-text)"
+                  opacity={0.7}
+                >
+                  {r}
+                </text>
+                {columns.map((_c, j) => {
+                  const v = values?.[i]?.[j] ?? 0;
+                  return (
+                    <rect
+                      key={`cell-${i}-${j}`}
+                      x={padLeft + j * cell}
+                      y={padTop + i * cell}
+                      width={cell - 2}
+                      height={cell - 2}
+                      rx={3}
+                      fill={colorFor(v)}
+                      stroke="var(--color-background)"
+                      strokeWidth={1}
+                    >
+                      <title>{`${r} × ${_c}: ${v.toFixed(2)}`}</title>
+                    </rect>
+                  );
+                })}
+              </g>
+            ))}
+          </g>
+        </svg>
+      </div>
+      <div className="mt-2 text-[10px] text-[var(--color-text)]/50 font-mono">
+        min {min.toFixed(2)} · max {max.toFixed(2)} · range {span.toFixed(2)}
+      </div>
+    </figure>
+  );
+}
+
 /* ---------------------------------------------------------------- */
 /* The catalog — single source of truth for the React side.            */
 /*                                                                     */
@@ -187,6 +310,15 @@ const catalog = createCatalog(
         snippet: z.string().max(200),
       }) as unknown as CatalogComponentDefinition["props"],
     },
+    NCCEHeatmap: {
+      description: "An MxN heatmap grid (rows × columns) of float values rendered as a cool→warm SVG grid.",
+      props: z.object({
+        rows: z.array(z.string()),
+        columns: z.array(z.string()),
+        values: z.array(z.array(z.number())),
+        title: z.string().optional(),
+      }) as unknown as CatalogComponentDefinition["props"],
+    },
   },
   {
     // The a2ui-renderer v1 type-check uses `Record<string, any>` for the
@@ -200,6 +332,7 @@ const catalog = createCatalog(
     ScrAdvisoryHighlight: ScrAdvisoryHighlight as any,
     OnlineLearningCallout: OnlineLearningCallout as any,
     CitationPill: CitationPill as any,
+    NCCEHeatmap: NCCEHeatmap as any,
   },
   {
     catalogId: "https://gemini-hackathon.cianfhoghlaim.ie/a2ui/catalogs/ncca-v1.json",
@@ -215,4 +348,5 @@ export {
   ScrAdvisoryHighlight,
   OnlineLearningCallout,
   CitationPill,
+  NCCEHeatmap,
 };

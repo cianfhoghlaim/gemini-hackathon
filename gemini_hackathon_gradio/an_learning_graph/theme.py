@@ -41,17 +41,17 @@ def apply_learning_graph_theme() -> Any:
     if gr is None:
         raise ImportError(
             "Gradio is required for apply_learning_graph_theme(); "
-            "install with `pip install gradio>=5.28.0,<6.0`"
+            "install with `pip install gradio>=6.0,<7.0`"
         )
     theme = gr.themes.Soft(
         primary_hue=gr.themes.Color(
-            **{".c50": "#e6f4ea", ".c100": "#cce8d3", ".c200": "#a6d3ad",
-               ".c300": "#80be87", ".c400": "#5aa961", ".c500": "#3d8e47",
-               ".c600": "#2f7138", ".c700": "#21542a", ".c800": "#13381b",
-               ".c900": "#081c0e", ".c950": "#040e07"},
+            c50="#e6f4ea", c100="#cce8d3", c200="#a6d3ad",
+            c300="#80be87", c400="#5aa961", c500="#3d8e47",
+            c600="#2f7138", c700="#21542a", c800="#13381b",
+            c900="#081c0e", c950="#040e07",
         ),
         secondary_hue="orange",
-        neutral_hue="dark",
+        neutral_hue="slate",  # the Hades Shadow-First dark neutral
     )
     try:
         theme = theme.set(

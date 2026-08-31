@@ -69,7 +69,7 @@ HF_SPACES: list[dict] = [
 
 
 REQUIREMENTS = textwrap.dedent("""\
-    gradio>=5.28.0,<6.0
+    gradio>=6.0,<7.0
     google-adk>=2.7.1,<3.0
     pydantic>=2.0
     huggingface_hub>=0.30
@@ -91,7 +91,6 @@ def build_app_py(space: dict) -> str:
         from __future__ import annotations
 
         import logging
-        import os
 
         import gradio as gr
 
@@ -100,7 +99,7 @@ def build_app_py(space: dict) -> str:
 
         def build_app():
             """Build the {space["stage"]} Gradio app."""
-            return gr.Blocks(
+            with gr.Blocks(
                 title="{space["title"]}",
                 theme=gr.themes.Soft(primary_hue="{space["color_from"]}", secondary_hue="{space["color_to"]}"),
             ) as demo:
@@ -139,7 +138,7 @@ def build_readme_md(space: dict) -> str:
         colorFrom: "{space["color_from"]}"
         colorTo: "{space["color_to"]}"
         sdk: gradio
-        sdk_version: 5.28.0
+        sdk_version: 6.26.0
         app_file: app.py
         pinned: false
         license: mit

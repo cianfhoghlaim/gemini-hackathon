@@ -36,7 +36,7 @@ def _build_app() -> gr.Blocks:
         )
 
     # Fallback placeholder — mirrors the canonical 4-tab layout.
-    return gr.Blocks(
+    with gr.Blocks(
         title="An Léaráid Foghlama — The Learning Graph Studio",
         theme=gr.themes.Soft(primary_hue="green", secondary_hue="yellow"),
     ) as demo:
@@ -67,6 +67,8 @@ def _build_app() -> gr.Blocks:
                 "**Tab 4 — Pedagogy overlay (stub).** Shipped by Change C "
                 "(`2026-08-31-pedagogy-overlay-renderer-v1`)."
             )
+
+    return demo
 
 
 if __name__ == "__main__":

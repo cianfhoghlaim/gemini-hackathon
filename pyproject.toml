@@ -42,6 +42,10 @@ dependencies = [
     # Gradio 5.28+ for gr.Workflow (editorial canvas), gr.mcp (Spaces-as-MCP),
     # ZeroGPU (@spaces.GPU), server-side rendering.
     "gradio>=6.0,<7.0",
+    # Plotly — the renderer behind 3 of the 4 an_learning_graph studio tabs
+    # (Render / Equivalencies / Pedagogy overlay). Without it those tabs
+    # silently build zero components.
+    "plotly>=5.0",
     # HuggingFace Hub — for gradio_client + the `hf` CLI + hf skills add
     "huggingface_hub>=0.30",
     # FastMCP for the per-subject MCP servers

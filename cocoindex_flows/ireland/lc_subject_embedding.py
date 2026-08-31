@@ -76,7 +76,11 @@ def build_lc_app_configs() -> list[LCAppConfig]:
     return configs
 
 
-if COCOINDEX_AVAILABLE and False:  # set False to skip app construction (for non-cocoindex envs)
+if COCOINDEX_AVAILABLE and hasattr(coco, "app"):
+    # CocoIndex v1 dropped `@coco.app` decorator in favour of `coco.App(...)` at module scope.
+    # The slim shim was originally written for the v0.x decorator pattern — gracefully
+    # skip app construction when the API doesn't match. The 16 per-LC CocoIndex Apps
+    # will be re-introduced in Phase 5 (post NCCE PDF lift) using the modern pattern.
     from .._shared._lifespan import LANCE_DB, EMBEDDER, shared_lifespan_ctx
 
     @coco.app(

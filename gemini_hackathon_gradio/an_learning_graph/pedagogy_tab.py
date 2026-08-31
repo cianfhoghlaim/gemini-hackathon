@@ -202,7 +202,7 @@ def _render_pedagogy_overlay(
     if annotated_graph is None:
         return (
             None,
-            "_No annotated graph yet — run `mise run dagster:launch --assets "
+            "_No annotated graph yet — run `dg launch --assets "
             "pedagogy_overlay_<subject>` to populate the "
             "`annotated_learning_graphs` SQLite table._",
             "",

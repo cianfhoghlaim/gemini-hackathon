@@ -52,16 +52,21 @@ def _default_render_backend() -> str:
     return os.environ.get("RENDERER_BACKEND", "plotly").lower()
 
 
-def _render_graph_json(graph: dict[str, Any]) -> Any:
-    """Render a single ``LearningGraph`` JSON dict as a Plotly heatmap."""
+def _render_graph_json(graph: dict[str, Any]) -> Any | None:
+    """Render a single ``LearningGraph`` JSON dict as a Plotly heatmap.
+
+    Returns ``None`` when there is nothing to draw (Plotly missing, or an
+    empty graph). The caller is responsible for explaining why — a
+    ``gr.Plot`` only accepts a figure or ``None``, never an HTML string.
+    """
     if not PLOTLY_AVAILABLE:
-        return "<p><em>Plotly not installed — install with `pip install plotly` to enable the renderer.</em></p>"
+        return None
 
     rows = graph.get("rows", [])
     columns = graph.get("columns", [])
     cells = graph.get("cells", [])
     if not rows or not columns:
-        return f"<p><em>Empty graph: {len(rows)} rows × {len(columns)} columns.</em></p>"
+        return None
 
     row_labels = [r.get("label", r.get("id", "")) for r in rows]
     col_labels = [c.get("label", c.get("id", "")) for c in columns]
@@ -181,7 +186,7 @@ def _on_render(
         meta_md = (
             f"**Stub payload** — no extraction has run yet for "
             f"`{jurisdiction}/{subject}/y{year_level}`.\n\n"
-            f"Run `mise run data:ncce:extract` to materialise the canonical "
+            f"Run `make ncce-extract` to materialise the canonical "
             f"LearningGraph JSON, or upload a PDF in the **Generate** tab."
         )
     else:
@@ -195,6 +200,15 @@ def _on_render(
             f"- pedagogy principles: {len(graph.get('pedagogy_principle_ids', []))}\n"
         )
     fig = _render_graph_json(graph)
+    if fig is None:
+        if not PLOTLY_AVAILABLE:
+            meta_md += "\n\n_Nothing to draw: Plotly is not installed (`uv sync`)._"
+        else:
+            meta_md += (
+                f"\n\n_Nothing to draw: the graph has "
+                f"{len(graph.get('rows', []))} rows × "
+                f"{len(graph.get('columns', []))} columns._"
+            )
     return fig, meta_md + f"\n_Active renderer: `{backend}`._"
 
 
