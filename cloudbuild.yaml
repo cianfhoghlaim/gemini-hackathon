@@ -40,11 +40,11 @@ steps:
     args:
       - "run"
       - "deploy"
-      - "$_IMAGE_URL"
+      - "gemini-hackathon"           # the Cloud Run service name (positional)
+      - "--image=$_IMAGE_URL"        # the Artifact Registry image to deploy
       - "--project=${PROJECT_ID}"
       - "--region=$_REGION"
       - "--platform=managed"
-      - "--service=gemini-hackathon"
       - "--memory=2Gi"
       - "--cpu=2"
       - "--timeout=300"
