@@ -311,7 +311,96 @@ RULES:
      returned.
   5. Keep answers in plain text with a citation footer. Do not generate
      images (Level 5 does that with FIBO).
+  6. When the user asks for an asset (infographic, summary card, or
+     illustrative diagram) tied to an NCCA policy PDF, call
+     `generate_asset(pdf_id, asset_type, topic)` to emit the
+     `NccaPdfCard` A2UI surface that the studio renders as the
+     end-to-end certificate-flow showcase at `/agents`.
 """
+
+
+def generate_asset(
+    pdf_id: str,
+    asset_type: str,
+    topic: str,
+    tool_context,
+) -> dict[str, Any]:
+    """Emit an NccaPdfCard A2UI surface tied to one of the 5 NCCA policy PDFs.
+
+    Phase E (`2026-08-31-submission-scope-realignment-v1`) — the 4th tool
+    in the NCCA panel. Renders a `NccaPdfCard` next to the agent's text
+    response so the certificate flow is end-to-end visible at `/agents`.
+
+    Args:
+        pdf_id: The PDF identifier (one of `_NCCA_PDFS[*].pdf_id`).
+        asset_type: The asset kind — one of {"infographic", "summary",
+            "diagram"}. Determines the title emoji + sub-blurb the
+            `NccaPdfCard` displays.
+        topic: The user-supplied topic the asset is being generated for
+            (e.g. "Differentiation", "Senior Cycle Mathematics").
+        tool_context: Injected by ADK.
+
+    Returns:
+        dict with `status` + `pdf_id` + `asset_type` + `topic` + the
+        A2UI surface_id emitted.
+    """
+    pdf = _find_pdf(pdf_id)
+    if pdf is None:
+        return {
+            "status": "error",
+            "message": f"unknown pdf_id {pdf_id!r}; must be one of {[p['pdf_id'] for p in _NCCA_PDFS]}",
+        }
+
+    asset_label = {
+        "infographic": "📊 Infographic",
+        "summary": "📝 Summary",
+        "diagram": "🗺 Diagram",
+    }.get(asset_type, "Asset")
+
+    tool_context.state["last_asset_request"] = {
+        "pdf_id": pdf_id,
+        "asset_type": asset_type,
+        "topic": topic,
+    }
+    log_mlflow_metric("ncca_panel.generate_asset.invocations", 1)
+    logger.info(
+        "tool.generate_asset",
+        pdf_id=pdf_id,
+        asset_type=asset_type,
+        topic=topic,
+    )
+
+    surface_id = f"ncca-asset-{pdf_id}-{asset_type}"
+    components = [
+        {"id": "root", "component": "Column", "children": ["heading", "card"]},
+        {
+            "id": "heading",
+            "component": "Text",
+            "text": f"{asset_label}: {topic}",
+            "variant": "h2",
+        },
+        {
+            "id": "card",
+            "component": "NccaPdfCard",
+            "pdf_id": {"path": "pdf_id"},
+            "title": {"path": "title"},
+            "blurb": {"path": "blurb"},
+        },
+    ]
+    data = {
+        "pdf_id": pdf_id,
+        "title": pdf["title"],
+        "blurb": f"{asset_label} on '{topic}' drawn from {pdf['title']}",
+    }
+    record_a2ui_raw_event(tool_context, wrap_a2ui_in_raw_event(surface_id, components, data))
+
+    return {
+        "status": "success",
+        "pdf_id": pdf_id,
+        "asset_type": asset_type,
+        "topic": topic,
+        "surface_id": surface_id,
+    }
 
 
 def _seed_participant_state(callback_context) -> None:
@@ -382,7 +471,7 @@ def build_ncca_panel_agent(model: str = "gemini-3.5-flash", *, tools: list | Non
         from google.adk.agents import LlmAgent
 
     if tools is None:
-        tools = [cite_pdf, fetch_highlight, list_ncca_pdfs]
+        tools = [cite_pdf, fetch_highlight, list_ncca_pdfs, generate_asset]
 
     return LlmAgent(
         name="NccaPanelAgent",
@@ -447,5 +536,6 @@ __all__ = [
     "build_ncca_panel_agent",
     "cite_pdf",
     "fetch_highlight",
+    "generate_asset",
     "list_ncca_pdfs",
 ]
