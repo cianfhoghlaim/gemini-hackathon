@@ -64,7 +64,9 @@ steps:
       - "--max-instances=10"
       - "--allow-unauthenticated"
       - "--set-env-vars=MODEL_PROFILE=hackathon,GEMINI_BACKEND=vertex,GOOGLE_CLOUD_LOCATION=$_REGION,PYTHONUNBUFFERED=1"
-      - "--set-secrets=UNSLOTH_API_KEY=projects/${PROJECT_ID}/secrets/UNSLOTH_API_KEY:latest,UNSLOTH_BASE_URL=projects/${PROJECT_ID}/secrets/UNSLOTH_BASE_URL:latest,GEMINI_API_KEY=projects/${PROJECT_ID}/secrets/GEMINI_API_KEY:latest"
+      # Secret refs MUST match gsm_secret_id (lowercase, hyphens) in secrets.yaml.
+      # GEMINI_API_KEY omitted because GEMINI_BACKEND=vertex uses ADC (no key needed).
+      - "--set-secrets=UNSLOTH_API_KEY=projects/${PROJECT_ID}/secrets/unsloth-api-key:latest,UNSLOTH_BASE_URL=projects/${PROJECT_ID}/secrets/unsloth-base-url:latest"
 
 substitutions:
   _REGION: europe-west1
