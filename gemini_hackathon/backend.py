@@ -154,7 +154,7 @@ class _BackendHandler(BaseHTTPRequestHandler):
 
     # -- chat completions -------------------------------------------------
     def _handle_chat_completions(self) -> None:
-        from . import call_llm
+        from .call_llm import call_llm
 
         body = self._read_body()
         if body is None:

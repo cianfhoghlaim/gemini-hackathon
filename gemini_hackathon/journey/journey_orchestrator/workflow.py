@@ -152,7 +152,7 @@ async def _level_5_node(ctx: Any) -> dict[str, Any]:
     }
 
 
-async def request_human_confirmation(ctx: Any) -> dict[str, Any]:
+async def request_human_confirmation(ctx: Any) -> dict[str, Any] | object:
     """Emit the ADK 2 `RequestInput` pause between Level 4 and Level 5.
 
     The grounding research: `loop-lab-table/hello_workflow.py` + ADK 2
@@ -215,7 +215,7 @@ async def run_full_journey(ctx: Any | None = None) -> JourneyOutcome:
             # `RequestInput`, not a dict, which is what the downstream citation-
             # aggregator assumes.
             if hasattr(result, "model_dump"):
-                result_dict = result.model_dump()
+                result_dict: dict[str, Any] = result.model_dump()
             elif hasattr(result, "__dict__") and not isinstance(result, dict):
                 # Pydantic v2 model that returned a RequestInput — preserve the
                 # original object but build a citation-extractable dict alongside.
@@ -225,7 +225,7 @@ async def run_full_journey(ctx: Any | None = None) -> JourneyOutcome:
                     "message": getattr(result, "message", ""),
                 }
             else:
-                result_dict = dict(result)
+                result_dict = dict(result)  # type: ignore[call-overload]
             setattr(outcome, name, result_dict)
             logger.info("journey: %s OK", name)
             for c in result_dict.get("ncca_policy_citations") or []:

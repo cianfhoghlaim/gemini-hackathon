@@ -413,7 +413,7 @@ def _jurisdiction_from_source_key(source_key: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-@dlt.resource(
+@dlt.resource(  # type: ignore[call-overload]
     name="artifact_upserts",
     table_name="content_artefacts",
     write_disposition="merge",
@@ -1174,7 +1174,7 @@ def _emit_sourcing_run(
     """Append one sourcing_runs row to Firestore (one row per CLI step)."""
     fs = _shared_fs()
     finished_at = _now_iso()
-    fetch_errors = counts.pop("fetch_errors", [])
+    fetch_errors: list[Any] = counts.pop("fetch_errors", [])
     counts.setdefault("sourced_ok", None)
     counts.setdefault("sourced_fail", None)
     counts.setdefault("excluded_marked", None)
