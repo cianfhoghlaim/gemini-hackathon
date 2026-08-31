@@ -12,7 +12,7 @@
 steps:
   # 0. Install uv + regenerate the BAML client. Ensures the image always
   #    has the up-to-date baml_client/ generated from baml_extracts/*.baml.
-  - name: "gcr.io/cloud-builders/docker:latest"
+  - name: "python:3.12-slim"
     id: "baml-generate"
     entrypoint: "bash"
     args:
@@ -70,7 +70,6 @@ steps:
 
 substitutions:
   _REGION: europe-west1
-  _REPO: gemini-hackathon
 
 images:
   - "$_IMAGE_URL"

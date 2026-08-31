@@ -1,0 +1,61 @@
+# Cloud Build source-upload gcloudignore — exclude everything that's
+# either generated locally or downloaded at build time. Keeps the
+# 475 MiB upload focused on the ~100 MiB of source we actually need.
+#
+# Reference: https://cloud.google.com/sdk/gcloud/reference/topic/gcloudignore
+
+.venv/
+.venv-secrets/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.cache/
+
+# Generated content (regenerated at build time by step 0)
+baml_client/
+
+# Local data + artefacts (regenerated at runtime)
+data/bi_ep/extracted_syllabi.sqlite
+data/bi_ep/syllabi_md/
+data/bi_ep/annotated_learning_graphs/
+data/bi_ep/learning_graphs/
+data/lancedb/
+*.duckdb
+*.duckdb.wal
+*.lance/
+
+# Notebooks (committed; not needed for backend image)
+notebooks/
+
+# Docs (committed; not needed for backend image)
+docs/stitch-skills/
+docs/unsloth_notebooks/
+docs/adk-examples/
+docs/cocoindex_examples/
+docs/huggingface_examples/
+docs/ideas/
+
+# Git + editor artefacts
+.git/
+.gitignore
+.DS_Store
+*.swp
+.vscode/
+.idea/
+
+# Subagent scratch dirs
+.hypothesis/
+.pytest_cache/
+
+# Local secrets (use GSM in production)
+.env
+.env.local
+.env.*.local
