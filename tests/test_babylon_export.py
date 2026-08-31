@@ -1,41 +1,22 @@
-"""Tests for the Babylon.js 3D preview + Godot 4.4 export (Phase 9)."""
+"""Tests for the Babylon.js 3D preview + Godot 4.4 export (Phase 9).
+
+Updated 2026-08-31 (Phase 6): the 2 Babylon.tsx file-system tests were
+removed per the deferred-tuatha consolidation (`babylon/` is out of scope
+per the 2026-08-27-defer-tuatha-consolidation-v1 change). The Godot
+exporter Python port tests remain — they're an in-process logic test
+that doesn't require the Babylon.js 3D surface.
+"""
 
 from __future__ import annotations
 
 import re
-from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 
 
 # ---------------------------------------------------------------------------
-# BabylonScene
-# ---------------------------------------------------------------------------
-
-
-def test_babylon_file_uses_only_three_babylon_modules():
-    """The BabylonScene component imports exactly three @babylonjs/core
-    submodules: Engine, Scene, ArcRotateCamera + supporting types.
-    Anything more means we accidentally pulled a heavyweight 3D engine dep."""
-    src = Path("web/src/components/babylon/BabylonScene.tsx").read_text()
-    # Three primary Babylon imports (Engine, Scene, ArcRotateCamera).
-    assert "@babylonjs/core/Engines/engine" in src
-    assert "@babylonjs/core/scene" in src
-    assert "@babylonjs/core/Cameras/arcRotateCamera" in src
-
-
-def test_babylon_renders_an_intersection_observer():
-    """The render loop is gated by an IntersectionObserver so off-screen
-    canvases don't burn CPU. Important for the user's battery."""
-    src = Path("web/src/components/babylon/BabylonScene.tsx").read_text()
-    assert "IntersectionObserver" in src
-    assert "isIntersecting" in src
-    assert "stopRenderLoop" in src
-
-
-# ---------------------------------------------------------------------------
-# GodotExporter
+# GodotExporter (Python port — logic-only test)
 # ---------------------------------------------------------------------------
 
 

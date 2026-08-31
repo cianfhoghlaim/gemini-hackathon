@@ -10,6 +10,11 @@ Per Phase 2 of the polish plan (`openspec/changes/2026-08-31-gcp-data-plane-v1`)
   does NOT construct the GCS client.
 
 All tests are fully mocked — no live GCS calls.
+
+Updated 2026-08-31 (Phase 6): tests now also mock `google.cloud.exceptions`
+so the lazy `from google.cloud.exceptions import GoogleCloudError` resolves
+to a MagicMock. Without it, previous tests that imported `google.cloud.*`
+modules leave cached references that bypass the sys.modules patch.
 """
 
 from __future__ import annotations
@@ -28,6 +33,36 @@ def _reload_shared() -> object:
     return importlib.import_module("dlt_pipelines._shared")
 
 
+def _invalidate_google_cloud_modules() -> None:
+    """Drop ``google.cloud`` + ``google.cloud.storage`` so the lazy
+    ``from google.cloud import storage`` in the helper goes through the
+    normal import path (which respects ``sys.modules``).
+
+    The cocoindex ``test_dual_write_target`` and ``test_vertex_target``
+    tests transitively import the real ``google.cloud.storage`` (via
+    Firestore + Vector Search's grpc deps), which caches the real module
+    on the ``google.cloud`` namespace package. Subsequent ``from google.cloud
+    import storage`` then bypasses ``patch.dict(sys.modules, ...)`` —
+    PEP 562 namespace package ``__getattr__`` re-imports from disk even
+    when ``sys.modules`` carries a mock.
+
+    Clearing the cached entries here before ``patch.dict`` is the only
+    reliable way to make the mock survive test ordering.
+    """
+    for mod_name in list(sys.modules):
+        if mod_name == "google.cloud" or mod_name.startswith("google.cloud.storage"):
+            del sys.modules[mod_name]
+
+
+def _fake_google_cloud_modules() -> tuple[MagicMock, MagicMock]:
+    """Build a (storage, exceptions) MagicMock pair for the lazy imports."""
+    fake_storage = MagicMock(name="google.cloud.storage")
+    fake_storage.Client.return_value = MagicMock(name="Client")
+    fake_exceptions = MagicMock(name="google.cloud.exceptions")
+    fake_exceptions.GoogleCloudError = type("GoogleCloudError", (Exception,), {})
+    return fake_storage, fake_exceptions
+
+
 def test_gcs_helper_returns_gs_uri_when_bucket_set(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -37,16 +72,19 @@ def test_gcs_helper_returns_gs_uri_when_bucket_set(
 
     mod = _reload_shared()
 
-    fake_blob = MagicMock(name="Blob")
-    fake_bucket = MagicMock(name="Bucket")
-    fake_bucket.blob.return_value = fake_blob
+    fake_storage, fake_exceptions = _fake_google_cloud_modules()
     fake_client = MagicMock(name="Client")
-    fake_client.bucket.return_value = fake_bucket
-
-    fake_storage = MagicMock(name="google.cloud.storage")
+    fake_bucket = MagicMock(name="Bucket")
+    fake_blob = MagicMock(name="Blob")
     fake_storage.Client.return_value = fake_client
+    fake_client.bucket.return_value = fake_bucket
+    fake_bucket.blob.return_value = fake_blob
 
-    with patch.dict(sys.modules, {"google.cloud.storage": fake_storage}):
+    _invalidate_google_cloud_modules()
+    with patch.dict(sys.modules, {
+        "google.cloud.storage": fake_storage,
+        "google.cloud.exceptions": fake_exceptions,
+    }):
         result = mod.write_pdf_to_gcs_or_local(
             b"%PDF-1.4 fake bytes",
             source_key="aqa.org.uk",
@@ -72,8 +110,7 @@ def test_gcs_helper_falls_back_to_local_when_bucket_unset(
 
     mod = _reload_shared()
 
-    fake_storage = MagicMock(name="google.cloud.storage")
-    fake_storage.Client.return_value = MagicMock(name="Client")
+    fake_storage, _ = _fake_google_cloud_modules()
 
     # Even if `google.cloud.storage` is importable, the client must NOT
     # be instantiated when GCS_RAW_BUCKET is unset.
@@ -106,16 +143,19 @@ def test_gcs_helper_layout_matches_spec(
 
     mod = _reload_shared()
 
-    fake_blob = MagicMock(name="Blob")
-    fake_bucket = MagicMock(name="Bucket")
-    fake_bucket.blob.return_value = fake_blob
+    fake_storage, fake_exceptions = _fake_google_cloud_modules()
     fake_client = MagicMock(name="Client")
-    fake_client.bucket.return_value = fake_bucket
-
-    fake_storage = MagicMock(name="google.cloud.storage")
+    fake_bucket = MagicMock(name="Bucket")
+    fake_blob = MagicMock(name="Blob")
     fake_storage.Client.return_value = fake_client
+    fake_client.bucket.return_value = fake_bucket
+    fake_bucket.blob.return_value = fake_blob
 
-    with patch.dict(sys.modules, {"google.cloud.storage": fake_storage}):
+    _invalidate_google_cloud_modules()
+    with patch.dict(sys.modules, {
+        "google.cloud.storage": fake_storage,
+        "google.cloud.exceptions": fake_exceptions,
+    }):
         result = mod.write_pdf_to_gcs_or_local(
             b"x",
             source_key="wjec.co.uk",

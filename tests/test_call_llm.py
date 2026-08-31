@@ -120,16 +120,31 @@ def test_public_api_is_importable():
 
 
 def test_tier_constants():
-    # Per the 3-tier OpenSpec model policy:
-    #   Tier 1 = MiniMax-M3 via LiteLLM
-    #   Tier 2 = Gemma 4 26B-A4B via Unsloth Studio (local)
-    #   Tier 3 = Gemini 3.5 via Google Cloud Agent Garden (Vertex AI)
+    # Updated 2026-08-31 (Phase 6) to match the canonical 6-tier chain
+    # defined in gemini_hackathon/call_llm.py:HACKATHON_TIERS + DEV_TIERS.
+    # The 2026-08-30 Gemma+Gemini refocus promoted gemini-3.5-flash from
+    # role="agent_garden" (Tier 3) to role="default" (Tier 1). The chain
+    # now spans:
+    #   Tier 1: gemini-3.5-flash      (Vertex — `default`)
+    #   Tier 2: gemini-3.5-flash-aistudio (AI Studio — `aistudio`)
+    #   Tier 3: gemma-4-26b-a4b     (Unsloth — `fallback`)
+    #   Tier 4: gemma-4-e4b         (Unsloth — `fallback_light`)
+    #   Tier 5: gemma-3-27b-it      (Unsloth — `local_fallback`)
+    #   Tier 6: gemma-2-9b          (Unsloth — `local_fallback_old`)
     assert cl.HACKATHON_TIERS == (
-        ("text_llm", "default"),       # Tier 1: MiniMax-M3 (LiteLLM)
-        ("text_llm", "fallback"),      # Tier 2: Gemma 4 26B-A4B (Unsloth)
-        ("text_llm", "agent_garden"),  # Tier 3: Gemini 3.5 (Agent Garden)
+        ("text_llm", "default"),
+        ("text_llm", "aistudio"),
+        ("text_llm", "fallback"),
+        ("text_llm", "fallback_light"),
+        ("text_llm", "local_fallback"),
+        ("text_llm", "local_fallback_old"),
     )
-    assert cl.DEV_TIERS == cl.HACKATHON_TIERS
+    # DEV_TIERS inserts `lite` between aistudio and fallback, then adds
+    # `dev_encoder_decoder` as the dev-only 8th slot.
+    assert cl.DEV_TIERS[0] == ("text_llm", "default")
+    assert cl.DEV_TIERS[1] == ("text_llm", "aistudio")
+    assert ("text_llm", "lite") in cl.DEV_TIERS
+    assert ("text_llm", "dev_encoder_decoder") in cl.DEV_TIERS
     assert cl.TIER_RETRY_BUDGETS["default"] == 2
 
 
@@ -160,27 +175,39 @@ def test_active_profile_unknown_falls_back_to_hackathon(monkeypatch, bogus):
 def test_tiers_for_profile():
     assert cl.tiers_for_profile("hackathon") == cl.HACKATHON_TIERS
     assert cl.tiers_for_profile("dev") == cl.DEV_TIERS
-    # The public profile now includes all 3 tiers; the dev profile is the
-    # same set (no extra entry — previously MiniMax-M3 was dev-only).
-    assert len(cl.tiers_for_profile("dev")) == len(cl.tiers_for_profile("hackathon"))
+    # Updated 2026-08-31 (Phase 6): DEV_TIERS now = HACKATHON_TIERS + 2
+    # dev-only roles (`lite` + `dev_encoder_decoder`).
+    assert len(cl.DEV_TIERS) == len(cl.HACKATHON_TIERS) + 2
 
 
-def test_hackathon_profile_includes_minimax_tier():
-    """Per the OpenSpec model-policy spec, MiniMax-M3 IS the Tier 1 primary."""
+def test_hackathon_profile_first_tier_is_gemini_on_vertex():
+    """Tier 1 of the hackathon profile = gemini-3.5-flash via Vertex AI
+    (the canonical primary after the 2026-08-30 Gemma+Gemini refocus)."""
     model_list, _ = cl.build_model_list(profile="hackathon")
     aliases = [m["litellm_params"]["model"] for m in model_list]
-    assert aliases[0] == "minimax-m3"
+    assert aliases[0] == "vertex_ai/gemini-3.5-flash"
 
 
 def test_dev_profile_matches_hackathon_tier_chain(monkeypatch):
-    monkeypatch.setenv("MINIMAX_API_KEY", "sk-not-a-real-key")
-    monkeypatch.setenv("GEMINI_API_KEY", "sk-aistudio-not-real")
     monkeypatch.setenv("UNSLOTH_API_KEY", "sk-unsloth-not-real")
     model_list, fallbacks = cl.build_model_list(profile="dev")
     aliases = [m["litellm_params"]["model"] for m in model_list]
-    assert aliases == ["minimax-m3", "openai/unsloth/gemma-4-26b-a4b", "vertex_ai/gemini-3.5-flash"]
-    assert len(model_list) == 3
-    assert fallbacks == [{"model": "tier-1"}, {"model": "tier-2"}, {"model": "tier-3"}]
+    # Updated 2026-08-31 (Phase 6): many of the tier slots are
+    # profile=dev only (the `aistudio`, `lite`, `fallback`,
+    # `fallback_light` Gemini/Unsloth entries are visible only on
+    # profile=hackathon). The dev profile's reachable tiers are
+    # `default` + `local_fallback` + `local_fallback_old` +
+    # `dev_encoder_decoder`.
+    assert aliases == [
+        "vertex_ai/gemini-3.5-flash",            # Tier 1: default (dev)
+        "openai/unsloth/gemma-3-27b-it",         # Tier 6: local_fallback
+        "openai/unsloth/gemma-2-9b",             # Tier 7: local_fallback_old
+        "openai/unsloth/t5gemma-2-4b",           # Tier 8: dev_encoder_decoder
+    ]
+    assert len(model_list) == 4
+    # The fallbacks list mirrors the tier_index used to build each slot.
+    assert fallbacks == [{"model": "tier-1"}, {"model": "tier-6"},
+                         {"model": "tier-7"}, {"model": "tier-8"}]
 
 
 # ---------------------------------------------------------------------------
@@ -253,25 +280,23 @@ def test_aistudio_fallback_changes_the_tier1_model_string(monkeypatch):
 
 
 def test_vertex_tier1_model_string_when_creds_present(monkeypatch):
-    """Tier 1 (default) is now MiniMax-M3 — Vertex is Tier 3."""
-    monkeypatch.setenv("MINIMAX_API_KEY", "sk-not-a-real-key")
+    """Tier 1 = gemini-3.5-flash via Vertex AI."""
     monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "some-project")
     monkeypatch.setenv("GOOGLE_CLOUD_LOCATION", "europe-west1")
     model_list, _ = cl.build_model_list(profile="hackathon")
     params = model_list[0]["litellm_params"]
-    assert params["model"] == "minimax-m3"
-    assert params["api_base"] == "https://api.minimax.io/v1"
-    assert "api_key" in params  # MiniMax uses bearer auth
+    assert params["model"] == "vertex_ai/gemini-3.5-flash"
+    assert params["vertex_project"] == "some-project"
+    assert params["vertex_location"] == "europe-west1"
 
 
 def test_vertex_location_defaults_to_us_central1(monkeypatch):
-    """The Vertex (Agent Garden Tier 3) location defaults to us-central1."""
+    """The Vertex Tier 1 location defaults to us-central1."""
     monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "some-project")
-    monkeypatch.setenv("MINIMAX_API_KEY", "sk-not-a-real-key")
     monkeypatch.setenv("UNSLOTH_API_KEY", "sk-not-a-real-key")
     model_list, _ = cl.build_model_list(profile="hackathon")
-    # Vertex lives at index 2 (Tier 3) now.
-    params = model_list[2]["litellm_params"]
+    # Tier 1 (vertex) lives at index 0 now.
+    params = model_list[0]["litellm_params"]
     assert params["vertex_location"] == "us-central1"
 
 
@@ -293,7 +318,9 @@ def test_unsloth_tier_uses_env_base_url(monkeypatch):
     monkeypatch.setenv("UNSLOTH_BASE_URL", "http://host.docker.internal:8888/v1")
     monkeypatch.setenv("UNSLOTH_API_KEY", "sk-unsloth-not-a-real-key")
     model_list, _ = cl.build_model_list(profile="hackathon")
-    tier2 = model_list[1]["litellm_params"]
+    # Updated 2026-08-31 (Phase 6): Tier 1 = gemini-3.5-flash on Vertex,
+    # Tier 2 = aistudio, Tier 3 = gemma-4-26b-a4b on Unsloth.
+    tier2 = model_list[2]["litellm_params"]
     assert tier2["model"] == "openai/unsloth/gemma-4-26b-a4b"
     assert tier2["api_base"] == "http://host.docker.internal:8888/v1"
     assert tier2["api_key"] == "sk-unsloth-not-a-real-key"
@@ -302,7 +329,8 @@ def test_unsloth_tier_uses_env_base_url(monkeypatch):
 def test_unsloth_base_url_falls_back_to_host_loopback(monkeypatch):
     monkeypatch.delenv("UNSLOTH_BASE_URL", raising=False)
     model_list, _ = cl.build_model_list(profile="hackathon")
-    assert model_list[1]["litellm_params"]["api_base"] == "http://127.0.0.1:8888/v1"
+    # Updated 2026-08-31 (Phase 6): Unsloth lives at Tier 3 now.
+    assert model_list[2]["litellm_params"]["api_base"] == "http://127.0.0.1:8888/v1"
 
 
 def test_unsloth_api_key_has_no_literal_default(monkeypatch):
@@ -350,8 +378,8 @@ def test_public_roster_ignores_model_profile_dev(monkeypatch):
     dev_view = cl.public_model_roster()
 
     assert hackathon_view == dev_view
-    # MiniMax-M3 is part of the public profile now (Tier 1 primary).
-    assert "minimax-m3" in {e.key for e in dev_view}
+    # The public roster surfaces the hackathon Tier 1 primary (gemini-3.5-flash).
+    assert "gemini-3.5-flash" in {e.key for e in dev_view}
 
 
 def test_public_roster_never_contains_a_dev_profile_entry(monkeypatch):
@@ -379,23 +407,29 @@ def test_public_roster_is_ordered_by_tier():
 
 
 def test_public_tier_table_is_tier1_tier2_tier3():
-    """3-tier model policy: MiniMax-M3 (LiteLLM) → Unsloth → Agent Garden."""
+    """The public tier table surfaces all tiered text_llm entries.
+
+    Updated 2026-08-31 (Phase 6) to match the Gemma+Gemini refocus:
+    5 Tier 1 entries (default + aistudio + lite + pro + alt + embedder)
+    and 2 Tier 2 entries (fallback + fallback_light). The dev-only Gemma
+    benchmarks (local_fallback, local_fallback_old) and the dev-only
+    T5Gemma encoder-decoder are correctly excluded from the public table.
+    """
     table = cl.public_tier_table()
-    assert [e.tier for e in table] == [1, 1, 2, 3]
+    tiers = [e.tier for e in table]
+    assert tiers.count(1) == 5
+    assert tiers.count(2) == 2
     keys = {e.key for e in table}
-    # Tier 1 = MiniMax-M3 (LiteLLM) + the AI Studio twin of the same model.
-    # Tier 2 = Gemma 4 26B-A4B (Unsloth).
-    # Tier 3 = Gemini 3.5 (Agent Garden).
-    assert "minimax-m3" in keys
     assert "gemini-3.5-flash-aistudio" in keys
     assert "gemma-4-26b-a4b" in keys
     assert "gemini-3.5-flash" in keys
+    assert "gemini-3.5-flash-lite" in keys
 
 
 def test_public_tier_table_inherits_containment(monkeypatch):
-    """MiniMax-M3 IS in the public tier table (Tier 1 per OpenSpec)."""
+    """The public tier table is the same under any MODEL_PROFILE."""
     monkeypatch.setenv("MODEL_PROFILE", "dev")
-    assert "minimax-m3" in {e.key for e in cl.public_tier_table()}
+    assert "gemini-3.5-flash" in {e.key for e in cl.public_tier_table()}
 
 
 def test_public_roster_entries_are_immutable():
@@ -446,15 +480,23 @@ def test_build_model_list_emits_no_excluded_models(profile):
 
 
 def test_registry_resolution_hackathon_tier1():
-    """Per the OpenSpec model-policy spec, Tier 1 = MiniMax-M3 via LiteLLM."""
+    """Tier 1 of hackathon = gemini-3.5-flash on Vertex AI."""
     entry = cl.model_for("text_llm", "default", profile="hackathon")
     assert entry is not None
-    assert entry.key == "minimax-m3"
-    assert entry.backend == "minimax"
-    assert entry.litellm_alias == "minimax-m3"
+    assert entry.key == "gemini-3.5-flash"
+    assert entry.backend == "vertex"
+    assert entry.litellm_alias == "vertex_ai/gemini-3.5-flash"
+
+
+def test_registry_resolution_hackathon_tier2_ai_studio():
+    """Tier 1 (aistudio) = gemini-3.5-flash via AI Studio."""
+    entry = cl.model_for("text_llm", "aistudio", profile="hackathon")
+    assert entry is not None
+    assert entry.key == "gemini-3.5-flash-aistudio"
 
 
 def test_registry_resolution_hackathon_tier2():
+    """Tier 2 of the fallback chain = gemma-4-26b-a4b on Unsloth Studio."""
     entry = cl.model_for("text_llm", "fallback", profile="hackathon")
     assert entry is not None
     assert entry.key == "gemma-4-26b-a4b"
@@ -462,25 +504,40 @@ def test_registry_resolution_hackathon_tier2():
 
 
 def test_registry_resolution_hackathon_tier3_agent_garden():
-    """Tier 3 = Gemini 3.5 via Vertex AI Agent Garden."""
-    entry = cl.model_for("text_llm", "agent_garden", profile="hackathon")
+    """Tier 3 (fallback_light) = gemma-4-e4b on Unsloth Studio.
+
+    The previous "agent_garden" role no longer exists in the registry
+    after the 2026-08-30 Gemma+Gemini refocus — Tier 3 is now an Unsloth
+    Gemma-4-E4B role. Asking for `agent_garden` returns None."""
+    entry = cl.model_for("text_llm", "fallback_light", profile="hackathon")
     assert entry is not None
-    assert entry.key == "gemini-3.5-flash"
-    assert entry.backend == "vertex"
-    assert entry.litellm_alias == "vertex_ai/gemini-3.5-flash"
+    assert entry.key == "gemma-4-e4b"
+    assert entry.backend == "unsloth_studio"
+    assert entry.litellm_alias == "openai/unsloth/gemma-4-e4b"
+    # And the agent_garden role is no longer registered.
+    assert cl.model_for("text_llm", "agent_garden", profile="hackathon") is None
 
 
 def test_registry_resolution_dev_tier3():
-    """Dev profile's Tier 3 = Agent Garden (same as hackathon profile)."""
-    entry = cl.model_for("text_llm", "agent_garden", profile="dev")
+    """Dev profile's `fallback` role is not registered (the gemma-4-26b-a4b
+    entry is profile=hackathon). Use `local_fallback` for the dev Gemma-3
+    benchmark tier instead."""
+    # `fallback` is hackathon-only.
+    assert cl.model_for("text_llm", "fallback", profile="dev") is None
+    # `local_fallback` (Gemma-3-27B) is dev-visible.
+    entry = cl.model_for("text_llm", "local_fallback", profile="dev")
     assert entry is not None
-    assert entry.key == "gemini-3.5-flash"
+    assert entry.key == "gemma-3-27b-it"
 
 
-def test_registry_resolution_dev_model_is_invisible_to_hackathon():
-    """`dev_primary` is no longer in the registry (was removed when
-    minimax-m3 was promoted to the hackathon profile's Tier 1)."""
-    assert cl.model_for("text_llm", "dev_primary", profile="hackathon") is None
+def test_registry_resolution_dev_extras_are_dev_only():
+    """The dev profile adds `dev_encoder_decoder` as the 8th tier slot;
+    `lite` is registered under hackathon too (profile="hackathon")."""
+    # `dev_encoder_decoder` is dev-only.
+    assert cl.model_for("text_llm", "dev_encoder_decoder", profile="hackathon") is None
+    assert cl.model_for("text_llm", "dev_encoder_decoder", profile="dev") is not None
+    # `lite` is on the public roster (hackathon + dev).
+    assert cl.model_for("text_llm", "lite", profile="hackathon") is not None
 
 
 def test_registry_resolution_unknown_role_returns_none():
@@ -568,14 +625,14 @@ def test_empty_messages_raises():
 
 
 def test_tier1_success(fake_router, monkeypatch):
-    """Tier 1 = MiniMax-M3 via LiteLLM (per the OpenSpec model-policy)."""
-    monkeypatch.setenv("MINIMAX_API_KEY", "sk-not-a-real-key")
+    """Tier 1 = gemini-3.5-flash on Vertex (the canonical primary)."""
+    monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "some-project")
     router = fake_router({"tier-1": _fake_completion_response("hello")})
     response = cl.call_llm([{"role": "user", "content": "hi"}])
     assert response.content == "hello"
     assert response.tier == 1
-    assert response.model == "minimax-m3"
-    assert response.backend == "minimax"
+    assert response.model == "vertex_ai/gemini-3.5-flash"
+    assert response.backend == "vertex"
     assert response.role == "default"
     assert router.calls == ["tier-1"]
 
@@ -597,72 +654,85 @@ def test_tier1_aistudio_success_reports_the_aistudio_backend(fake_router, monkey
 
 
 def test_falls_through_to_tier2_when_tier1_fails(fake_router, monkeypatch):
-    """Tier 2 = Unsloth Studio Gemma 4 26B-A4B."""
-    monkeypatch.setenv("MINIMAX_API_KEY", "sk-not-a-real-key")
+    """Tier 1 = gemini-3.5-flash on Vertex, fails twice → falls through to
+    Tier 2 (aistudio twin), then Tier 3 (gemma-4-26b-a4b).
+
+    Updated 2026-08-31 (Phase 6): the Tier 5/6 slots resolve to None on
+    the hackathon profile (their entries are profile=dev), so the chain
+    stops at Tier 4 (fallback_light)."""
+    monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "some-project")
+    monkeypatch.setenv("GEMINI_API_KEY", "sk-aistudio-not-a-real-key")
     monkeypatch.setenv("UNSLOTH_API_KEY", "sk-not-a-real-key")
     router = fake_router({
-        "tier-1": RuntimeError("minimax is down"),
-        "tier-2": _fake_completion_response("from gemma"),
+        "tier-1": RuntimeError("vertex is down"),
+        "tier-2": RuntimeError("aistudio is down"),
+        "tier-3": _fake_completion_response("from gemma"),
     })
     response = cl.call_llm([{"role": "user", "content": "hi"}])
-    assert response.tier == 2
+    assert response.tier == 3
     assert response.content == "from gemma"
     assert response.backend == "unsloth_studio"
     assert response.model == "openai/unsloth/gemma-4-26b-a4b"
-    # Tier 1 has a retry budget of 2, so it is tried twice before falling through.
-    assert router.calls == ["tier-1", "tier-1", "tier-2"]
+    # Tier 1 budget=2, Tier 2 budget=2, Tier 3 single-shot success.
+    assert router.calls == ["tier-1", "tier-1", "tier-2", "tier-2", "tier-3"]
 
 
 def test_all_tiers_failing_raises_llm_call_error(fake_router, monkeypatch):
-    """All 3 tiers (MiniMax-M3 + Unsloth + Agent Garden) failing raises LLMCallError."""
-    monkeypatch.setenv("MINIMAX_API_KEY", "sk-not-a-real-key")
-    monkeypatch.setenv("UNSLOTH_API_KEY", "sk-not-a-real-key")
+    """All hackathon tiers failing raises LLMCallError.
+
+    Updated 2026-08-31 (Phase 6) to match the 6-tier chain (only 4 of
+    which are reachable on hackathon: default + aistudio + fallback +
+    fallback_light — local_fallback + local_fallback_old are dev-only).
+    Number of attempts = sum of budgets of the 4 reachable tiers
+    = 2 (default) + 2 (aistudio) + 1 (fallback) + 1 (fallback_light)
+    = 6 attempts.
+    """
     monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "some-project")
+    monkeypatch.setenv("GEMINI_API_KEY", "sk-aistudio-not-a-real-key")
+    monkeypatch.setenv("UNSLOTH_API_KEY", "sk-not-a-real-key")
     fake_router({
-        "tier-1": RuntimeError("minimax is down"),
-        "tier-2": RuntimeError("unsloth studio is down"),
-        "tier-3": RuntimeError("agent garden is down"),
+        f"tier-{i}": RuntimeError(f"tier {i} is down")
+        for i in range(1, 5)  # only the 4 hackathon-reachable tiers
     })
     with pytest.raises(cl.LLMCallError) as exc:
         cl.call_llm([{"role": "user", "content": "hi"}])
-    # 2x tier-1 + 1x tier-2 + 1x tier-3 = 4 attempts total
-    assert len(exc.value.attempts) == 4
-    assert "agent garden is down" in exc.value.last_error
+    assert len(exc.value.attempts) == 6
+    assert "tier 4 is down" in exc.value.last_error
     assert all(not a.succeeded for a in exc.value.attempts)
 
 
-def test_dev_profile_reaches_the_third_tier(fake_router, monkeypatch):
-    """All 3 profiles (hackathon + dev) have the 3-tier chain. Tier 3 = Agent Garden."""
+def test_dev_profile_falls_through_after_default(fake_router, monkeypatch):
+    """The dev profile's first reachable tier after vertex is tier-6
+    (local_fallback = gemma-3-27b-it on Unsloth) — since aistudio +
+    lite + fallback + fallback_light are all profile=hackathon only."""
     monkeypatch.setenv("MODEL_PROFILE", "dev")
-    monkeypatch.setenv("MINIMAX_API_KEY", "not-a-real-key")
-    monkeypatch.setenv("UNSLOTH_API_KEY", "not-a-real-key")
     monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "some-project")
+    monkeypatch.setenv("UNSLOTH_API_KEY", "sk-not-a-real-key")
     router = fake_router({
         "tier-1": RuntimeError("down"),
-        "tier-2": RuntimeError("down"),
-        "tier-3": _fake_completion_response("from agent garden"),
+        "tier-6": _fake_completion_response("from gemma-3"),
     })
     response = cl.call_llm([{"role": "user", "content": "hi"}])
-    assert response.tier == 3
-    assert response.model == "vertex_ai/gemini-3.5-flash"
-    assert response.backend == "vertex"
-    assert "tier-3" in router.calls
+    assert response.tier == 6
+    assert response.model == "openai/unsloth/gemma-3-27b-it"
+    assert response.backend == "unsloth_studio"
+    assert "tier-6" in router.calls
 
 
-def test_hackathon_profile_reaches_the_third_tier(fake_router, monkeypatch):
-    """The hackathon profile's Tier 3 IS reachable (Gemini 3.5 Agent Garden)."""
+def test_hackathon_profile_reaches_the_tier3_fallback(fake_router, monkeypatch):
+    """The hackathon profile's Tier 3 (= gemma-4-26b-a4b on Unsloth) is reachable."""
     monkeypatch.setenv("MODEL_PROFILE", "hackathon")
-    monkeypatch.setenv("MINIMAX_API_KEY", "not-a-real-key")
-    monkeypatch.setenv("UNSLOTH_API_KEY", "not-a-real-key")
     monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "some-project")
+    monkeypatch.setenv("GEMINI_API_KEY", "sk-aistudio-not-a-real-key")
+    monkeypatch.setenv("UNSLOTH_API_KEY", "sk-not-a-real-key")
     router = fake_router({
         "tier-1": RuntimeError("down"),
         "tier-2": RuntimeError("down"),
-        "tier-3": _fake_completion_response("from agent garden"),
+        "tier-3": _fake_completion_response("from gemma"),
     })
     response = cl.call_llm([{"role": "user", "content": "hi"}])
     assert response.tier == 3
-    assert response.model == "vertex_ai/gemini-3.5-flash"
+    assert response.model == "openai/unsloth/gemma-4-26b-a4b"
     assert "tier-3" in router.calls
 
 
@@ -699,7 +769,7 @@ def test_pin_mode_cannot_reach_a_dev_model_under_hackathon_profile(monkeypatch):
         cl.call_llm(
             [{"role": "user", "content": "hi"}],
             family="text_llm",
-            role="dev_primary",
+            role="dev_encoder_decoder",
         )
 
 

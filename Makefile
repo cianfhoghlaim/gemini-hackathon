@@ -162,7 +162,9 @@ extract-ondisk-pdfs: ## extract structured BAML data from the 10 on-disk PDFs (w
 # ============================================================================
 # Cloud — Cloud Run + Cloud Build + Hugging Face
 # ============================================================================
-.PHONY: docker-build dev down cloudbuild hf-publish
+.PHONY: docker-build dev down cloudbuild hf-publish hf-publish-aistear \
+        hf-publish-bunscoil hf-publish-junior-cycle hf-publish-leaving-certificate \
+        hf-publish-learning-graphs hf-publish-editorial-studio hf-publish-all
 docker-build: ## docker build -t gemini-hackathon:dev .
 	docker build -t gemini-hackathon:dev .
 
@@ -175,8 +177,55 @@ down: ## docker compose down -v (nuclear: wipes the duckdb volume)
 cloudbuild: ## gcloud builds submit --config=cloudbuild.yaml (the prod deploy)
 	gcloud builds submit --config=cloudbuild.yaml --project=$$GCP_PROJECT
 
-hf-publish: ## regenerate + push the 6 HF Spaces mirrors
-	$(PY) -m hf_spaces._generate && echo 'Review hf_spaces/*/ then: hf upload <space> hf_spaces/<space> --repo-type space'
+# ============================================================================
+# HuggingFace Space publish — per-Space recipes (wired 2026-08-31 Phase 6)
+# ============================================================================
+# Updated 2026-08-31 (Phase 6): the 6 hf-publish-<space> targets wrap
+# `huggingface-cli upload --repo-type space cianfhoghlaim/<space> .` per
+# `hf_spaces/README.md:27-30`. `hf-publish-all` iterates the 6 known Spaces.
+# Requires `huggingface-cli login` to have been run (no HF credentials in dev).
+#
+# Usage:
+#   make hf-publish-<space>      # publish one Space (e.g. hf-publish-aistear)
+#   make hf-publish-all           # publish all 6
+#
+# The Spaces (in shipping order):
+#   1. aistear              — Early childhood (Aistear)
+#   2. bunscoil             — Primary school (Bunscoil)
+#   3. junior-cycle         — Junior Cycle (NCCA)
+#   4. leaving-certificate  — Leaving Certificate (NCCA)
+#   5. learning-graphs      — Cross-subject learning graphs (NCCE)
+#   6. editorial-studio     — Cloud Run editorial studio
+HF ?= huggingface-cli
+HF_OWNER := cianfhoghlaim
+
+hf-publish-aistear:             ## publish the Aistear HF Space
+	cd hf_spaces/gemini_hackathon_aistear && $(HF) upload $(HF_OWNER)/gemini_hackathon_aistear . --repo-type space
+
+hf-publish-bunscoil:            ## publish the Bunscoil HF Space
+	cd hf_spaces/gemini_hackathon_bunscoil && $(HF) upload $(HF_OWNER)/gemini_hackathon_bunscoil . --repo-type space
+
+hf-publish-junior-cycle:        ## publish the Junior Cycle HF Space
+	cd hf_spaces/gemini_hackathon_junior_cycle && $(HF) upload $(HF_OWNER)/gemini_hackathon_junior_cycle . --repo-type space
+
+hf-publish-leaving-certificate: ## publish the Leaving Certificate HF Space
+	cd hf_spaces/gemini_hackathon_leaving_certificate && $(HF) upload $(HF_OWNER)/gemini_hackathon_leaving_certificate . --repo-type space
+
+hf-publish-learning-graphs:     ## publish the Learning Graphs HF Space
+	cd hf_spaces/gemini_hackathon_learning_graphs && $(HF) upload $(HF_OWNER)/gemini_hackathon_learning_graphs . --repo-type space
+
+hf-publish-editorial-studio:    ## publish the Editorial Studio HF Space
+	cd hf_spaces/gemini_hackathon_editorial_studio && $(HF) upload $(HF_OWNER)/gemini_hackathon_editorial_studio . --repo-type space
+
+hf-publish-all:                  ## publish all 6 HF Spaces in shipping order
+	@set -e; \
+	for space in aistear bunscoil junior_cycle leaving_certificate learning_graphs editorial_studio; do \
+		echo "--- $$space ---"; \
+		$(MAKE) hf-publish-$$space; \
+	done
+
+hf-publish: ## regenerate + push the 6 HF Spaces mirrors (alias for hf-publish-all)
+	make hf-publish-all
 
 # ============================================================================
 # Hygiene — nuke caches + build artefacts

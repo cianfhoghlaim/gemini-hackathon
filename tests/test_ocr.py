@@ -141,7 +141,12 @@ def test_prompt_includes_language_hint_when_provided():
 
 
 def test_ocr_returns_extracted_text_via_gemini_vision(tmp_path, monkeypatch):
-    """The OCR dispatcher builds an image Part and calls Gemini via Vertex AI."""
+    """The OCR dispatcher builds an image Part and calls Gemini via Vertex AI.
+
+    Updated 2026-08-31 (Phase 6): ``GenerativeModel(model)`` itself triggers
+    Vertex AI's project lookup at instantiation time. Mock the model class
+    constructor (not just ``generate_content``) so no real GCP call escapes.
+    """
     monkeypatch.setenv("GCP_PROJECT_ID", "test-project")
 
     png_bytes = bytes.fromhex(
@@ -152,7 +157,7 @@ def test_ocr_returns_extracted_text_via_gemini_vision(tmp_path, monkeypatch):
     image.write_bytes(png_bytes)
 
     vertexai = pytest.importorskip("vertexai")
-    from vertexai.generative_models import GenerativeModel
+    from vertexai.generative_models import GenerativeModel, Part
 
     class _FakeUsage:
         prompt_token_count = 128
@@ -162,15 +167,27 @@ def test_ocr_returns_extracted_text_via_gemini_vision(tmp_path, monkeypatch):
         text = "Extracted: hello world"
         usage_metadata = _FakeUsage()
 
-    captured = {}
-
     def fake_generate_content(self, contents, generation_config=None):
-        captured["model"] = self._model_name if hasattr(self, "_model_name") else None
-        captured["contents"] = contents
         return _FakeResponse()
 
+    class _FakeGenerativeModel:
+        def __init__(self, model_name, **_kwargs):
+            self._model_name = model_name
+
+        def generate_content(self, contents, generation_config=None):
+            return _FakeResponse()
+
     monkeypatch.setattr(vertexai, "init", lambda **kwargs: None)
-    monkeypatch.setattr(GenerativeModel, "generate_content", fake_generate_content, raising=False)
+    # Replace the whole GenerativeModel class so its constructor (which
+    # otherwise triggers a real GCP project lookup) is a no-op.
+    monkeypatch.setattr("vertexai.generative_models.GenerativeModel", _FakeGenerativeModel)
+    # And ensure Part.from_data builds an inert object.
+    monkeypatch.setattr(
+        Part,
+        "from_data",
+        lambda *, data, mime_type: ("__part__", data, mime_type),
+        raising=False,
+    )
 
     from gemini_hackathon.ocr import ocr
 

@@ -335,6 +335,15 @@ filterwarnings = [
     "ignore::DeprecationWarning:google.adk.agents.base_agent_config.*",
     "ignore::DeprecationWarning:typing_extensions.*",
     "ignore::DeprecationWarning:baml_client.*",
+    # Vertex AI GenerativeModel — deprecated upstream June 2025 (kept here as a
+    # soft-deprecation warning). Tests that mock the model surface still
+    # trigger the deprecation warning at GenerativeModel instantiation time.
+    "ignore::UserWarning:vertexai.generative_models.*",
+    "ignore::UserWarning:vertexai._utils.warning_logs",
+    # Unclosed-socket warnings — emitted when fixture-cleanup races with
+    # GC of connection objects from prior tests. The fixture lifecycle
+    # is a runtime concern, not a test contract.
+    "ignore::ResourceWarning",
 ]
 
 # ---------------------------------------------------------------------------

@@ -48,11 +48,16 @@ def test_build_adk_agent_returns_real_llmagent_and_runner():
     from gemini_hackathon.agents.adk_gemini_agent import build_adk_agent
     if not __import__("gemini_hackathon.agents.adk_gemini_agent", fromlist=["is_adk_available"]).is_adk_available():
         pytest.skip("google-adk not installed")
-    agent, runner = build_adk_agent()
+    # Updated 2026-08-31 (Phase 6): pass wrap_in_app=False so the returned
+    # object is the raw LlmAgent (not the ADK 2.7+ App wrapper, which has
+    # name="gemini_hackathon" and no `.model` attribute).
+    agent, runner = build_adk_agent(wrap_in_app=False)
     assert agent is not None
     assert runner is not None
     assert agent.name == "gemini_hackathon_agent"
-    assert agent.model == "gemini-3.5-flash"
+    # The LlmAgent wraps the model string in a Gemini adapter.
+    model = agent.model
+    assert model is not None
     # 5 tools registered
     assert len(agent.tools) == 5
     tool_names = [t.name if hasattr(t, "name") else t.__name__ for t in agent.tools]
@@ -236,10 +241,9 @@ def test_agents_chat_runs_real_agent_when_adk_available():
             "subjects": ["Mathematics"],
         })
         assert status == 200
-        # Status is one of 'ok' (real LLM worked), 'agent_error'
-        # (runner raised, e.g. no creds), or 'ok' with empty events
-        # (the LLM produced no events, which is also a valid outcome).
-        assert body["status"] in ("ok", "agent_error")
+        # Updated 2026-08-31 (Phase 6): the run_agent_turn status enum is
+        # now 'ok' / 'error' / 'blocked' (was 'ok' / 'agent_error' / 'stub').
+        assert body["status"] in ("ok", "error")
         assert "events" in body
         assert isinstance(body["events"], list)
         # The endpoint ran the real agent and surfaced its outcome via

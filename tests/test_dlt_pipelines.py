@@ -148,15 +148,20 @@ def test_official_doc_fetcher_handles_missing_pdfs_gracefully(
 ) -> None:
     """The Ireland NCCA resource yields zero rows when LC_SUBJECTS_PATH is missing.
 
-    The :func:`ireland_ncca_documents` resource is filesystem-based;
-    when the configured ``LC_SUBJECTS_PATH`` does not exist, it must
-    log a warning and yield zero rows (no exception).
+    Updated 2026-08-31 (Phase 6): ``LC_SUBJECTS_PATH`` is captured at
+    module-import time (see ``dlt_pipelines/_shared.py:76``), so the test
+    patches the constant directly via ``monkeypatch.setattr`` rather than
+    relying on env-var reload semantics.
     """
-    monkeypatch.setenv("LC_SUBJECTS_PATH", str(tmp_path / "does-not-exist"))
+    import dlt_pipelines._shared as _shared_mod
 
-    from dlt_pipelines.official_doc_fetcher import ireland_ncca_documents
+    missing = tmp_path / "does-not-exist"
+    monkeypatch.setattr(_shared_mod, "LC_SUBJECTS_PATH", missing)
+    # Patch the same attribute that ``ireland_ncca_documents`` reads.
+    import dlt_pipelines.official_doc_fetcher as _odf_mod
 
-    rows = list(ireland_ncca_documents())
+    monkeypatch.setattr(_odf_mod, "LC_SUBJECTS_PATH", missing)
+    rows = list(_odf_mod.ireland_ncca_documents())
     assert rows == []
 
 
@@ -342,20 +347,21 @@ def test_shared_helpers_with_retry_propagates_after_budget() -> None:
     not _DLT_SHARED_AVAILABLE,
     reason="dlt_pipelines._shared not importable (Python 3.11+ required)",
 )
-def test_jurisdiction_boards_has_10_entries() -> None:
-    """The 10 canonical British Isles jurisdiction/board source keys are in
+def test_jurisdiction_boards_has_11_entries() -> None:
+    """The 11 canonical British Isles jurisdiction/board source keys are in
     :data:`JURISDICTION_BOARDS` — Ireland + 3 England boards (AQA/OCR/
     Pearson) + Scotland + Wales + Northern Ireland + Isle of Man + Jersey
-    + Guernsey. Was 8 before Phase 3 of the GCP-first refactor added
-    Jersey (`gov.je/education`) and Guernsey (`gov.gg/education`), which
-    previously had zero entries anywhere in this module.
+    + Guernsey + NCCE (added by Phase 0 of the gemini_hackathon polish
+    plan to fold in the 5 NCCE artefacts for the equivalent-learner
+    extract). Was 10 before this round.
     """
-    assert len(JURISDICTION_BOARDS) == 10
+    assert len(JURISDICTION_BOARDS) == 11
     assert "ncca.ie" in JURISDICTION_BOARDS
     assert "aqa.org.uk" in JURISDICTION_BOARDS
     assert "ccea.org.uk" in JURISDICTION_BOARDS
     assert "gov.je/education" in JURISDICTION_BOARDS
     assert "gov.gg/education" in JURISDICTION_BOARDS
+    assert "uk_ncce" in JURISDICTION_BOARDS
 
 
 @pytest.mark.skipif(

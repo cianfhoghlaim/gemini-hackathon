@@ -126,7 +126,14 @@ def test_router_records_provenance_chain():
 
 
 def test_router_priority_order_fibo_invoke_unsloth():
-    """The router tries ComfyUI first, then InvokeAI, then Unsloth Studio, then stub."""
+    """The router tries LiteLLM first, then ComfyUI, then InvokeAI,
+    then Unsloth Studio, then stub.
+
+    Updated 2026-08-31 (Phase 6): LITELLM was added to the front of the
+    chain in the 2026-08-25 FIBO image-gen refactor (it wraps any
+    upstream provider, so it goes first and only falls through when its
+    invocation fails).
+    """
     import os
 
     for k in ("COMFYUI_BASE_URL", "INVOKEAI_BASE_URL", "UNSLOTH_BASE_URL"):
@@ -137,6 +144,7 @@ def test_router_priority_order_fibo_invoke_unsloth():
     router = ImageGenRouter()
     backend_names = [b.name for b in router.backends]
     assert backend_names == [
+        ImageGenBackend.LITELLM,
         ImageGenBackend.COMFYUI,
         ImageGenBackend.INVOKEAI,
         ImageGenBackend.UNSLOTH_STUDIO,
