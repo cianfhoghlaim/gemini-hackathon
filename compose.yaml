@@ -105,6 +105,15 @@ services:
     depends_on:
       llama-swap:
         condition: service_started
+      # Observability stack (Phase 1 — local data plane).
+      # Local dev only: in prod Cloud Run we wire Langfuse/MLflow via
+      # Workload Identity Federation, not via these compose services.
+      mlflow:
+        condition: service_started
+      langfuse-web:
+        condition: service_started
+      langfuse-postgres:
+        condition: service_healthy
     networks:
       - gh-net
     # ---- x-google-cloudrun (per-service overrides) ----

@@ -368,3 +368,7 @@ __all__ = [
     "uk_dfe_safeguarding",
     "wales_safeguarding",
 ]
+
+
+if __name__ == "__main__":  # pragma: no cover
+    main()

@@ -335,7 +335,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Run the LC6 BAML extraction over all .md files."
     )
-    parser.add_argument("--subject", required=True, help="subject slug (e.g. mathematics)")
+    # Phase 1: `--subject` is now optional for the `make cocoindex-update`
+    # bulk-run target. The default "*" matches every subject; the per-row
+    # `subject_slug` is still derived from the path layout by the App.
+    parser.add_argument(
+        "--subject",
+        default="*",
+        help="subject slug (e.g. mathematics); default '*' matches all",
+    )
     parser.add_argument("--language", default="en", choices=["en", "ga"])
     parser.add_argument("--md-root", type=pathlib.Path, default=None)
     parser.add_argument("--sqlite", type=pathlib.Path, default=None)

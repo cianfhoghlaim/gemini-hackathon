@@ -53,8 +53,13 @@ PDF_RAW_ROOT: pathlib.Path = pathlib.Path(
     )
 )
 
-#: Canonical DuckDB path. Override via ``DUCKDB_PATH`` (default
-#: ``data/gemini_hackathon.duckdb``).
+#: Canonical DuckDB path. Override via ``DUCKDB_PATH``. Note:
+#: `pdf_downloader.py` historically pointed at ``data/gemini_hackathon.duckdb``
+#: rather than the shared ``dlt_pipelines._shared.DUCKDB_PATH`` (the repo-root
+#: ``gemini_hackathon.duckdb``); kept here for backwards compat. The downloader
+#: reads the file via the bundled sqlite3 driver in read-only mode (which
+#: treats the DuckDB file as opaque) and only emits 0 rows by design — see
+#: KNOWN_ISSUES.md "pdf_downloader is a no-op against the canonical DuckDB".
 DUCKDB_PATH: pathlib.Path = pathlib.Path(
     os.environ.get("DUCKDB_PATH", "data/gemini_hackathon.duckdb")
 )

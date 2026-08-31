@@ -233,6 +233,71 @@ uv run baml-cli test baml_extracts_education/celtic_curriculum.baml
 
 ---
 
+## Step 3.5 — Local data plane verification (5 min, Phase 1)
+
+The Phase 1 polish plan (`openspec/changes/2026-08-31-local-data-plane-v1/`)
+wires the local data plane end-to-end. After Step 3.3 above, the 3
+canonical data-plane artifacts should exist on disk:
+
+| Artifact | Where | Populated by |
+|---|---|---|
+| **`gemini_hackathon.duckdb`** | repo root | `make dlt-smoke-all` |
+| **`data/bi_ep/extracted_syllabi.sqlite`** | `data/bi_ep/` | `make cocoindex-update` (runs the LC6 extraction App on every `.md` under `data/bi_ep/syllabi_md/`) |
+| **`data/lancedb/gemini_hackathon.lance/`** | `data/lancedb/` | `EMBED_BACKEND=sentence_transformers uv run python -m cocoindex_flows.ireland.junior_cycle_embedding` (the local fallback) |
+
+### Local DuckDB mode (offline dev default)
+
+The DLT pipelines write to the repo-root `gemini_hackathon.duckdb`
+file (override via `DUCKDB_PATH=/path/to/file.duckdb`). `make dev`
+mounts a docker named volume (`gemini-hackathon-duckdb-data`) at
+`/app/data/gemini.duckdb` inside the container — the container-side
+path and the host-side path differ but the data is canonical. See
+[KNOWN_ISSUES.md §"Phase 1 gaps"](./KNOWN_ISSUES.md) for the
+3 documented inconsistencies (`LANGFUSE_HOST` default, the
+per-LC cache, the `pdf_downloader` sqlite3-vs-DuckDB issue).
+
+### Local LanceDB mode (`EMBED_BACKEND=sentence_transformers`)
+
+The CocoIndex Apps write to `data/lancedb/<project>.lance/` when
+`EMBED_BACKEND=sentence_transformers` (the offline dev path). This
+requires the optional `cianfhoghlaim-parity` deps:
+
+```bash
+uv sync --group cianfhoghlaim-parity   # installs cocoindex + lancedb + sentence-transformers
+EMBED_BACKEND=sentence_transformers uv run python -m cocoindex_flows.ireland.junior_cycle_embedding
+```
+
+When `EMBED_BACKEND=vertex` (the production default), the
+Apps use the Vertex AI embedder (`gemini-embedding-001`, 1536-d)
+and write to Firestore / Vertex AI Vector Search in the deployed
+path (no LanceDB). Local LanceDB mode is the offline fallback
+for the development machine + CI.
+
+### Local BAML offline mode (`BAML_TEST_MODE=true`)
+
+When no Ollama / OpenAI / Vertex credentials are available, the
+BAML client honours `BAML_TEST_MODE=true` (the canonical `TestMock`
+client wired in `baml_extracts/clients.baml`) and returns
+deterministic stub-shaped output for all 5 LC6 extraction
+functions. The downstream App
+(`cocoindex_flows.education.lc6_extraction_app`) writes the
+extracted rows to `data/bi_ep/extracted_syllabi.sqlite`.
+
+### Quick verification
+
+```bash
+make dlt-smoke-all        # writes 35+11+19 = 65 rows to gemini_hackathon.duckdb
+make cocoindex-update     # writes 9 rows to extracted_syllabi.sqlite
+make ncce-extract         # the canonical NCCE DLT + CocoIndex batch
+make compare-demo         # writes a comparison run to a tmp DuckDB
+```
+
+All 4 targets exit 0 on a fresh clone (after `uv sync --all-extras
+--group cianfhoghlaim-parity`). The 3 integration tests under
+`tests/{dlt,cocoindex,baml}/` exercise the full data plane end-to-end.
+
+---
+
 ## Step 4 — Run the Dagster assets (5 min)
 
 The 5-layer `orchestration/defs/` tree:

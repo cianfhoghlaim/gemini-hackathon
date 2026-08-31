@@ -169,6 +169,16 @@ cianfhoghlaim-parity = [
     "cognee>=0.2",
     "langfuse>=3.0",
     "mlflow>=2.20",
+    # Phase 1 (local data plane) — CocoIndex v1 + the
+    # SentenceTransformerEmbedder that powers the `EMBED_BACKEND=
+    # sentence_transformers` offline fallback path
+    # (cocoindex_flows/_shared/_lifespan.py:53-69). Without these the
+    # CocoIndex Apps degrade to "unavailable" stubs and `make
+    # cocoindex-update` is a graceful no-op (the test in
+    # tests/cocoindex/test_lancedb_local_mode.py is `@pytest.mark.integration`
+    # and skips when these aren't installed).
+    "cocoindex>=1.0,<2.0,!=1.0.8",
+    "sentence-transformers>=3.0,<7.0",
 ]
 
 # ---------------------------------------------------------------------------

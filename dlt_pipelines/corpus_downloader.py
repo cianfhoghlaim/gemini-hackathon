@@ -71,12 +71,12 @@ DOWNLOADED_DOC_COLUMN_HINTS: dict[str, dict[str, str]] = {
     "subject": {"data_type": "text"},
     "language": {"data_type": "text"},
     "source_url": {"data_type": "text"},
-    "content_type": {"data_type": "text"},
-    "byte_size": {"data_type": "bigint"},
-    "sha256_hash": {"data_type": "text"},
-    "storage_uri": {"data_type": "text"},
-    "http_status": {"data_type": "bigint"},
-    "fetch_error": {"data_type": "text"},
+    "content_type": {"data_type": "text", "nullable": True},
+    "byte_size": {"data_type": "bigint", "nullable": True},
+    "sha256_hash": {"data_type": "text", "nullable": True},
+    "storage_uri": {"data_type": "text", "nullable": True},
+    "http_status": {"data_type": "bigint", "nullable": True},
+    "fetch_error": {"data_type": "text", "nullable": True},
     "fetched_at": {"data_type": "timestamp"},
 }
 

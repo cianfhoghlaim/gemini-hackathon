@@ -122,8 +122,24 @@ class JuniorCycleChunk:
 
 
 # R3 — `app = coco.App(coco.AppConfig(name=...))` at module scope.
+# Wrapped in try/except because CocoIndex v1.0 changed the `App` signature
+# to require `main_fn` as a positional arg; the original R1-R4 conformance
+# pattern (`coco.App(coco.AppConfig(name=...))`) was for the older v0.x
+# API. The fix-up is tracked for Phase 5 (CocoIndex upgrade); for now we
+# degrade to a no-op stub when the API mismatches so `make cocoindex-update`
+# stays a graceful no-op rather than a fatal crash (the LanceDB write is
+# independently verified by `tests/cocoindex/test_lancedb_local_mode.py`).
 if COCOINDEX_AVAILABLE:
-    app = coco.App(coco.AppConfig(name="junior_cycle_embedding"))
+    try:
+        app = coco.App(coco.AppConfig(name="junior_cycle_embedding"))
+    except TypeError:
+        logger.warning(
+            "junior_cycle_embedding: coco.App(...) rejected the legacy "
+            "AppConfig-only signature (CocoIndex v1.0+ requires a main_fn); "
+            "degrading to a no-op stub."
+        )
+        COCOINDEX_AVAILABLE = False  # type: ignore[assignment]
+        app = None  # type: ignore[assignment]
 else:
     app = None  # type: ignore[assignment]
 

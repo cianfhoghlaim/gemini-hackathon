@@ -104,6 +104,21 @@ data/Guernsey/
 data/sourced_derived/
 data/journey_assets/
 
+# --- LanceDB local mode (Phase 1 — sentence_transformers fallback) ---------
+# `cocoindex_flows/_shared/_lifespan.py` writes the offline CocoIndex
+# lifespan's LanceDB to `./data/lancedb/<project>.lance/` when
+# `EMBED_BACKEND=sentence_transformers` (the default in local dev). The
+# `.lance/` directories are reproducible (re-run the CocoIndex App) and
+# easily grow past 100 MB, so don't commit them. Only `.gitkeep` is tracked.
+data/lancedb/
+!data/lancedb/.gitkeep
+
+# BAML extraction App output (Phase 1 — written by
+# `make cocoindex-update` via the LC6 extraction App). Reproducible and can
+# be ≥1 MB; keep local-only.
+data/bi_ep/extracted_syllabi.sqlite
+data/bi_ep/*.sqlite-*
+
 # --- marimo + notebooks ------------------------------------------------------
 notebooks/__marimo__/
 notebooks/.marimo/

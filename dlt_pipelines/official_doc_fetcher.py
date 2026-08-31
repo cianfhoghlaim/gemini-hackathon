@@ -735,3 +735,7 @@ __all__ = [
     "scotland_sqa_documents",
     "wales_wjec_documents",
 ]
+
+
+if __name__ == "__main__":  # pragma: no cover
+    main()

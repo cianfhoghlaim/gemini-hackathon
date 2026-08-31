@@ -1,0 +1,10 @@
+# LanceDB local mode
+
+This directory is the local fallback for CocoIndex's `LANCE_DB`
+connection (see `cocoindex_flows/_shared/_lifespan.py:59`). When
+`EMBED_BACKEND=sentence_transformers` (the offline dev default —
+see Makefile target `cocoindex-update`), the CocoIndex Apps write
+their tables to `./data/lancedb/<project>.lance/`.
+
+The `.lance/` directories are gitignored (per `.gitignore:107-117`).
+Only this `.gitkeep` is tracked.
