@@ -38,7 +38,6 @@ import os
 from pathlib import Path
 from typing import Final
 
-
 _DEFAULT_HF_ORG: Final[str] = "cianfhoghlaim"
 
 
@@ -108,4 +107,4 @@ def push_assets_to_hub(
     return result.oid
 
 
-__all__ = ["push_assets_to_hub", "build_user_dataset_repo_id"]
+__all__ = ["build_user_dataset_repo_id", "push_assets_to_hub"]

@@ -44,7 +44,7 @@ async def build_collab_tutor_workflow(config: Pillar2CollabTutorWorkflow) -> Any
         return None
 
     # Build the coordinator
-    coordinator = LlmAgent(
+    return LlmAgent(
         name="subject_coordinator",
         model=config.coordinator_model,
         description="Routes learner questions to subject specialists.",
@@ -64,7 +64,6 @@ async def build_collab_tutor_workflow(config: Pillar2CollabTutorWorkflow) -> Any
             for slug, model in config.specialist_models.items()
         ],
     )
-    return coordinator
 
 
 __all__ = ["Pillar2CollabTutorWorkflow", "build_collab_tutor_workflow"]

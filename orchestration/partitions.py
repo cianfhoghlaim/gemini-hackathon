@@ -21,7 +21,6 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Any
 
 
 @dataclass(frozen=True)
@@ -44,8 +43,14 @@ STAGES: tuple[str, ...] = ("aistear", "primary", "junior_cycle", "scoil_sinseara
 
 # The 8 core NCCA LC subjects + 2 languages
 LC_SUBJECTS: tuple[str, ...] = (
-    "mathematics", "english", "gaeilge", "chemistry",
-    "geography", "physics", "biology", "computer_science",
+    "mathematics",
+    "english",
+    "gaeilge",
+    "chemistry",
+    "geography",
+    "physics",
+    "biology",
+    "computer_science",
 )
 LANGUAGES: tuple[str, ...] = ("en", "ga")
 
@@ -100,9 +105,9 @@ def get_partition_name(
 __all__ = [
     "LANGUAGES",
     "LC_SUBJECTS",
-    "PipelinePartition",
     "STAGES",
     "YEARS",
+    "PipelinePartition",
     "get_partition_name",
     "pipeline_partitions",
     "subject_partitions",

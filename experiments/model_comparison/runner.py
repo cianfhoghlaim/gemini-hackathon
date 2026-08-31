@@ -19,14 +19,16 @@ from __future__ import annotations
 
 import logging
 import time
-from dataclasses import asdict, dataclass, field
-from pathlib import Path
-from typing import Any, Callable, Iterable
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass, field
+from typing import Any
 
 try:
     from .metrics import cost_usd, field_level_f1, schema_validity
 except ImportError:  # pragma: no cover — standalone-load fallback
-    import importlib.util as _iu, sys as _sys, pathlib as _pl
+    import importlib.util as _iu
+    import pathlib as _pl
+
     _spec = _iu.spec_from_file_location(
         "_metrics_mod",
         _pl.Path(__file__).resolve().parent / "metrics.py",
@@ -43,6 +45,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Data classes
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class EvalSample:
@@ -98,7 +101,7 @@ def default_invoker(model_key: str, prompt: str) -> tuple[str, int, int]:
         return str(response.content), tokens_in, tokens_out
     except ImportError:
         return _stub_invoker(model_key, prompt)
-    except Exception as exc:  # noqa: BLE001 — observability only
+    except Exception as exc:
         logger.warning("runner.default_invoker_failed model=%s reason=%s", model_key, exc)
         return "", 0, 0
 
@@ -132,12 +135,14 @@ def _stub_invoker(model_key: str, prompt: str) -> tuple[str, int, int]:
 
 def json_dumps(obj: Any) -> str:
     import json
+
     return json.dumps(obj)
 
 
 # ---------------------------------------------------------------------------
 # The harness
 # ---------------------------------------------------------------------------
+
 
 def run_one(
     model_key: str,
@@ -150,7 +155,7 @@ def run_one(
     started = time.monotonic()
     try:
         content, tokens_in, tokens_out = invoker(model_key, prompt)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return EvalResult(
             model=model_key,
             sample_id=sample.sample_id,
@@ -212,7 +217,7 @@ def _try_parse(content: str) -> dict[str, Any] | None:
         if cleaned.startswith("```"):
             cleaned = cleaned.strip("`").lstrip("json").strip()
             if cleaned.endswith("```"):
-                cleaned = cleaned[: -3].strip()
+                cleaned = cleaned[:-3].strip()
         try:
             parsed = json.loads(cleaned)
         except (TypeError, json.JSONDecodeError):
@@ -238,13 +243,14 @@ def run_all(
         for j, sample in enumerate(samples_list, start=1):
             logger.info(
                 "runner.eval progress=%d/%d model=%s sample=%s",
-                (i - 1) * len(samples_list) + j, total, model_key, sample.sample_id,
+                (i - 1) * len(samples_list) + j,
+                total,
+                model_key,
+                sample.sample_id,
             )
             results.append(run_one(model_key, sample, invoker=invoker))
     elapsed_ms = int((time.monotonic() - started_all) * 1000)
-    logger.info(
-        "runner.complete results=%d elapsed_ms=%d", len(results), elapsed_ms
-    )
+    logger.info("runner.complete results=%d elapsed_ms=%d", len(results), elapsed_ms)
     return results
 
 

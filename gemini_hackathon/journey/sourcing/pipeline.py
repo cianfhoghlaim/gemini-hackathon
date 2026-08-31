@@ -30,25 +30,27 @@ Honest about what each step does in offline mode (and where it can't):
     fallback stubs (Phase 4) take over.
   - `ready` / `status` — read-only, always work.
 """
+
 from __future__ import annotations
 
 import argparse
-import asyncio
 import json
-import logging
 import os
 import sys
 import time
 import uuid
+from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 try:
-    import dlt  # noqa: F401 — the DLT resource decorators are the public API
+    import dlt
+
     DLT_AVAILABLE = True
 except ImportError:
     DLT_AVAILABLE = False
+
     # Provide a no-op `dlt.resource` decorator so the rest of the module is
     # importable offline (the DLT-using step then falls back to a direct
     # Firestore write). The offline path is the workshop's default dev path.
@@ -56,25 +58,23 @@ except ImportError:
         def resource(self, *args: Any, **kwargs: Any) -> Any:
             def _decorator(fn: Any) -> Any:
                 return fn
+
             return _decorator
+
     dlt = _DltStub()  # type: ignore[assignment]
 import httpx
 import structlog
 
 from gemini_hackathon.journey.sourcing.cache import (
-    compute_sha256,
     read_bytes,
     write_bytes,
 )
 from gemini_hackathon.journey.sourcing.fs import (
-    catalog_path,
     content_artefact_path,
     get_firestore,
     sourcing_runs_path,
 )
 from gemini_hackathon.journey.sourcing.schemas import (
-    CatalogRowDoc,
-    ContentArtefactDoc,
     SourcingRunDoc,
     derive_document_type,
 )
@@ -110,6 +110,7 @@ SUBNATION_TO_DISPLAY = {
 # ---------------------------------------------------------------------------
 # DLT resource 1 — catalog_rows (the static "what exists" table)
 # ---------------------------------------------------------------------------
+
 
 @dlt.resource(
     name="catalog_rows",
@@ -176,80 +177,192 @@ def catalog_rows() -> Iterator[dict[str, Any]]:
         # (this is the canonical source). 35 catalog rows across 10 subnations
         # (the 8 listed + pearson + ocr as separate rows for the 3 England boards).
         "aqa.org.uk": [
-            {"subject": "mathematics", "language": "en",
-             "official_url": "https://www.aqa.org.uk/subjects/mathematics/a-level/mathematics-7357"},
-            {"subject": "chemistry", "language": "en",
-             "official_url": "https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7404"},
-            {"subject": "biology", "language": "en",
-             "official_url": "https://www.aqa.org.uk/subjects/biology/a-level/biology-7401"},
-            {"subject": "english", "language": "en",
-             "official_url": "https://www.aqa.org.uk/subjects/english/a-level/english-literature-b-7716"},
+            {
+                "subject": "mathematics",
+                "language": "en",
+                "official_url": "https://www.aqa.org.uk/subjects/mathematics/a-level/mathematics-7357",
+            },
+            {
+                "subject": "chemistry",
+                "language": "en",
+                "official_url": "https://www.aqa.org.uk/subjects/chemistry/a-level/chemistry-7404",
+            },
+            {
+                "subject": "biology",
+                "language": "en",
+                "official_url": "https://www.aqa.org.uk/subjects/biology/a-level/biology-7401",
+            },
+            {
+                "subject": "english",
+                "language": "en",
+                "official_url": "https://www.aqa.org.uk/subjects/english/a-level/english-literature-b-7716",
+            },
         ],
         "ocr.org.uk": [
-            {"subject": "computer_science", "language": "en",
-             "official_url": "https://www.ocr.org.uk/qualifications/as-and-a-level/computer-science-h046-h446-from-2015/"},
-            {"subject": "geography", "language": "en",
-             "official_url": "https://www.ocr.org.uk/qualifications/as-and-a-level/geography-h081-h481-from-2016/"},
+            {
+                "subject": "computer_science",
+                "language": "en",
+                "official_url": "https://www.ocr.org.uk/qualifications/as-and-a-level/computer-science-h046-h446-from-2015/",
+            },
+            {
+                "subject": "geography",
+                "language": "en",
+                "official_url": "https://www.ocr.org.uk/qualifications/as-and-a-level/geography-h081-h481-from-2016/",
+            },
         ],
         "qualifications.pearson.com": [
-            {"subject": "mathematics", "language": "en",
-             "official_url": "https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/mathematics-2017.html"},
-            {"subject": "history", "language": "en",
-             "official_url": "https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/history-2015.html"},
+            {
+                "subject": "mathematics",
+                "language": "en",
+                "official_url": "https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/mathematics-2017.html",
+            },
+            {
+                "subject": "history",
+                "language": "en",
+                "official_url": "https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/history-2015.html",
+            },
         ],
         "sqa.org.uk": [
-            {"subject": "mathematics", "language": "en", "official_url": "https://www.sqa.org.uk/sqa/45750.html"},
-            {"subject": "english", "language": "en", "official_url": "https://www.sqa.org.uk/sqa/45672.html"},
-            {"subject": "chemistry", "language": "en", "official_url": "https://www.sqa.org.uk/sqa/45720.html"},
-            {"subject": "biology", "language": "en", "official_url": "https://www.sqa.org.uk/sqa/45723.html"},
-            {"subject": "physics", "language": "en", "official_url": "https://www.sqa.org.uk/sqa/45729.html"},
-            {"subject": "geography", "language": "en", "official_url": "https://www.sqa.org.uk/sqa/45627.html"},
-            {"subject": "history", "language": "en", "official_url": "https://www.sqa.org.uk/sqa/45628.html"},
-            {"subject": "computer_science", "language": "en", "official_url": "https://www.sqa.org.uk/sqa/48477.html"},
-            {"subject": "gaidhlig", "language": "gd", "official_url": "https://www.sqa.org.uk/sqa/45675.html"},
+            {
+                "subject": "mathematics",
+                "language": "en",
+                "official_url": "https://www.sqa.org.uk/sqa/45750.html",
+            },
+            {
+                "subject": "english",
+                "language": "en",
+                "official_url": "https://www.sqa.org.uk/sqa/45672.html",
+            },
+            {
+                "subject": "chemistry",
+                "language": "en",
+                "official_url": "https://www.sqa.org.uk/sqa/45720.html",
+            },
+            {
+                "subject": "biology",
+                "language": "en",
+                "official_url": "https://www.sqa.org.uk/sqa/45723.html",
+            },
+            {
+                "subject": "physics",
+                "language": "en",
+                "official_url": "https://www.sqa.org.uk/sqa/45729.html",
+            },
+            {
+                "subject": "geography",
+                "language": "en",
+                "official_url": "https://www.sqa.org.uk/sqa/45627.html",
+            },
+            {
+                "subject": "history",
+                "language": "en",
+                "official_url": "https://www.sqa.org.uk/sqa/45628.html",
+            },
+            {
+                "subject": "computer_science",
+                "language": "en",
+                "official_url": "https://www.sqa.org.uk/sqa/48477.html",
+            },
+            {
+                "subject": "gaidhlig",
+                "language": "gd",
+                "official_url": "https://www.sqa.org.uk/sqa/45675.html",
+            },
         ],
         "wjec.co.uk": [
-            {"subject": "mathematics", "language": "en",
-             "official_url": "https://www.wjec.co.uk/qualifications/mathematics/a-level/"},
-            {"subject": "geography", "language": "en",
-             "official_url": "https://www.wjec.co.uk/qualifications/geography/a-level/"},
-            {"subject": "welsh", "language": "cy",
-             "official_url": "https://www.wjec.co.uk/qualifications/welsh-second-language/a-level/"},
-            {"subject": "_index", "language": "en", "official_url": "https://www.wjec.co.uk/qualifications/"},
+            {
+                "subject": "mathematics",
+                "language": "en",
+                "official_url": "https://www.wjec.co.uk/qualifications/mathematics/a-level/",
+            },
+            {
+                "subject": "geography",
+                "language": "en",
+                "official_url": "https://www.wjec.co.uk/qualifications/geography/a-level/",
+            },
+            {
+                "subject": "welsh",
+                "language": "cy",
+                "official_url": "https://www.wjec.co.uk/qualifications/welsh-second-language/a-level/",
+            },
+            {
+                "subject": "_index",
+                "language": "en",
+                "official_url": "https://www.wjec.co.uk/qualifications/",
+            },
         ],
         "ccea.org.uk": [
-            {"subject": "mathematics", "language": "en",
-             "official_url": "https://ccea.org.uk/qualifications/gce/as-a-level-mathematics"},
-            {"subject": "chemistry", "language": "en",
-             "official_url": "https://ccea.org.uk/qualifications/gce/as-a-level-chemistry"},
-            {"subject": "gaeilge", "language": "ga",
-             "official_url": "https://ccea.org.uk/qualifications/gce/as-a-level-irish"},
-            {"subject": "biology", "language": "en",
-             "official_url": "https://ccea.org.uk/key-stage-4/gcse/subjects/gcse-biology-2017"},
-            {"subject": "art_and_design", "language": "en",
-             "official_url": "https://ccea.org.uk/key-stage-4/gcse/subjects/gcse-art-and-design-2017"},
-            {"subject": "_index", "language": "en",
-             "official_url": "https://ccea.org.uk/key-stage-4/gcse/subjects"},
+            {
+                "subject": "mathematics",
+                "language": "en",
+                "official_url": "https://ccea.org.uk/qualifications/gce/as-a-level-mathematics",
+            },
+            {
+                "subject": "chemistry",
+                "language": "en",
+                "official_url": "https://ccea.org.uk/qualifications/gce/as-a-level-chemistry",
+            },
+            {
+                "subject": "gaeilge",
+                "language": "ga",
+                "official_url": "https://ccea.org.uk/qualifications/gce/as-a-level-irish",
+            },
+            {
+                "subject": "biology",
+                "language": "en",
+                "official_url": "https://ccea.org.uk/key-stage-4/gcse/subjects/gcse-biology-2017",
+            },
+            {
+                "subject": "art_and_design",
+                "language": "en",
+                "official_url": "https://ccea.org.uk/key-stage-4/gcse/subjects/gcse-art-and-design-2017",
+            },
+            {
+                "subject": "_index",
+                "language": "en",
+                "official_url": "https://ccea.org.uk/key-stage-4/gcse/subjects",
+            },
         ],
         "gov.im/education": [
-            {"subject": "english", "language": "en",
-             "official_url": "https://www.gov.im/education/"},
-            {"subject": "mathematics", "language": "en",
-             "official_url": "https://www.gov.im/education/"},
+            {
+                "subject": "english",
+                "language": "en",
+                "official_url": "https://www.gov.im/education/",
+            },
+            {
+                "subject": "mathematics",
+                "language": "en",
+                "official_url": "https://www.gov.im/education/",
+            },
         ],
         "gov.je/education": [
-            {"subject": "_key_stage_4", "language": "en",
-             "official_url": "https://www.gov.je/Education/Schools/ChildLearning/Pages/KeyStage4.aspx"},
-            {"subject": "_key_stage_3", "language": "en",
-             "official_url": "https://www.gov.je/Education/Schools/ChildLearning/Pages/Keystage3.aspx"},
-            {"subject": "_exams_assessment", "language": "en",
-             "official_url": "https://www.gov.je/Education/Schools/ChildLearning/Pages/ExamsAssessment.aspx"},
+            {
+                "subject": "_key_stage_4",
+                "language": "en",
+                "official_url": "https://www.gov.je/Education/Schools/ChildLearning/Pages/KeyStage4.aspx",
+            },
+            {
+                "subject": "_key_stage_3",
+                "language": "en",
+                "official_url": "https://www.gov.je/Education/Schools/ChildLearning/Pages/Keystage3.aspx",
+            },
+            {
+                "subject": "_exams_assessment",
+                "language": "en",
+                "official_url": "https://www.gov.je/Education/Schools/ChildLearning/Pages/ExamsAssessment.aspx",
+            },
         ],
         "gov.gg/education": [
-            {"subject": "_qualifications", "language": "en",
-             "official_url": "https://www.gov.gg/qualifications"},
-            {"subject": "_education_index", "language": "en",
-             "official_url": "https://www.gov.gg/education"},
+            {
+                "subject": "_qualifications",
+                "language": "en",
+                "official_url": "https://www.gov.gg/qualifications",
+            },
+            {
+                "subject": "_education_index",
+                "language": "en",
+                "official_url": "https://www.gov.gg/education",
+            },
         ],
     }
 
@@ -331,7 +444,9 @@ def _jurisdiction_from_source_key(source_key: str) -> str:
         "provenance": {"data_type": "text"},  # JSON-encoded dict
     },
 )
-def artifact_upserts(catalog_rows_iter: list[dict[str, Any]], run_id: str) -> Iterator[dict[str, Any]]:
+def artifact_upserts(
+    catalog_rows_iter: list[dict[str, Any]], run_id: str
+) -> Iterator[dict[str, Any]]:
     """The canonical per-document source-of-truth — one row per fetched byte.
 
     Iterates `catalog_rows_iter` (the in-memory stream of catalog rows
@@ -343,7 +458,6 @@ def artifact_upserts(catalog_rows_iter: list[dict[str, Any]], run_id: str) -> It
     `sourcing_runs.fetch_errors` rather than crashing the pipeline — one
     bad government website must not abort the other 34 catalog rows.
     """
-    from gemini_hackathon.journey.sourcing.fetch_errors import record_fetch_error
     from gemini_hackathon.journey.sourcing.pipeline import _record_fetch_error_in_run
 
     for row in catalog_rows_iter:
@@ -430,9 +544,15 @@ def _stage_from_level(level: str) -> str:
     write_disposition="append",
     primary_key="run_id",
 )
-def sourcing_runs(run_id: str, step: str, started_at: str, finished_at: str | None,
-                  status: str, counts: dict[str, int | None],
-                  notes: str | None = None) -> Iterator[dict[str, Any]]:
+def sourcing_runs(
+    run_id: str,
+    step: str,
+    started_at: str,
+    finished_at: str | None,
+    status: str,
+    counts: dict[str, int | None],
+    notes: str | None = None,
+) -> Iterator[dict[str, Any]]:
     """One row per pipeline invocation — the copilot reads the latest row.
 
     Yielded at the END of each step (so the row reflects the step's
@@ -455,6 +575,7 @@ def sourcing_runs(run_id: str, step: str, started_at: str, finished_at: str | No
 # ---------------------------------------------------------------------------
 # Microscopic helpers shared across steps
 # ---------------------------------------------------------------------------
+
 
 def _now_iso() -> str:
     return datetime.now(tz=UTC).isoformat(timespec="seconds")
@@ -487,12 +608,13 @@ def _drain_fetch_errors(run_id: str) -> list[dict[str, Any]]:
 
 
 # Expose the helpers at module level so tests + the copilot can drive them.
-record_fetch_error = _record_fetch_error_in_run  # noqa: F841 — used by tests
+record_fetch_error = _record_fetch_error_in_run
 
 
 # ---------------------------------------------------------------------------
 # The 6 steps
 # ---------------------------------------------------------------------------
+
 
 def step_sourced(*, project_id: str | None, run_id: str | None = None) -> dict[str, int]:
     """Step 1 — fetch every catalog row's URL, persist bytes, upsert content_artefacts.
@@ -516,10 +638,10 @@ def step_sourced(*, project_id: str | None, run_id: str | None = None) -> dict[s
         dataset_name="raw",
         progress="log",
     )
-    load_info = pipeline.run(
+    pipeline.run(
         [
-            catalog_rows(),                                       # replace the static table
-            artifact_upserts(catalog, run_id),                 # upsert the canonical artefacts
+            catalog_rows(),  # replace the static table
+            artifact_upserts(catalog, run_id),  # upsert the canonical artefacts
             sourcing_runs(
                 run_id=run_id,
                 step="sourced",
@@ -538,7 +660,9 @@ def step_sourced(*, project_id: str | None, run_id: str | None = None) -> dict[s
 
     logger.info(
         "step_sourced: run_id=%s ok=%d fail=%d",
-        run_id, counts["sourced_ok"], counts["sourced_fail"],
+        run_id,
+        counts["sourced_ok"],
+        counts["sourced_fail"],
     )
     return counts
 
@@ -585,8 +709,10 @@ def step_normalised(*, project_id: str | None, run_id: str | None = None) -> dic
 
         # Read the cached bytes.
         content = read_bytes(
-            jurisdiction=jurisdiction, subject_slug=subject,
-            language=language, sha256=sha256,
+            jurisdiction=jurisdiction,
+            subject_slug=subject,
+            language=language,
+            sha256=sha256,
         )
         if content is None:
             logger.warning("step_normalised: missing cache for %s", sha256)
@@ -596,9 +722,12 @@ def step_normalised(*, project_id: str | None, run_id: str | None = None) -> dic
         best = _best_of_three_normalisations(content)
 
         # Write the derived JSON to GCS (or local cache in dev).
-        derived_gcs_uri = _write_derived_json(
+        _write_derived_json(
             best,
-            jurisdiction=jurisdiction, subject_slug=subject, language=language, sha256=sha256,
+            jurisdiction=jurisdiction,
+            subject_slug=subject,
+            language=language,
+            sha256=sha256,
         )
 
         # Flip the artefact's flag.
@@ -609,7 +738,10 @@ def step_normalised(*, project_id: str | None, run_id: str | None = None) -> dic
         counts["normalised"] += 1
 
     _emit_sourcing_run(
-        run_id, "normalised", started_at, counts,
+        run_id,
+        "normalised",
+        started_at,
+        counts,
         f"normalised {counts['normalised']} documents",
     )
     logger.info("step_normalised: run_id=%s normalised=%d", run_id, counts["normalised"])
@@ -627,33 +759,41 @@ def _best_of_three_normalisations(content: bytes) -> dict[str, Any]:
     # Path B: Document AI Layout Parser — only when GCP_PROJECT_ID is set
     if os.environ.get("GCP_PROJECT_ID") and _has_lib("google.cloud.documentai"):
         try:
-            from gemini_hackathon.ocr import run_backend, Backend
-            text, extras = run_backend(Backend.DOCUMENT_AI, content, prompt="Extract every text block.")
-            paths.append({
-                "extraction_path": "document_ai",
-                "extracted_text": text,
-                "page_count": extras.get("page_count"),
-                "extraction_latency_ms": 0,  # we don't track per-call here
-            })
+            from gemini_hackathon.ocr import Backend, run_backend
+
+            text, extras = run_backend(
+                Backend.DOCUMENT_AI, content, prompt="Extract every text block."
+            )
+            paths.append(
+                {
+                    "extraction_path": "document_ai",
+                    "extracted_text": text,
+                    "page_count": extras.get("page_count"),
+                    "extraction_latency_ms": 0,  # we don't track per-call here
+                }
+            )
         except Exception as exc:
             logger.warning("normalise: Document AI failed (%s)", exc)
 
     # Path C: Gemini 3.5 Flash native PDF — only when GCP_PROJECT_ID is set
     if os.environ.get("GCP_PROJECT_ID") and _has_lib("vertexai"):
         try:
-            from gemini_hackathon.ocr import run_backend, Backend
+            from gemini_hackathon.ocr import Backend, run_backend
+
             text, extras = run_backend(
                 Backend.GEMINI_VISION,
                 content,
                 prompt="Extract every text block, preserving order. Output plain text only.",
                 model="gemini-3.5-flash",
             )
-            paths.append({
-                "extraction_path": "gemini_flash",
-                "extracted_text": text,
-                "page_count": None,  # Gemini doesn't return a page count directly
-                "extraction_latency_ms": 0,
-            })
+            paths.append(
+                {
+                    "extraction_path": "gemini_flash",
+                    "extracted_text": text,
+                    "page_count": None,  # Gemini doesn't return a page count directly
+                    "extraction_latency_ms": 0,
+                }
+            )
         except Exception as exc:
             logger.warning("normalise: Gemini Flash failed (%s)", exc)
 
@@ -713,7 +853,6 @@ def _write_derived_json(
     Returns the URI the caller records on the artefact doc.
     """
     import json as _json
-    import tempfile as _tempfile
 
     payload = {
         "sha256": sha256,
@@ -779,17 +918,22 @@ def step_filtered(
                 f"must be one of {_LEGAL_REASONS}"
             )
         existing = snap.to_dict() or {}
-        doc_ref.set({
-            **existing,
-            "excluded": True,
-            "excluded_reason": reason,
-            "last_run_id": run_id,
-        })
+        doc_ref.set(
+            {
+                **existing,
+                "excluded": True,
+                "excluded_reason": reason,
+                "last_run_id": run_id,
+            }
+        )
         counts["excluded_marked"] += 1
         counts["excluded_unmarked"] -= 1
 
     _emit_sourcing_run(
-        run_id, "filtered", started_at, counts,
+        run_id,
+        "filtered",
+        started_at,
+        counts,
         f"excluded {counts['excluded_marked']} document(s)",
     )
     logger.info("step_filtered: run_id=%s marked=%d", run_id, counts["excluded_marked"])
@@ -814,7 +958,6 @@ def _shared_fs():
     return _SHARED_FS
 
 
-
 def step_extract_baml(*, project_id: str | None, run_id: str | None = None) -> dict[str, int]:
     """Step 4 — BAML extraction for every ready content_artefact.
 
@@ -834,7 +977,8 @@ def step_extract_baml(*, project_id: str | None, run_id: str | None = None) -> d
     counts = {"baml_extracted": 0}
     fs = _shared_fs()
     ready = [
-        a for a in _iter_artefacts(fs, include_excluded=False, only_normalised=True)
+        a
+        for a in _iter_artefacts(fs, include_excluded=False, only_normalised=True)
         if not a.get("baml_extracted")
     ]
 
@@ -843,23 +987,28 @@ def step_extract_baml(*, project_id: str | None, run_id: str | None = None) -> d
         return counts
 
     try:
-        from baml_client import b  # noqa: PLC0415
+        from baml_client import b
+
         _baml_available = True
     except ImportError:
         _baml_available = False
-        logger.warning("step_extract_baml: baml_client not built; flipping baml_extracted=False → baml_extracted=True is a no-op (offline mode)")
+        logger.warning(
+            "step_extract_baml: baml_client not built; flipping baml_extracted=False → baml_extracted=True is a no-op (offline mode)"
+        )
 
     for artefact in ready:
         sha256 = artefact["sha256"]
         subject = artefact["subject_slug"]
         language = artefact["language"]
-        normalised_uri = artefact.get("gcs_uri", "")  # best proxy we have
+        artefact.get("gcs_uri", "")  # best proxy we have
         normalised_text = _read_normalised_text(artefact)
 
         if _baml_available and normalised_text:
             try:
                 b.ExtractCurriculumSyllabus(
-                    pdf_text=normalised_text, subject=subject, language=language,
+                    pdf_text=normalised_text,
+                    subject=subject,
+                    language=language,
                 )
                 counts["baml_extracted"] += 1
             except Exception as exc:
@@ -884,13 +1033,14 @@ def _read_normalised_text(artefact: dict[str, Any]) -> str | None:
     (the BAML caller then gets an empty string — degraded but doesn't crash).
     """
     import json as _json
-    from gemini_hackathon.journey.sourcing.fs import get_firestore
 
     sha256 = artefact["sha256"]
     jurisdiction = artefact["jurisdiction"].replace(" ", "_").lower()
     subject = artefact["subject_slug"]
     language = artefact["language"]
-    derived_path = Path("./data/sourced_derived") / jurisdiction / subject / language / f"{sha256}.json"
+    derived_path = (
+        Path("./data/sourced_derived") / jurisdiction / subject / language / f"{sha256}.json"
+    )
     if derived_path.exists():
         return _json.loads(derived_path.read_text()).get("extracted_text", "")
     # Try GCS
@@ -898,6 +1048,7 @@ def _read_normalised_text(artefact: dict[str, Any]) -> str | None:
     if gcs_uri.startswith("gs://"):
         try:
             from google.cloud import storage
+
             bucket_name, blob_path = gcs_uri.replace("gs://", "").split("/", 1)
             blob_path = blob_path.replace(f"{jurisdiction}/{subject}/{language}/", "", 1) + ".json"
             return storage.Client().bucket(bucket_name).blob(blob_path).download_as_text()
@@ -963,7 +1114,13 @@ def _latest_run_summary(fs) -> dict[str, Any] | None:
     return docs[0].to_dict()
 
 
-def _iter_artefacts(fs=None, *, include_excluded: bool | None = None, only_unnormalised: bool = False, only_normalised: bool = False):
+def _iter_artefacts(
+    fs=None,
+    *,
+    include_excluded: bool | None = None,
+    only_unnormalised: bool = False,
+    only_normalised: bool = False,
+):
     """Yield artefact dicts, with optional filtering.
 
     `include_excluded`:
@@ -979,9 +1136,7 @@ def _iter_artefacts(fs=None, *, include_excluded: bool | None = None, only_unnor
         excluded = data.get("excluded", False)
         if include_excluded is None:
             pass
-        elif include_excluded and not excluded:
-            continue
-        elif not include_excluded and excluded:
+        elif (include_excluded and not excluded) or (not include_excluded and excluded):
             continue
         if only_unnormalised and data.get("normalised_at"):
             continue
@@ -995,21 +1150,26 @@ def _dlt_destination(project_id: str | None) -> Any:
     """Pick the DLT destination: Firestore native (prod) or duckdb (dev)."""
     if project_id and _has_lib("dlm_firestore_dlt_dest"):
         try:
-            import dlm_firestore_dlt_dest  # noqa: F401,PLC0415
+            import dlm_firestore_dlt_dest
+
             return "firestore"  # the destination name in dlt's plugin
         except Exception:
             pass
     # Default: in-memory DuckDB (works offline, no GCP creds).
     try:
         import dlt
+
         return dlt.destinations.destination("duckdb", "./data/sourcing_pipeline.duckdb")
     except Exception:
         return None
 
 
 def _emit_sourcing_run(
-    run_id: str, step: str, started_at: str,
-    counts: dict[str, int | None], notes: str | None = None,
+    run_id: str,
+    step: str,
+    started_at: str,
+    counts: dict[str, int | None],
+    notes: str | None = None,
 ) -> None:
     """Append one sourcing_runs row to Firestore (one row per CLI step)."""
     fs = _shared_fs()
@@ -1048,6 +1208,7 @@ def _emit_sourcing_run(
 # CLI
 # ---------------------------------------------------------------------------
 
+
 def _print_status_table(counts: dict[str, Any]) -> None:
     """Pretty-print the 9-row status table (the workshop host's daily view)."""
     print("\n=== Sourcing pipeline status ===")
@@ -1061,7 +1222,7 @@ def _print_status_table(counts: dict[str, Any]) -> None:
     print(f"  {'mastery_done':<24}  {counts.get('mastery_done', '-')}")
     print(f"  {'asset_done':<24}  {counts.get('asset_done', '-')}")
     print(f"  {'ready (next stage)':<24}  {counts.get('ready', '-')}")
-    if "latest_run" in counts and counts["latest_run"]:
+    if counts.get("latest_run"):
         lr = counts["latest_run"]
         print("\n  latest run:")
         print(f"    run_id:     {lr.get('run_id', '?')}")
@@ -1094,7 +1255,7 @@ def main(argv: list[str] | None = None) -> int:
         default=[],
         metavar="sha256[:reason]",
         help="Mark the given sha256 as excluded. Format: <sha256>[:<reason>] "
-             "(one of: out_of_scope, corrupted, duplicate, superseded, language_unsupported)",
+        "(one of: out_of_scope, corrupted, duplicate, superseded, language_unsupported)",
     )
     parser.add_argument(
         "--run-id",
@@ -1119,8 +1280,16 @@ def main(argv: list[str] | None = None) -> int:
             print("DRY RUN: would source", len(list(catalog_rows())), "catalog rows")
             return 0
         counts = step_sourced(project_id=args.project_id or None, run_id=args.run_id)
-        _print_status_table({**counts, "ready": 0, "excluded": 0, "ocr_consensus_done": 0,
-                            "mastery_done": 0, "asset_done": 0})
+        _print_status_table(
+            {
+                **counts,
+                "ready": 0,
+                "excluded": 0,
+                "ocr_consensus_done": 0,
+                "mastery_done": 0,
+                "asset_done": 0,
+            }
+        )
         return 0
 
     if args.step == "normalised":
@@ -1128,8 +1297,16 @@ def main(argv: list[str] | None = None) -> int:
             print("DRY RUN: would normalise every not-yet-normalised artefact")
             return 0
         counts = step_normalised(project_id=args.project_id or None, run_id=args.run_id)
-        _print_status_table({**counts, "ready": 0, "excluded": 0, "ocr_consensus_done": 0,
-                            "mastery_done": 0, "asset_done": 0})
+        _print_status_table(
+            {
+                **counts,
+                "ready": 0,
+                "excluded": 0,
+                "ocr_consensus_done": 0,
+                "mastery_done": 0,
+                "asset_done": 0,
+            }
+        )
         return 0
 
     if args.step == "filtered":
@@ -1159,7 +1336,7 @@ def main(argv: list[str] | None = None) -> int:
         _print_status_table(counts)
         return 0
 
-    if args.step == "ready" or args.step == "status":
+    if args.step in {"ready", "status"}:
         counts = step_status(project_id=args.project_id or None)
         _print_status_table(counts)
         return 0

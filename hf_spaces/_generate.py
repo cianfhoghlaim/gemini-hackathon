@@ -17,7 +17,6 @@ import argparse
 import textwrap
 from pathlib import Path
 
-
 # The 5 HF Spaces — (name, stage, title, emoji, color_from, color_to, sdk_version)
 HF_SPACES: list[dict] = [
     {
@@ -178,7 +177,9 @@ def build_space(space: dict, hf_spaces_dir: Path) -> None:
 
 def main():
     parser = argparse.ArgumentParser(description="Generate gemini_hackathon HF Spaces")
-    parser.add_argument("--hf-spaces-dir", default="hf_spaces", help="Root directory for the 5 Spaces")
+    parser.add_argument(
+        "--hf-spaces-dir", default="hf_spaces", help="Root directory for the 5 Spaces"
+    )
     args = parser.parse_args()
 
     hf_spaces_dir = Path(args.hf_spaces_dir).resolve()

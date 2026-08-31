@@ -48,6 +48,7 @@ implementation:
 
 ```python
 from gemini_hackathon.theming import apply_palette_for_subnation
+
 return apply_palette_for_subnation(subnation)
 ```
 

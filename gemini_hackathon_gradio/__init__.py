@@ -29,9 +29,9 @@ from __future__ import annotations
 __all__ = [
     "build_an_scrudu_app",
     "build_anam_education_app",
+    "build_editorial_studio_app",
     "build_oideachais_mission_control_app",
     "build_oideachais_pdf_review_app",
-    "build_editorial_studio_app",
     "build_workflow_canvas",
 ]
 
@@ -40,20 +40,26 @@ def __getattr__(name: str):
     """Lazily import studio app builders (require Gradio)."""
     if name == "build_an_scrudu_app":
         from gemini_hackathon_gradio.an_scrudu.app import build_app
+
         return build_app
     if name == "build_anam_education_app":
         from gemini_hackathon_gradio.anam_education.app import build_app
+
         return build_app
     if name == "build_oideachais_mission_control_app":
         from gemini_hackathon_gradio.oideachais_mission_control.app import build_app
+
         return build_app
     if name == "build_oideachais_pdf_review_app":
         from gemini_hackathon_gradio.oideachais_pdf_review.app import build_app
+
         return build_app
     if name == "build_editorial_studio_app":
         from gemini_hackathon_gradio.editorial_studio.app import build_app
+
         return build_app
     if name == "build_workflow_canvas":
         from gemini_hackathon_gradio.editorial_studio.app import build_workflow_canvas
+
         return build_workflow_canvas
     raise AttributeError(f"module 'gemini_hackathon_gradio' has no attribute {name!r}")

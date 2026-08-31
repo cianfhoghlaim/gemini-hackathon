@@ -173,7 +173,9 @@ model = model.to("cuda")
 processor = AutoProcessor.from_pretrained(model_id)
 
 prompt = "<image>caption en"
-image_file = "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/cats.png"
+image_file = (
+    "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/cats.png"
+)
 raw_image = Image.open(requests.get(image_file, stream=True).raw).convert("RGB")
 
 inputs = processor(prompt, raw_image, return_tensors="pt").to("cuda")
@@ -191,14 +193,10 @@ You can also use the transformers `bitsandbytes` integration to load the models 
 from transformers import BitsAndBytesConfig
 
 bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype=torch.bfloat16
+    load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16
 )
 model = PaligemmaForConditionalGeneration.from_pretrained(
-    model_id,
-    quantization_config=bnb_config,
-    device_map={"":0}
+    model_id, quantization_config=bnb_config, device_map={"": 0}
 )
 ```
 

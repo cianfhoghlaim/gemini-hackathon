@@ -29,7 +29,7 @@ def test_lancedb_local_mode_writes_to_local_path(
     - `data/lancedb/.gitkeep` exists (the Phase 1 directory presence signal).
     """
     try:
-        import lancedb  # noqa: F401
+        import lancedb
     except ImportError:
         pytest.skip(
             "lancedb is not installed; skipping the LanceDB local-mode E2E test "

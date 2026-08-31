@@ -115,11 +115,20 @@ The updated dataframe is live in the latest Gradio release. Update your installa
 ```python
 import gradio as gr
 
-df_headers = ["Name", "Population", "Size (min cm)", "Size (max cm)", "Weight (min kg)", "Weight (max kg)", "Lifespan (min years)", "Lifespan (max years)"]
+df_headers = [
+    "Name",
+    "Population",
+    "Size (min cm)",
+    "Size (max cm)",
+    "Weight (min kg)",
+    "Weight (max kg)",
+    "Lifespan (min years)",
+    "Lifespan (max years)",
+]
 df_data = [
     ["Irish Red Fox", 185000, 48, 92, 4.2, 6.8, 3, 5],
     ["Irish Badger", 95000, 62, 88, 8.5, 13.5, 6, 8],
-    ["Irish Otter", 13500, 58, 98, 5.5, 11.5, 9, 13]
+    ["Irish Otter", 13500, 58, 98, 5.5, 11.5, 9, 13],
 ]
 
 with gr.Blocks() as demo:
@@ -134,7 +143,7 @@ with gr.Blocks() as demo:
         show_row_numbers=True,
         pinned_columns=1,
         static_columns=[0],
-        column_widths=["300px"]
+        column_widths=["300px"],
     )
 
 demo.launch()

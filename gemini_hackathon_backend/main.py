@@ -18,16 +18,17 @@ Or run inside the existing dev container — the same `gemini-hackathon`
 artifact-registry image that hosts `gemini-hackathon-journey` can host
 this, since both are FastAPI + ADK + the same venv.
 """
+
 from __future__ import annotations
 
 import logging
 from typing import Any
 
+from gemini_hackathon_backend.agents.memory import build_memory_service
 from gemini_hackathon_backend.observability import (
     init_backend_observability,
     lifespan_observability,
 )
-from gemini_hackathon_backend.agents.memory import build_memory_service
 
 logger = logging.getLogger(__name__)
 
@@ -43,11 +44,12 @@ def build_app():
 
     try:
         import warnings
+
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", DeprecationWarning)
             warnings.simplefilter("ignore", UserWarning)
-            from google.adk.agents import LlmAgent  # noqa: F401  (validated by the runtime startup)
-            from ag_ui_adk import ADKAgent, add_adk_fastapi_endpoint, AGUIToolset
+            from ag_ui_adk import ADKAgent, AGUIToolset, add_adk_fastapi_endpoint
+            from google.adk.agents import LlmAgent
 
             from gemini_hackathon_backend.agents.ncca_panel import (
                 build_ncca_panel_agent,
@@ -64,7 +66,7 @@ def build_app():
         app = FastAPI(title="gemini-hackathon-backend (stub)")
 
         @app.get("/healthz")
-        async def _healthz():  # noqa: D401
+        async def _healthz():
             init_state = init_backend_observability()
             return {"status": "stub", "google_adk_available": False, "observability": init_state}
 
@@ -81,7 +83,7 @@ def build_app():
     )
 
     @app.get("/healthz")
-    async def _healthz():  # noqa: D401
+    async def _healthz():
         return {"status": "ok", "observability": init_state}
 
     # The NCCA panel agent: 3 server-side tools (cite_pdf, fetch_highlight,
@@ -124,8 +126,7 @@ def build_app():
                 user_id=user_id,
                 metadata={"path": request.url.path, "method": request.method},
             ):
-                response = await call_next(request)
-                return response
+                return await call_next(request)
 
     add_adk_fastapi_endpoint(
         app,

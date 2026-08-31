@@ -12,8 +12,6 @@ This test verifies:
 
 from __future__ import annotations
 
-import pytest
-
 
 def test_build_app_returns_non_none_blocks() -> None:
     """`anam_education.build_app()` returns a non-None `gr.Blocks`."""

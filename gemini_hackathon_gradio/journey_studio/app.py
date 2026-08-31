@@ -20,6 +20,7 @@ The marimo iframes point at `https://marimo.app/.../<path>` (the marimo
 WASM hosting). When the operator's notebook lives locally, the studio
 falls back to a placeholder card.
 """
+
 from __future__ import annotations
 
 import logging
@@ -36,7 +37,6 @@ from .._common import (
     render_anam_bonneagar_footer,
 )
 
-
 _log = logging.getLogger("journey_studio.app")
 
 
@@ -44,23 +44,28 @@ _log = logging.getLogger("journey_studio.app")
 # CSS class from gemini_hackathon_gradio/_common/theme.py that paints the
 # 5-stage accent strip.
 SUBNATIONS: tuple[tuple[str, str, str, str], ...] = (
-    ("ireland",          "Ireland (NCCA)",                  "ncca_palette.json",          "stage-scoil-sinsearach"),
-    ("england",          "England (AQA + OCR + Pearson)",   "aqa_palette.json",           "stage-meanscoil"),
-    ("northern_ireland", "Northern Ireland (CCEA)",         "northern_ireland_palette.json", "stage-bunscoil"),
-    ("scotland",         "Scotland (SQA)",                  "scotland_palette.json",      "stage-aistear"),
-    ("wales",            "Wales (WJEC)",                    "wales_palette.json",         "stage-ollscoil"),
-    ("jersey",           "Jersey (States of Jersey)",       "jersey_palette.json",        "stage-bunscoil"),
-    ("guernsey",         "Guernsey (States of Guernsey)",   "guernsey_palette.json",      "stage-bunscoil"),
-    ("isle_of_man",      "Isle of Man (DESC)",              "isle_of_man_palette.json",   "stage-aistear"),
+    ("ireland", "Ireland (NCCA)", "ncca_palette.json", "stage-scoil-sinsearach"),
+    ("england", "England (AQA + OCR + Pearson)", "aqa_palette.json", "stage-meanscoil"),
+    (
+        "northern_ireland",
+        "Northern Ireland (CCEA)",
+        "northern_ireland_palette.json",
+        "stage-bunscoil",
+    ),
+    ("scotland", "Scotland (SQA)", "scotland_palette.json", "stage-aistear"),
+    ("wales", "Wales (WJEC)", "wales_palette.json", "stage-ollscoil"),
+    ("jersey", "Jersey (States of Jersey)", "jersey_palette.json", "stage-bunscoil"),
+    ("guernsey", "Guernsey (States of Guernsey)", "guernsey_palette.json", "stage-bunscoil"),
+    ("isle_of_man", "Isle of Man (DESC)", "isle_of_man_palette.json", "stage-aistear"),
 )
 
 # (stage, accent_class, accent_hex) — the 5 stages.
 STAGES: tuple[tuple[str, str, str], ...] = (
-    ("Aistear",            "stage-aistear",          "#e8915c"),
-    ("Bunscoil",           "stage-bunscoil",         "#1e80c6"),
-    ("MeanScoil",          "stage-meanscoil",        "#28955e"),
-    ("Scoil Sinsearach",   "stage-scoil-sinsearach", "#cc9966"),
-    ("Ollscoil",           "stage-ollscoil",         "#5a4fcf"),
+    ("Aistear", "stage-aistear", "#e8915c"),
+    ("Bunscoil", "stage-bunscoil", "#1e80c6"),
+    ("MeanScoil", "stage-meanscoil", "#28955e"),
+    ("Scoil Sinsearach", "stage-scoil-sinsearach", "#cc9966"),
+    ("Ollscoil", "stage-ollscoil", "#5a4fcf"),
 )
 
 
@@ -70,18 +75,33 @@ STAGES: tuple[tuple[str, str, str], ...] = (
 # the repo). The empty default points at a placeholder — real URLs are
 # filled in as the per-stage notebooks come online.
 _NOTEBOOKS: dict[tuple[str, str], str] = {
-    ("ireland", "aistear"):              "https://marimo.app/cianfhoghlaim/gemini-hackathon-ireland-aistear",
-    ("ireland", "bunscoil"):             "https://marimo.app/cianfhoghlaim/gemini-hackathon-ireland-bunscoil",
-    ("ireland", "meanscoil"):            "https://marimo.app/cianfhoghlaim/gemini-hackathon-ireland-meanscoil",
-    ("ireland", "scoil-sinsearach"):     "https://marimo.app/cianfhoghlaim/gemini-hackathon-ireland-sinsearach",
-    ("ireland", "ollscoil"):             "https://marimo.app/cianfhoghlaim/gemini-hackathon-ireland-ollscoil",
+    ("ireland", "aistear"): "https://marimo.app/cianfhoghlaim/gemini-hackathon-ireland-aistear",
+    ("ireland", "bunscoil"): "https://marimo.app/cianfhoghlaim/gemini-hackathon-ireland-bunscoil",
+    ("ireland", "meanscoil"): "https://marimo.app/cianfhoghlaim/gemini-hackathon-ireland-meanscoil",
+    (
+        "ireland",
+        "scoil-sinsearach",
+    ): "https://marimo.app/cianfhoghlaim/gemini-hackathon-ireland-sinsearach",
+    ("ireland", "ollscoil"): "https://marimo.app/cianfhoghlaim/gemini-hackathon-ireland-ollscoil",
     # Per-jurisdiction stubs (Phase 2 — every jurisdiction gets the same
     # 5-stage skeleton; the per-jurisdiction marimos live in the hf_spaces/
     # mirror).
-    ("england", "scoil-sinsearach"):     "https://marimo.app/cianfhoghlaim/gemini-hackathon-england-sinsearach",
-    ("northern_ireland", "scoil-sinsearach"): "https://marimo.app/cianfhoghlaim/gemini-hackathon-ni-sinsearach",
-    ("scotland", "scoil-sinsearach"):    "https://marimo.app/cianfhoghlaim/gemini-hackathon-scotland-sinsearach",
-    ("wales", "scoil-sinsearach"):       "https://marimo.app/cianfhoghlaim/gemini-hackathon-wales-sinsearach",
+    (
+        "england",
+        "scoil-sinsearach",
+    ): "https://marimo.app/cianfhoghlaim/gemini-hackathon-england-sinsearach",
+    (
+        "northern_ireland",
+        "scoil-sinsearach",
+    ): "https://marimo.app/cianfhoghlaim/gemini-hackathon-ni-sinsearach",
+    (
+        "scotland",
+        "scoil-sinsearach",
+    ): "https://marimo.app/cianfhoghlaim/gemini-hackathon-scotland-sinsearach",
+    (
+        "wales",
+        "scoil-sinsearach",
+    ): "https://marimo.app/cianfhoghlaim/gemini-hackathon-wales-sinsearach",
 }
 
 
@@ -94,7 +114,7 @@ def _resolve_notebook(subnation_slug: str, stage_slug: str) -> str:
     if key in _NOTEBOOKS:
         return _NOTEBOOKS[key]
     # Try a less specific key — match by stage only.
-    for (sub_slug, stage_slug_alt), url in _NOTEBOOKS.items():
+    for (_sub_slug, stage_slug_alt), url in _NOTEBOOKS.items():
         if stage_slug_alt == key[1]:
             return url
     return ""
@@ -112,8 +132,7 @@ def build_app():
     """
     if gr is None:
         raise ImportError(
-            "Gradio is required for build_app(); install with "
-            "`pip install gradio>=6.0,<7.0`"
+            "Gradio is required for build_app(); install with `pip install gradio>=6.0,<7.0`"
         )
 
     with gr.Blocks(
@@ -183,38 +202,36 @@ visibly tracks where you are in the journey.""",
                 )
             else:
                 # Local notebook fallback — try to find a file in /notebooks/ matching the stage.
-                local = (
-                    Path(__file__).resolve().parents[2]
-                    / "notebooks"
-                    / f"{stage_slug}_*.py"
+                (Path(__file__).resolve().parents[2] / "notebooks" / f"{stage_slug}_*.py")
+                candidates = sorted(
+                    Path(__file__).resolve().parents[2].glob("notebooks/1[0-9]*.py")
                 )
-                candidates = sorted(Path(__file__).resolve().parents[2].glob("notebooks/1[0-9]*.py"))
                 local_match = next((p for p in candidates if stage_slug in p.name.lower()), None)
                 if local_match:
                     notebook_url = f"file://{local_match}"
                     iframe = (
                         f'<div style="padding:24px;border:1px dashed var(--color-secondary);border-radius:8px;'
                         f'background:var(--color-background);">'
-                        f'<strong>Local marimo:</strong> '
-                        f'<code>{local_match.relative_to(local_match.parents[2])}</code><br>'
-                        f'Open with <code>marimo edit {local_match.name}</code>.<br><br>'
-                        f'WASM preview not yet wired for this stage.'
-                        f'</div>'
+                        f"<strong>Local marimo:</strong> "
+                        f"<code>{local_match.relative_to(local_match.parents[2])}</code><br>"
+                        f"Open with <code>marimo edit {local_match.name}</code>.<br><br>"
+                        f"WASM preview not yet wired for this stage."
+                        f"</div>"
                     )
                 else:
                     iframe = (
                         f'<div style="padding:24px;border:1px dashed var(--color-secondary);border-radius:8px;'
                         f'background:var(--color-background);">'
-                        f'<strong>Coming soon.</strong><br>'
-                        f'No marimo notebook wired for <code>{sub_slug} × {stage_slug}</code> yet. '
-                        f'Add it to <code>_NOTEBOOKS</code> in this file or to the local <code>notebooks/</code> directory.'
-                        f'</div>'
+                        f"<strong>Coming soon.</strong><br>"
+                        f"No marimo notebook wired for <code>{sub_slug} × {stage_slug}</code> yet. "
+                        f"Add it to <code>_NOTEBOOKS</code> in this file or to the local <code>notebooks/</code> directory."
+                        f"</div>"
                     )
 
             explain = (
                 f"**Stage:** {stage} (`{stage_class_name}`, accent `{accent_hex}`)\n\n"
                 f"**Subnation:** {subnation_display} → `{sub_slug}` (palette `{palette_file}`)\n\n"
-                f"**Journey level:** `journey/level_{ {'Aistear': 0, 'Bunscoil': 1, 'MeanScoil': 2, 'Scoil Sinsearach': 3, 'Ollscoil': 4}.get(stage, 0)}_*`\n\n"
+                f"**Journey level:** `journey/level_{ {'Aistear': 0, 'Bunscoil': 1, 'MeanScoil': 2, 'Scoil Sinsearach': 3, 'Ollscoil': 4}.get(stage, 0) }_*`\n\n"
                 f"**Marimo URL:** `{notebook_url or '(not wired)'}`"
             )
             return palette, iframe, explain
@@ -250,4 +267,4 @@ if __name__ == "__main__":
     app.launch(server_name="0.0.0.0", server_port=7860)
 
 
-__all__ = ["build_app", "SUBNATIONS", "STAGES"]
+__all__ = ["STAGES", "SUBNATIONS", "build_app"]

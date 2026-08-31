@@ -44,7 +44,7 @@ import logging
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 logger = logging.getLogger(__name__)
 
@@ -206,7 +206,9 @@ def detect_grid(paragraphs: Iterable[str]) -> DetectedGrid | None:
         for ci, col_label in enumerate(column_labels):
             idx = ri * n_cols + ci
             if idx < len(cell_paras):
-                cells.append(GridCell(row_label=row_label, column_label=col_label, text=cell_paras[idx]))
+                cells.append(
+                    GridCell(row_label=row_label, column_label=col_label, text=cell_paras[idx])
+                )
             else:
                 cells.append(GridCell(row_label=row_label, column_label=col_label, text=""))
 
@@ -291,28 +293,20 @@ def _docling_extract_paragraphs(content: bytes) -> tuple[list[str], bool]:
         from docling.datamodel.base_models import DocumentStream  # type: ignore[import-not-found]
         from docling.document_converter import DocumentConverter  # type: ignore[import-not-found]
     except ImportError:
-        logger.debug(
-            "_docling_grid_segmenter: docling not installed; returning empty paragraphs"
-        )
+        logger.debug("_docling_grid_segmenter: docling not installed; returning empty paragraphs")
         return [], False
 
     try:
         import io
 
         converter = DocumentConverter()
-        doc = converter.convert(
-            DocumentStream(name="in.pdf", stream=io.BytesIO(content))
-        )
-    except Exception as exc:  # noqa: BLE001 — Docling can fail on malformed PDFs
-        logger.warning(
-            "_docling_grid_segmenter: Docling convert failed: %s", exc
-        )
+        doc = converter.convert(DocumentStream(name="in.pdf", stream=io.BytesIO(content)))
+    except Exception as exc:
+        logger.warning("_docling_grid_segmenter: Docling convert failed: %s", exc)
         return [], True
 
     markdown = doc.document.export_to_markdown()
-    paragraphs = [
-        p.strip() for p in re.split(r"\n{2,}", markdown) if p and p.strip()
-    ]
+    paragraphs = [p.strip() for p in re.split(r"\n{2,}", markdown) if p and p.strip()]
     return paragraphs, True
 
 

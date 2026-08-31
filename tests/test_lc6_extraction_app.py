@@ -19,21 +19,23 @@ import pathlib
 import sqlite3
 from dataclasses import asdict
 
-import pytest
-
 
 def _load_module():
     spec = importlib.util.spec_from_file_location(
         "_test_lc6_mod",
         pathlib.Path(__file__).resolve().parent.parent
-        / "cocoindex_flows" / "education" / "lc6_extraction_app.py",
+        / "cocoindex_flows"
+        / "education"
+        / "lc6_extraction_app.py",
     )
-    assert spec is not None and spec.loader is not None
+    assert spec is not None
+    assert spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     # Register in sys.modules so dataclasses can resolve cls.__module__
     # (the @dataclass decorator looks up the module via sys.modules
     # at class-creation time).
     import sys as _sys
+
     _sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)
     return mod
@@ -43,7 +45,12 @@ def _load_module():
 mod = _load_module()
 
 
-def _fake_md(tmp_path: pathlib.Path, subnation: str = "aqa.org.uk", subject: str = "mathematics", lang: str = "en") -> pathlib.Path:
+def _fake_md(
+    tmp_path: pathlib.Path,
+    subnation: str = "aqa.org.uk",
+    subject: str = "mathematics",
+    lang: str = "en",
+) -> pathlib.Path:
     """Write a fake .md file with one page of content under the canonical layout."""
     md_dir = tmp_path / subnation / subject / lang
     md_dir.mkdir(parents=True)
@@ -73,9 +80,7 @@ def test_baml_extract_stub_returns_5_json_strings() -> None:
         subject_slug="mathematics",
         language="en",
     )
-    assert set(results.keys()) == {
-        "syllabus", "exam_paper", "marking", "concepts", "diagrams"
-    }
+    assert set(results.keys()) == {"syllabus", "exam_paper", "marking", "concepts", "diagrams"}
     for key, value in results.items():
         assert value is not None, f"{key} is None"
         parsed = json.loads(value)
@@ -91,9 +96,7 @@ def test_baml_extract_all_falls_back_to_stub() -> None:
         subject_slug="chemistry",
         language="ga",
     )
-    assert set(results.keys()) == {
-        "syllabus", "exam_paper", "marking", "concepts", "diagrams"
-    }
+    assert set(results.keys()) == {"syllabus", "exam_paper", "marking", "concepts", "diagrams"}
     for value in results.values():
         assert value is not None
         json.loads(value)  # Must be valid JSON
@@ -159,17 +162,18 @@ def test_process_one_reads_md_and_writes_row(tmp_path: pathlib.Path) -> None:
     assert row.source_pdf == "aqa.org.uk/mathematics/en/abc123def456.md"
     # All 5 JSON fields populated (stub values).
     for field_name in (
-        "syllabus_json", "exam_paper_json", "marking_json",
-        "concepts_json", "diagrams_json",
+        "syllabus_json",
+        "exam_paper_json",
+        "marking_json",
+        "concepts_json",
+        "diagrams_json",
     ):
         assert getattr(row, field_name) is not None, f"{field_name} is None"
         json.loads(getattr(row, field_name))  # Valid JSON
 
     # SQLite row was upserted.
     with sqlite3.connect(str(sqlite_path)) as conn:
-        stored = conn.execute(
-            "SELECT syllabus_json FROM extracted_syllabi"
-        ).fetchone()
+        stored = conn.execute("SELECT syllabus_json FROM extracted_syllabi").fetchone()
     assert stored[0] is not None
 
 
@@ -201,9 +205,7 @@ def test_run_writes_row_per_md(tmp_path: pathlib.Path) -> None:
     assert stats["failed"] == 0
 
     with sqlite3.connect(str(sqlite_path)) as conn:
-        rows = conn.execute(
-            "SELECT subnation, subject_slug FROM extracted_syllabi"
-        ).fetchall()
+        rows = conn.execute("SELECT subnation, subject_slug FROM extracted_syllabi").fetchall()
     subnations = {r[0] for r in rows}
     assert subnations == {"aqa.org.uk", "ocr.org.uk"}
 

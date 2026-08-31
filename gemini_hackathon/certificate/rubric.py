@@ -39,7 +39,14 @@ def compute_ssim(*, image_b64: str, reference_b64: str | None = None) -> float:
     if ref is None:
         return 0.0
     # True SSIM would use scikit-image; we use a perceptual-hash Hamming distance proxy
-    return 1.0 - bin(int.from_bytes(_perceptual_hash(img), "big") ^ int.from_bytes(_perceptual_hash(ref), "big")).count("1") / 64.0
+    return (
+        1.0
+        - bin(
+            int.from_bytes(_perceptual_hash(img), "big")
+            ^ int.from_bytes(_perceptual_hash(ref), "big")
+        ).count("1")
+        / 64.0
+    )
 
 
 def compute_perceptual_hash(image_bytes: bytes, *, size: int = 8) -> bytes:
@@ -49,6 +56,7 @@ def compute_perceptual_hash(image_bytes: bytes, *, size: int = 8) -> bytes:
     """
     try:
         from PIL import Image
+
         img = Image.open(io.BytesIO(image_bytes)).convert("L").resize((size, size))
         pixels = list(img.getdata())
         avg = sum(pixels) / len(pixels)
@@ -71,6 +79,7 @@ def compute_palette_fidelity(*, image_b64: str, anchor_hex: str) -> float:
         return 0.0
     try:
         from PIL import Image
+
         pil = Image.open(io.BytesIO(img)).convert("RGB")
     except Exception:
         return 0.0
@@ -81,7 +90,9 @@ def compute_palette_fidelity(*, image_b64: str, anchor_hex: str) -> float:
     pixels = list(pil.getdata())
     if not pixels:
         return 0.0
-    matching = sum(1 for (r, g, b) in pixels if abs(r - ar) <= 20 and abs(g - ag) <= 20 and abs(b - ab) <= 20)
+    matching = sum(
+        1 for (r, g, b) in pixels if abs(r - ar) <= 20 and abs(g - ag) <= 20 and abs(b - ab) <= 20
+    )
     return matching / len(pixels)
 
 

@@ -28,14 +28,13 @@ from gemini_hackathon.theming import (
     load_palette,
 )
 
-
 # ---------------------------------------------------------------------------
 # 8 jurisdiction palettes
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
-    "source_key,expected_jurisdiction",
+    ("source_key", "expected_jurisdiction"),
     [
         ("ncca.ie", "Ireland"),
         ("aqa.org.uk", "England"),
@@ -67,7 +66,8 @@ def test_load_each_of_8_jurisdiction_palettes(
     assert palette.source_key == source_key
     assert palette.jurisdiction == expected_jurisdiction
     # Hex codes must look like #RRGGBB.
-    assert palette.primary.startswith("#") and len(palette.primary) == 7
+    assert palette.primary.startswith("#")
+    assert len(palette.primary) == 7
 
 
 def test_load_ncca_palette(tmp_themes_dir: object) -> None:
@@ -138,7 +138,7 @@ def test_load_iom_palette(tmp_themes_dir: object) -> None:
 
 
 @pytest.mark.parametrize(
-    "source_key,expected_jurisdiction",
+    ("source_key", "expected_jurisdiction"),
     [
         ("gov.ie/education", "Ireland"),
         ("gov.uk/dfe", "England"),
@@ -185,9 +185,7 @@ def test_list_all_palettes_includes_jurisdiction_files(tmp_themes_dir: object) -
     """Within the tmp_themes_dir fixture, every jurisdiction + safeguarding palette is listed."""
     palettes = list_all_palettes()
     assert isinstance(palettes, list)
-    assert len(palettes) >= 13, (
-        f"Expected at least 13 palette fixtures, got {len(palettes)}"
-    )
+    assert len(palettes) >= 13, f"Expected at least 13 palette fixtures, got {len(palettes)}"
 
     # Every listed palette must carry the canonical 4 keys.
     for entry in palettes:
@@ -215,10 +213,10 @@ def test_list_all_palettes_includes_jurisdiction_files(tmp_themes_dir: object) -
 def test_palette_css_variables(sample_palette: dict) -> None:
     """The ``css_variables`` property exposes the 7 canonical CSS keys.
 
-    Per the theming module contract the property returns a dict with
-    ``--color-primary`` / ``--color-secondary`` / ``--color-accent``
- / ``--color-background`` / ``--color-text`` / ``--font-heading`` /
-    ``--font-body``.
+       Per the theming module contract the property returns a dict with
+       ``--color-primary`` / ``--color-secondary`` / ``--color-accent``
+    / ``--color-background`` / ``--color-text`` / ``--font-heading`` /
+       ``--font-body``.
     """
     palette = sample_palette["palette"]
     css = palette.css_variables

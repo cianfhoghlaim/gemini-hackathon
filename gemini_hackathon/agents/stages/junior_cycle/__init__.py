@@ -13,11 +13,12 @@ buckets (e.g. learning-support teachers).
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from typing import TYPE_CHECKING, Any
 
 try:
-    from google.adk import Agent, Workflow, Event
+    from google.adk import Agent, Event, Workflow
     from google.adk.workflow import START
 except ImportError:
     Agent = None  # type: ignore[assignment,misc]
@@ -29,26 +30,28 @@ except ImportError:
 _log = logging.getLogger(__name__)
 
 
-async def fetch_jc_subject_spec(node_input: Any) -> "Event":
+async def fetch_jc_subject_spec(node_input: Any) -> Event:
     """Fetch the JC subject specification for the active subnation + subject."""
-    return Event(output={
-        "spec_id": "jc-spec-stub",
-        "stage": "junior_cycle",
-        "ncca_policy_citations": ["SC-L1-L2, p.12", "key-competencies, p.7"],
-    })
+    return Event(
+        output={
+            "spec_id": "jc-spec-stub",
+            "stage": "junior_cycle",
+            "ncca_policy_citations": ["SC-L1-L2, p.12", "key-competencies, p.7"],
+        }
+    )
 
 
-async def fetch_jc_cba_descriptors(node_input: Any) -> "Event":
+async def fetch_jc_cba_descriptors(node_input: Any) -> Event:
     """Fetch the JC Classroom-Based Assessment descriptors (36 CBAs)."""
     return Event(output={"cba_id": "jc-cba-stub"})
 
 
-async def fetch_jc_short_course(node_input: Any) -> "Event":
+async def fetch_jc_short_course(node_input: Any) -> Event:
     """Fetch the JC short course content (16 short courses)."""
     return Event(output={"short_course_id": "jc-short-course-stub"})
 
 
-async def route_jc_subject(node_input: Any) -> "Event":
+async def route_jc_subject(node_input: Any) -> Event:
     """Pillar-1 router: pick the JC subject specialist."""
     subject = node_input.get("subject", "english")
     return Event(output={"subject": subject}, route=subject)
@@ -59,19 +62,25 @@ def build_junior_cycle_workflow() -> Any:
     if Workflow is None:
         return None
 
-    try:
+    with contextlib.suppress(ImportError):
         from gemini_hackathon.agents.registry import SUBJECT_WIRING_REGISTRY
-    except ImportError:
-        SUBJECT_WIRING_REGISTRY = {}
 
     # The JC bucket (10 subjects — subset of the 14 LC registry
     # that map to JC subjects). Built via the specialist_agent factory
     # so each subject becomes an ADK Agent (not a dataclass).
     from gemini_hackathon.agents.specialist_agent import build_specialist_agent
+
     jc_subject_slugs = (
-        "english", "gaeilge", "mathematics", "history",
-        "geography", "biology", "chemistry", "physics",
-        "french", "irish_t2",
+        "english",
+        "gaeilge",
+        "mathematics",
+        "history",
+        "geography",
+        "biology",
+        "chemistry",
+        "physics",
+        "french",
+        "irish_t2",
     )
     jc_subjects: dict[str, Any] = {}
     for slug in jc_subject_slugs:
@@ -100,8 +109,8 @@ def build_junior_cycle_workflow() -> Any:
 
 __all__ = [
     "build_junior_cycle_workflow",
-    "fetch_jc_subject_spec",
     "fetch_jc_cba_descriptors",
     "fetch_jc_short_course",
+    "fetch_jc_subject_spec",
     "route_jc_subject",
 ]

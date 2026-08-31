@@ -13,9 +13,6 @@ import time
 import urllib.request
 from pathlib import Path
 
-import pytest
-
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -29,10 +26,18 @@ def _free_port() -> int:
 
 def _start(port: int):
     proc = subprocess.Popen(
-        [sys.executable, "-m", "gemini_hackathon.backend",
-         "--host", "127.0.0.1", "--port", str(port)],
+        [
+            sys.executable,
+            "-m",
+            "gemini_hackathon.backend",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            str(port),
+        ],
         cwd=str(REPO_ROOT),
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
     base = f"http://127.0.0.1:{port}"
     for _ in range(60):
@@ -47,7 +52,9 @@ def _start(port: int):
 
 def _post(url: str, body: dict, timeout: float = 15.0):
     req = urllib.request.Request(
-        url, method="POST", data=json.dumps(body).encode(),
+        url,
+        method="POST",
+        data=json.dumps(body).encode(),
         headers={"Content-Type": "application/json"},
     )
     with urllib.request.urlopen(req, timeout=timeout) as r:
@@ -58,16 +65,19 @@ def test_assets_generate_returns_stub_in_dev():
     port = _free_port()
     proc, base = _start(port)
     try:
-        status, body = _post(f"{base}/api/assets/generate", {
-            "source_pdf_path": "/tmp/chem-2024.pdf",
-            "source_page": 12,
-            "learning_outcome_id": "LC-CHEM-3.1.2",
-            "subject": "Boyle's Law demo",
-            "palette_primary": "#00733B",
-            "palette_secondary": "#0E2D5C",
-            "palette_accent": "#FFB81C",
-            "palette_background": "#FFFFFF",
-        })
+        status, body = _post(
+            f"{base}/api/assets/generate",
+            {
+                "source_pdf_path": "/tmp/chem-2024.pdf",
+                "source_page": 12,
+                "learning_outcome_id": "LC-CHEM-3.1.2",
+                "subject": "Boyle's Law demo",
+                "palette_primary": "#00733B",
+                "palette_secondary": "#0E2D5C",
+                "palette_accent": "#FFB81C",
+                "palette_background": "#FFFFFF",
+            },
+        )
         assert status == 200
         assert body["status"] == "ok"
         assert body["backend"] == "stub"  # all real backends down in dev
@@ -92,10 +102,13 @@ def test_assets_generate_rejects_bad_record():
     port = _free_port()
     proc, base = _start(port)
     try:
-        status, body = _post(f"{base}/api/assets/generate", {
-            "subject": "Test",
-            "palette_primary": "#000",
-        })
+        status, body = _post(
+            f"{base}/api/assets/generate",
+            {
+                "subject": "Test",
+                "palette_primary": "#000",
+            },
+        )
         assert status == 200
         assert body["provenance"]["source_pdf_path"] == "unknown.pdf"
     finally:

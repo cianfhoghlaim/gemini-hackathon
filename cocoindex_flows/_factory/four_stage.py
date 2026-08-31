@@ -57,6 +57,7 @@ Reference:
     cianfhoghlaim/cocoindex_flows/biep_parity/4_stage_factory.py
     cianfhoghlaim/cocoindex_flows/biep_parity/4_stage_extraction.py
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -73,8 +74,9 @@ from .._shared._vector_target import VectorRow
 logger = structlog.get_logger(__name__)
 
 try:
-    import cocoindex as coco  # type: ignore[import-not-found]
     from cocoindex.ops.text import RecursiveSplitter  # type: ignore[import-not-found]
+
+    import cocoindex as coco  # type: ignore[import-not-found]
 
     _SPLITTER: Any = RecursiveSplitter()
 except ImportError:
@@ -149,33 +151,67 @@ JC_SUBJECT_CONFIG: list[JuniorCycleSubjectConfig] = [
 ]
 
 GCSE_SUBJECT_CONFIG: list[GCSESubjectConfig] = [
-    GCSESubjectConfig("mathematics", "Mathematics", {"aqa": "8462", "ocr": "J560", "edexcel": "1MA1"}),
-    GCSESubjectConfig("english_language", "English Language", {"aqa": "8700", "ocr": "J351", "edexcel": "1EN0"}),
-    GCSESubjectConfig("english_literature", "English Literature", {"aqa": "8702", "ocr": "J352", "edexcel": "1ET0"}),
+    GCSESubjectConfig(
+        "mathematics", "Mathematics", {"aqa": "8462", "ocr": "J560", "edexcel": "1MA1"}
+    ),
+    GCSESubjectConfig(
+        "english_language", "English Language", {"aqa": "8700", "ocr": "J351", "edexcel": "1EN0"}
+    ),
+    GCSESubjectConfig(
+        "english_literature",
+        "English Literature",
+        {"aqa": "8702", "ocr": "J352", "edexcel": "1ET0"},
+    ),
     GCSESubjectConfig("biology", "Biology", {"aqa": "8461", "ocr": "J247", "edexcel": "1BI0"}),
     GCSESubjectConfig("chemistry", "Chemistry", {"aqa": "8462", "ocr": "J248", "edexcel": "1CH0"}),
     GCSESubjectConfig("physics", "Physics", {"aqa": "8463", "ocr": "J249", "edexcel": "1PH0"}),
-    GCSESubjectConfig("computer_science", "Computer Science", {"aqa": "8525", "ocr": "J277", "edexcel": "1CP2"}),
+    GCSESubjectConfig(
+        "computer_science", "Computer Science", {"aqa": "8525", "ocr": "J277", "edexcel": "1CP2"}
+    ),
     GCSESubjectConfig("history", "History", {"aqa": "8145", "ocr": "J410", "edexcel": "1HI0"}),
     GCSESubjectConfig("geography", "Geography", {"aqa": "8035", "ocr": "J383", "edexcel": "1GA0"}),
 ]
 
 A_LEVEL_SUBJECT_CONFIG: list[ALevelSubjectConfig] = [
-    ALevelSubjectConfig("mathematics", "Mathematics", {"aqa": "7357", "ocr": "H240", "edexcel": "9MA0"}),
-    ALevelSubjectConfig("further_mathematics", "Further Mathematics", {"aqa": "7367", "ocr": "H245", "edexcel": "9FM0"}),
-    ALevelSubjectConfig("english_literature", "English Literature", {"aqa": "7717", "ocr": "H472", "edexcel": "9ET0"}),
-    ALevelSubjectConfig("english_language", "English Language", {"aqa": "7702", "ocr": "H470", "edexcel": "9EN0"}),
+    ALevelSubjectConfig(
+        "mathematics", "Mathematics", {"aqa": "7357", "ocr": "H240", "edexcel": "9MA0"}
+    ),
+    ALevelSubjectConfig(
+        "further_mathematics",
+        "Further Mathematics",
+        {"aqa": "7367", "ocr": "H245", "edexcel": "9FM0"},
+    ),
+    ALevelSubjectConfig(
+        "english_literature",
+        "English Literature",
+        {"aqa": "7717", "ocr": "H472", "edexcel": "9ET0"},
+    ),
+    ALevelSubjectConfig(
+        "english_language", "English Language", {"aqa": "7702", "ocr": "H470", "edexcel": "9EN0"}
+    ),
     ALevelSubjectConfig("biology", "Biology", {"aqa": "7402", "ocr": "H420", "edexcel": "9BN0"}),
-    ALevelSubjectConfig("chemistry", "Chemistry", {"aqa": "7405", "ocr": "H433", "edexcel": "9CH0"}),
+    ALevelSubjectConfig(
+        "chemistry", "Chemistry", {"aqa": "7405", "ocr": "H433", "edexcel": "9CH0"}
+    ),
     ALevelSubjectConfig("physics", "Physics", {"aqa": "7408", "ocr": "H556", "edexcel": "9PH0"}),
-    ALevelSubjectConfig("psychology", "Psychology", {"aqa": "7182", "ocr": "H180", "edexcel": "9PS0"}),
+    ALevelSubjectConfig(
+        "psychology", "Psychology", {"aqa": "7182", "ocr": "H180", "edexcel": "9PS0"}
+    ),
     ALevelSubjectConfig("history", "History", {"aqa": "7042", "ocr": "H505", "edexcel": "9HI0"}),
-    ALevelSubjectConfig("geography", "Geography", {"aqa": "7037", "ocr": "H481", "edexcel": "9GE0"}),
-    ALevelSubjectConfig("economics", "Economics", {"aqa": "7126", "ocr": "H460", "edexcel": "9EC0"}),
+    ALevelSubjectConfig(
+        "geography", "Geography", {"aqa": "7037", "ocr": "H481", "edexcel": "9GE0"}
+    ),
+    ALevelSubjectConfig(
+        "economics", "Economics", {"aqa": "7126", "ocr": "H460", "edexcel": "9EC0"}
+    ),
     ALevelSubjectConfig("business", "Business", {"aqa": "7132", "ocr": "H431", "edexcel": "9BS0"}),
-    ALevelSubjectConfig("history_of_art", "History of Art", {"aqa": "7203", "ocr": "H401", "edexcel": "9HA0"}),
+    ALevelSubjectConfig(
+        "history_of_art", "History of Art", {"aqa": "7203", "ocr": "H401", "edexcel": "9HA0"}
+    ),
     ALevelSubjectConfig("politics", "Politics", {"aqa": "7152", "ocr": "H485", "edexcel": "9PL0"}),
-    ALevelSubjectConfig("sociology", "Sociology", {"aqa": "7192", "ocr": "H180", "edexcel": "9SC0"}),
+    ALevelSubjectConfig(
+        "sociology", "Sociology", {"aqa": "7192", "ocr": "H180", "edexcel": "9SC0"}
+    ),
 ]
 
 TOTAL_APPS = (
@@ -203,7 +239,7 @@ def _iter_source_texts(jurisdiction: str, subject: str) -> list[tuple[str, str]]
     project_id = os.environ.get("GCP_PROJECT_ID")
     if project_id:
         try:
-            from google.cloud import storage  # noqa: PLC0415
+            from google.cloud import storage
 
             client = storage.Client(project=project_id)
             bucket = client.bucket(f"{project_id}-biep-raw")
@@ -211,7 +247,9 @@ def _iter_source_texts(jurisdiction: str, subject: str) -> list[tuple[str, str]]
             results: list[tuple[str, str]] = []
             for blob in client.list_blobs(bucket, prefix=prefix):
                 if blob.name.endswith((".txt", ".md", ".html")):
-                    results.append((blob.name, blob.download_as_text(encoding="utf-8", errors="ignore")))
+                    results.append(
+                        (blob.name, blob.download_as_text(encoding="utf-8", errors="ignore"))
+                    )
             return results
         except Exception:
             logger.exception("_iter_source_texts: GCS read failed, falling back to local disk")
@@ -232,7 +270,10 @@ def _chunk_text(text: str) -> list[str]:
     VectorTarget wiring is still testable offline).
     """
     if _SPLITTER is not None:
-        return [c.text for c in _SPLITTER.split(text, chunk_size=2000, chunk_overlap=500, language="markdown")]
+        return [
+            c.text
+            for c in _SPLITTER.split(text, chunk_size=2000, chunk_overlap=500, language="markdown")
+        ]
     chunk_size, overlap = 2000, 500
     if len(text) <= chunk_size:
         return [text] if text.strip() else []

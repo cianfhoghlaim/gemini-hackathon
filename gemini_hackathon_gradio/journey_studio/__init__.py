@@ -17,12 +17,14 @@ is the convenience surface (per Way Back Home's `dashboard/frontend/`).
 Run standalone:
     python -m gemini_hackathon_gradio.journey_studio.app
 """
+
 from __future__ import annotations
 
 import json
 
 try:
     import gradio as gr  # type: ignore[import-not-found]
+
     GRADIO_AVAILABLE = True
 except ImportError:
     gr = None  # type: ignore[assignment]
@@ -31,8 +33,14 @@ except ImportError:
 from gemini_hackathon.journey.journey_orchestrator.workflow import run_full_journey
 from gemini_hackathon.journey.level_0_pick_subnation.app import (
     SUBNATIONS as L0_SUBNATIONS,
+)
+from gemini_hackathon.journey.level_0_pick_subnation.app import (
     _apply_palette as l0_apply_palette,
+)
+from gemini_hackathon.journey.level_0_pick_subnation.app import (
     _build_learner_doc as l0_build_doc,
+)
+from gemini_hackathon.journey.level_0_pick_subnation.app import (
     write_learner_profile as l0_write,
 )
 from gemini_hackathon.journey.level_1_syllabus_extraction import run_level_1
@@ -103,18 +111,28 @@ def level_3_run(subject: str, question_id: str, student_answer: str) -> dict:
         "strategy_summary": r.strategy_summary,
         "ncca_policy_citations": r.ncca_policy_citations,
         "criterion_grades": [
-            {"criterion_id": g["criterion_id"], "marks_awarded": g["marks_awarded"], "max_marks": g["max_marks"]}
+            {
+                "criterion_id": g["criterion_id"],
+                "marks_awarded": g["marks_awarded"],
+                "max_marks": g["max_marks"],
+            }
             for g in r.criterion_grades
         ],
     }
 
 
 # ── Tab 5: Level 4 ─────────────────────────────────────────────────────────
-def level_4_run(learner_id: str, subject_slug: str, outcome_code: str, mastery_score: float) -> dict:
-    r = _sync(run_level_4(
-        learner_id=learner_id, subject_slug=subject_slug,
-        outcome_code=outcome_code, mastery_score=mastery_score,
-    ))
+def level_4_run(
+    learner_id: str, subject_slug: str, outcome_code: str, mastery_score: float
+) -> dict:
+    r = _sync(
+        run_level_4(
+            learner_id=learner_id,
+            subject_slug=subject_slug,
+            outcome_code=outcome_code,
+            mastery_score=mastery_score,
+        )
+    )
     return {
         "per_backend_status": r.per_backend_status,
         "mastery_vector_dim": r.mastery_vector_dim,
@@ -135,8 +153,9 @@ def level_5_run(user_question: str, subnation: str, subject: str) -> dict:
 
 
 # ── "Run the whole journey" button ───────────────────────────────────────
-def run_whole_journey(learner_id: str, subnation: str, subject: str, user_question: str,
-                     student_answer: str = "") -> dict:
+def run_whole_journey(
+    learner_id: str, subnation: str, subject: str, user_question: str, student_answer: str = ""
+) -> dict:
     """One-click end-to-end: level 1 -> level 2 -> level 3 -> level 4 -> pause -> level 5."""
     state = {
         "learner_id": learner_id,
@@ -183,16 +202,27 @@ def _sync(coro):
 def _cop_status_md() -> str:
     """The SourcingCopilot's --status one-shot, rendered as Markdown."""
     import os
+
     os.environ.pop("GOOGLE_CLOUD_PROJECT", None)
     os.environ.pop("FIRESTORE_EMULATOR_HOST", None)
     from gemini_hackathon.journey.sourcing.pipeline import step_status
 
     counts = step_status(project_id=None)
-    rows = "\n".join(f"| {k} | `{counts.get(k, '-')}` |" for k in [
-        "catalog_rows_total", "sourced_ok", "sourced_fail", "excluded",
-        "normalised", "baml_extracted", "ocr_consensus_done",
-        "mastery_done", "asset_done", "ready",
-    ])
+    rows = "\n".join(
+        f"| {k} | `{counts.get(k, '-')}` |"
+        for k in [
+            "catalog_rows_total",
+            "sourced_ok",
+            "sourced_fail",
+            "excluded",
+            "normalised",
+            "baml_extracted",
+            "ocr_consensus_done",
+            "mastery_done",
+            "asset_done",
+            "ready",
+        ]
+    )
     body = f"### Sourcing pipeline status\n\n| key | count |\n|---|---|\n{rows}\n"
     # Recommendation
     s = counts.get("sourced_ok", 0) or 0
@@ -212,12 +242,14 @@ def _cop_status_md() -> str:
 def _cop_exclude_json(sha256: str, reason: str) -> dict:
     """The SourcingCopilot's --exclude one-shot, wrapped for the studio."""
     from gemini_hackathon.journey.sourcing_copilot.tools import mark_excluded
+
     return mark_excluded(sha256 or "no-sha-supplied", reason=reason)
 
 
 def _cop_deploy_md() -> str:
     """The SourcingCopilot's recommendation + inventory, rendered as Markdown."""
     import os
+
     os.environ.pop("GOOGLE_CLOUD_PROJECT", None)
     os.environ.pop("FIRESTORE_EMULATOR_HOST", None)
     from gemini_hackathon.journey.sourcing_copilot.tools import (
@@ -274,7 +306,23 @@ def build_app():
                 )
                 l1_sbj = gr.Dropdown(
                     label="subject",
-                    choices=["mathematics", "applied_mathematics", "chemistry", "physics", "biology", "geography", "english", "gaeilge", "french", "history", "business", "accounting", "art", "music", "computer_science"],
+                    choices=[
+                        "mathematics",
+                        "applied_mathematics",
+                        "chemistry",
+                        "physics",
+                        "biology",
+                        "geography",
+                        "english",
+                        "gaeilge",
+                        "french",
+                        "history",
+                        "business",
+                        "accounting",
+                        "art",
+                        "music",
+                        "computer_science",
+                    ],
                     value="mathematics",
                 )
                 l1_lang = gr.Radio(["en", "ga"], value="en", label="language")
@@ -308,9 +356,15 @@ def build_app():
         with gr.Tab("Level 4 — Mastery update"):
             with gr.Row():
                 l4_lid = gr.Textbox(label="learner_id", value="alice@school.ie")
-                l4_sbj = gr.Dropdown(label="subject_slug", choices=["mathematics", "gaeilge", "english"], value="mathematics")
+                l4_sbj = gr.Dropdown(
+                    label="subject_slug",
+                    choices=["mathematics", "gaeilge", "english"],
+                    value="mathematics",
+                )
                 l4_outc = gr.Textbox(label="outcome_code", value="MA-LC-MA-1.1")
-            l4_score = gr.Slider(label="mastery_score", minimum=0.0, maximum=1.0, step=0.05, value=0.78)
+            l4_score = gr.Slider(
+                label="mastery_score", minimum=0.0, maximum=1.0, step=0.05, value=0.78
+            )
             l4_btn = gr.Button("Update mastery")
             l4_out = gr.JSON(label="Per-backend status")
             l4_btn.click(fn=level_4_run, inputs=[l4_lid, l4_sbj, l4_outc, l4_score], outputs=l4_out)
@@ -322,8 +376,14 @@ def build_app():
                 lines=3,
             )
             with gr.Row():
-                l5_sub = gr.Dropdown(label="subnation", choices=[s for s, _, _ in L0_SUBNATIONS], value="ireland")
-                l5_sbj = gr.Dropdown(label="subject", choices=["mathematics", "chemistry", "gaeilge"], value="mathematics")
+                l5_sub = gr.Dropdown(
+                    label="subnation", choices=[s for s, _, _ in L0_SUBNATIONS], value="ireland"
+                )
+                l5_sbj = gr.Dropdown(
+                    label="subject",
+                    choices=["mathematics", "chemistry", "gaeilge"],
+                    value="mathematics",
+                )
             l5_btn = gr.Button("Generate asset")
             l5_out = gr.JSON(label="Asset result")
             l5_img = gr.Image(label="Generated asset preview", visible=False)
@@ -348,26 +408,36 @@ def build_app():
             with gr.Tabs():
                 with gr.Tab("Status (live counts)"):
                     cop_status_btn = gr.Button("Refresh status")
-                    cop_status_out = gr.Code(label="9-row status + recommendation", language="markdown")
-                    cop_status_btn.click(fn=lambda: _cop_status_md(), outputs=cop_status_out)
+                    cop_status_out = gr.Code(
+                        label="9-row status + recommendation", language="markdown"
+                    )
+                    cop_status_btn.click(fn=_cop_status_md, outputs=cop_status_out)
                 with gr.Tab("Exclude a document"):
-                    cop_ex_sha = gr.Textbox(label="sha256 (paste from `list` below)", placeholder="e.g. abc123...")
+                    cop_ex_sha = gr.Textbox(
+                        label="sha256 (paste from `list` below)", placeholder="e.g. abc123..."
+                    )
                     cop_ex_reason = gr.Dropdown(
                         label="reason",
-                        choices=["out_of_scope", "corrupted", "duplicate", "superseded", "language_unsupported"],
+                        choices=[
+                            "out_of_scope",
+                            "corrupted",
+                            "duplicate",
+                            "superseded",
+                            "language_unsupported",
+                        ],
                         value="out_of_scope",
                     )
                     cop_ex_btn = gr.Button("Mark excluded")
                     cop_ex_out = gr.JSON(label="Result + next 10 candidates")
                     cop_ex_btn.click(
-                        fn=lambda sha, reason: _cop_exclude_json(sha, reason),
+                        fn=_cop_exclude_json,
                         inputs=[cop_ex_sha, cop_ex_reason],
                         outputs=cop_ex_out,
                     )
                 with gr.Tab("Deploy — what's next?"):
                     cop_deploy_btn = gr.Button("What's next + Cloud Run inventory?")
                     cop_deploy_out = gr.Markdown()
-                    cop_deploy_btn.click(fn=lambda: _cop_deploy_md(), outputs=cop_deploy_out)
+                    cop_deploy_btn.click(fn=_cop_deploy_md, outputs=cop_deploy_out)
 
         with gr.Tab("Run the whole journey (one click)"):
             gr.Markdown(
@@ -376,12 +446,23 @@ def build_app():
             )
             with gr.Row():
                 wj_lid = gr.Textbox(label="learner_id", value="alice@school.ie")
-                wj_sub = gr.Dropdown(label="subnation", choices=[s for s, _, _ in L0_SUBNATIONS], value="ireland")
-                wj_sbj = gr.Dropdown(label="subject", choices=["mathematics", "gaeilge", "english"], value="mathematics")
-            wj_q = gr.Textbox(label="user_question (for Level 5)", value="Draw a labelled diagram of the sine rule")
+                wj_sub = gr.Dropdown(
+                    label="subnation", choices=[s for s, _, _ in L0_SUBNATIONS], value="ireland"
+                )
+                wj_sbj = gr.Dropdown(
+                    label="subject",
+                    choices=["mathematics", "gaeilge", "english"],
+                    value="mathematics",
+                )
+            wj_q = gr.Textbox(
+                label="user_question (for Level 5)",
+                value="Draw a labelled diagram of the sine rule",
+            )
             wj_btn = gr.Button("Run the whole journey")
             wj_out = gr.JSON(label="Journey outcome (all 6 levels)")
-            wj_btn.click(fn=run_whole_journey, inputs=[wj_lid, wj_sub, wj_sbj, wj_q], outputs=wj_out)
+            wj_btn.click(
+                fn=run_whole_journey, inputs=[wj_lid, wj_sub, wj_sbj, wj_q], outputs=wj_out
+            )
 
     return demo
 
@@ -396,4 +477,5 @@ def main():
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

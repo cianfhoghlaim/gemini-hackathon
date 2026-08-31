@@ -220,6 +220,7 @@ You can load Jupyter Agent Dataset in just a couple of lines using the following
 
 ```python
 from datasets import load_dataset
+
 # To load the train split of a specific subset, such as non-thinking, you can do
 ds = load_dataset("jupyter-agent/jupyter-agent-dataset", split="non-thinking")
 # apply chat template
@@ -239,12 +240,12 @@ ds = load_dataset("jupyter-agent/jupyter-agent-dataset", split="thinking")
 dataset_name = ds[0]["kaggle_dataset_name"]
 # load the dataset locally from Kaggle Hub
 path = kagglehub.dataset_download(dataset_name)
-print(path) # this is the folder path where the dataset is downloaded
+print(path)  # this is the folder path where the dataset is downloaded
 # initialize sandbox
 sandbox_init = e2b.Sandbox(timeout=240)
 # write used file to E2B sandbox
 file_name = ds[0]["files_used"][0]
-file_name = file_name.split('/')[-1] if '/' in file_name else file_name
+file_name = file_name.split("/")[-1] if "/" in file_name else file_name
 with open(f"{path}/{file_name}", "rb") as file:
     sandbox_init.files.write(f"/home/user/input/{file_name}", file)
 # execute code with E2B
@@ -260,17 +261,11 @@ model_name = "jupyter-agent/jupyter-agent-qwen3-4b-instruct"
 
 # load the tokenizer and the model
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(
-    model_name,
-    torch_dtype="auto",
-    device_map="auto"
-)
+model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype="auto", device_map="auto")
 
 # prepare the model input
 prompt = "Give me a short introduction to large language model."
-messages = [
-    {"role": "user", "content": prompt}
-]
+messages = [{"role": "user", "content": prompt}]
 text = tokenizer.apply_chat_template(
     messages,
     tokenize=False,
@@ -279,11 +274,8 @@ text = tokenizer.apply_chat_template(
 model_inputs = tokenizer([text], return_tensors="pt").to(model.device)
 
 # conduct text completion
-generated_ids = model.generate(
-    **model_inputs,
-    max_new_tokens=16384
-)
-output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist() 
+generated_ids = model.generate(**model_inputs, max_new_tokens=16384)
+output_ids = generated_ids[0][len(model_inputs.input_ids[0]) :].tolist()
 
 content = tokenizer.decode(output_ids, skip_special_tokens=True)
 

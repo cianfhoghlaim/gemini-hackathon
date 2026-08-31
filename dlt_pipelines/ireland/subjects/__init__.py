@@ -21,6 +21,7 @@ from typing import Any
 
 import dlt
 
+from ..._base.jurisdiction_pipeline_base import IrelandJurisdictionPipeline
 from ..._subject_base import (
     CrawledPage,
     PDFResource,
@@ -29,8 +30,6 @@ from ..._subject_base import (
     crawl_subject,
     extract_pdfs_from_subject,
 )
-from ..._base.jurisdiction_pipeline_base import IrelandJurisdictionPipeline
-
 
 _NCCA_CODE_BY_SUBJECT: dict[str, str] = {
     "mathematics": "LC-MATH-LO",
@@ -102,20 +101,48 @@ def _make_source(subject: str, cycle: str = _CYCLE, language: str = "en"):
 
 
 # Per-subject factories — 8 NCCA LC subjects
-create_mathematics_source = lambda cycle=_CYCLE, language="en": _make_source("mathematics", cycle, language)
-create_english_source = lambda cycle=_CYCLE, language="en": _make_source("english", cycle, language)
-create_gaeilge_source = lambda cycle=_CYCLE, language="en": _make_source("gaeilge", cycle, language)
-create_chemistry_source = lambda cycle=_CYCLE, language="en": _make_source("chemistry", cycle, language)
-create_geography_source = lambda cycle=_CYCLE, language="en": _make_source("geography", cycle, language)
-create_physics_source = lambda cycle=_CYCLE, language="en": _make_source("physics", cycle, language)
-create_biology_source = lambda cycle=_CYCLE, language="en": _make_source("biology", cycle, language)
-create_computer_science_source = lambda cycle=_CYCLE, language="en": _make_source("computer_science", cycle, language)
+def create_mathematics_source(cycle=_CYCLE, language="en"):
+    return _make_source("mathematics", cycle, language)
+
+
+def create_english_source(cycle=_CYCLE, language="en"):
+    return _make_source("english", cycle, language)
+
+
+def create_gaeilge_source(cycle=_CYCLE, language="en"):
+    return _make_source("gaeilge", cycle, language)
+
+
+def create_chemistry_source(cycle=_CYCLE, language="en"):
+    return _make_source("chemistry", cycle, language)
+
+
+def create_geography_source(cycle=_CYCLE, language="en"):
+    return _make_source("geography", cycle, language)
+
+
+def create_physics_source(cycle=_CYCLE, language="en"):
+    return _make_source("physics", cycle, language)
+
+
+def create_biology_source(cycle=_CYCLE, language="en"):
+    return _make_source("biology", cycle, language)
+
+
+def create_computer_science_source(cycle=_CYCLE, language="en"):
+    return _make_source("computer_science", cycle, language)
 
 
 # All-subjects registry for the gemini-hackathon ops
 ALL_LC_SUBJECTS: tuple[str, ...] = (
-    "mathematics", "english", "gaeilge", "chemistry",
-    "geography", "physics", "biology", "computer_science",
+    "mathematics",
+    "english",
+    "gaeilge",
+    "chemistry",
+    "geography",
+    "physics",
+    "biology",
+    "computer_science",
 )
 
 
@@ -139,8 +166,8 @@ __all__ = [
     "create_chemistry_source",
     "create_computer_science_source",
     "create_english_source",
-    "create_geography_source",
     "create_gaeilge_source",
+    "create_geography_source",
     "create_mathematics_source",
     "create_physics_source",
 ]

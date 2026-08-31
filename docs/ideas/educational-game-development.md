@@ -326,6 +326,7 @@ Using Niagara particles with color override:
 # Python script for Unreal Editor automation
 import unreal
 
+
 def set_flame_color(element_name: str, rgb_color: unreal.Vector):
     # Load Material Parameter Collection
     mpc = unreal.load_asset("/Game/Chemistry/Materials/MPC_FlameParams")
@@ -334,6 +335,7 @@ def set_flame_color(element_name: str, rgb_color: unreal.Vector):
     unreal.MaterialEditingLibrary.set_material_parameter_collection_vector_parameter_value(
         mpc, "FlameTint", rgb_color
     )
+
 
 # Copper: Blue-Green
 set_flame_color("Copper", unreal.Vector(0.0, 1.0, 0.5))
@@ -379,6 +381,7 @@ CopperPrecipitate.SetOpacity(ReactionProgress);
 from manim import *
 import numpy as np
 
+
 class PendulumGraph(Scene):
     def construct(self):
         # Transparent background for overlay
@@ -388,7 +391,7 @@ class PendulumGraph(Scene):
         axes = Axes(
             x_range=[0, 10, 1],
             y_range=[-1, 1, 0.5],
-            axis_config={"include_tip": False, "color": WHITE}
+            axis_config={"include_tip": False, "color": WHITE},
         ).add_coordinates()
 
         labels = axes.get_axis_labels(x_label="t (s)", y_label="\\theta (rad)")
@@ -396,10 +399,7 @@ class PendulumGraph(Scene):
         # SHM function matching Unity simulation
         g = 9.81
         L = 1.0
-        func = axes.plot(
-            lambda t: 0.087 * np.cos(np.sqrt(g/L) * t),
-            color=YELLOW
-        )
+        func = axes.plot(lambda t: 0.087 * np.cos(np.sqrt(g / L) * t), color=YELLOW)
 
         self.add(axes, labels)
         self.play(Create(func), run_time=10, rate_func=linear)
@@ -583,6 +583,7 @@ cargo install gdext-cli
 # render_sprites.py - Unreal Python automation
 import unreal
 
+
 def create_render_job(animation_path: str) -> unreal.MoviePipelineExecutorJob:
     subsystem = unreal.get_editor_subsystem(unreal.MoviePipelineQueueSubsystem)
     queue = subsystem.get_queue()
@@ -592,6 +593,7 @@ def create_render_job(animation_path: str) -> unreal.MoviePipelineExecutorJob:
     job.set_sequence(animation_path)
 
     return job
+
 
 # Configure output: Multilayer EXR (Color + Normal)
 preset = unreal.MoviePipelineMasterConfig()

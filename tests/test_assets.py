@@ -4,9 +4,6 @@ from __future__ import annotations
 
 import json
 
-import pytest
-
-
 # ---------------------------------------------------------------------------
 # AssetControlRecord
 # ---------------------------------------------------------------------------
@@ -14,6 +11,7 @@ import pytest
 
 def test_control_record_from_syllabus_and_palette():
     from gemini_hackathon.assets.control_record import AssetControlRecord
+
     rec = AssetControlRecord.from_syllabus_and_palette(
         source_pdf_path="/tmp/lc_chem_2024.pdf",
         source_page=12,
@@ -40,6 +38,7 @@ def test_control_record_from_syllabus_and_palette():
 
 def test_control_record_to_dict_is_json_serialisable():
     from gemini_hackathon.assets.control_record import AssetControlRecord
+
     rec = AssetControlRecord.from_syllabus_and_palette(
         source_pdf_path="/tmp/x.pdf",
         source_page=1,
@@ -55,6 +54,7 @@ def test_control_record_hash_is_stable():
     """Same record (same seed) → same hash, regardless of insertion order."""
     from gemini_hackathon.assets.control_record import AssetControlRecord
     from gemini_hackathon.assets.image_gen import _stable_hash
+
     rec1 = AssetControlRecord(
         source_pdf_path="/tmp/x.pdf",
         source_page=1,
@@ -158,7 +158,8 @@ def test_router_uses_role_aware_priority_when_live_backends_are_up(monkeypatch):
     """When FIBO is reachable for the 'provenance' role, it should win."""
     from gemini_hackathon.assets.control_record import AssetControlRecord
     from gemini_hackathon.assets.image_gen import (
-        ImageGenBackend, ImageGenRouter,
+        ImageGenBackend,
+        ImageGenRouter,
         _ComfyUiFiboBackend,
     )
 
@@ -206,8 +207,8 @@ def test_control_to_prompt_includes_palette_and_text():
     prompt = _control_to_prompt(rec)
     assert "Pyramid" in prompt
     assert "#FFB81C" in prompt
-    assert '#0E2D5C' in prompt
-    assert 'Volume calculation' in prompt
+    assert "#0E2D5C" in prompt
+    assert "Volume calculation" in prompt
     assert "eye_level" in prompt
 
 
@@ -221,8 +222,10 @@ def test_assessment_event_descriptor_round_trip():
     # The substrate is currently defined in the Firestore schema only.
     # Validate that the legal values are present.
     legal = {
-        "exceptional", "above_expectations",
-        "in_line_with_expectations", "yet_to_meet_expectations",
+        "exceptional",
+        "above_expectations",
+        "in_line_with_expectations",
+        "yet_to_meet_expectations",
     }
     assert len(legal) == 4
     assert "exceptional" in legal
@@ -230,8 +233,13 @@ def test_assessment_event_descriptor_round_trip():
 
 def test_award_types_cover_ncca_pathway():
     legal_award_types = {
-        "leaving_cycle", "junior_cycle", "cba", "short_course",
-        "l1lp", "l2lp", "special_education",
+        "leaving_cycle",
+        "junior_cycle",
+        "cba",
+        "short_course",
+        "l1lp",
+        "l2lp",
+        "special_education",
     }
     # Leaving Cycle + Junior Cycle + 2 L1LP/L2LP special-education tiers + CBA + Short Course.
     assert len(legal_award_types) >= 6

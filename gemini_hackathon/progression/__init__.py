@@ -25,18 +25,18 @@ Award types supported (Phase 11 surface):
    - L1LP / L2LP (Level 1 / Level 2 Learning Programmes)
 """
 
-from .progression import (
-    AssessmentEvent,
-    AssessmentType,
-    OutcomeMastery,
-    MasteryDescriptor,
-    apply_event,
-    progress_summary,
-)
 from .certificate import (
     AwardType,
     CertificateRecord,
     render_certificate_markdown,
+)
+from .progression import (
+    AssessmentEvent,
+    AssessmentType,
+    MasteryDescriptor,
+    OutcomeMastery,
+    apply_event,
+    progress_summary,
 )
 
 __all__ = [

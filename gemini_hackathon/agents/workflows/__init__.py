@@ -51,27 +51,26 @@ from gemini_hackathon.agents.workflows.pillar5_eval_flywheel import (
     build_eval_flywheel,
 )
 
-
 __all__ = [
     # Pillar 1: Graph workflow (parallel grading)
     "Pillar1GradingWorkflow",
-    "build_pillar1_grading_workflow",
-    "grade_criterion",
-    "join_outputs",
     # Pillar 2: Collaborative tutor
     "Pillar2CollabTutorWorkflow",
-    "build_collab_tutor_workflow",
     # Pillar 3: Dynamic research (parallel + recursive)
     "Pillar3DynamicResearchWorkflow",
-    "build_decompose_research_workflow",
-    "decompose_into_subquestions",
-    "synthesize_research",
     # Pillar 4: Long-running + ResumabilityConfig
     "Pillar4LongRunningWorkflow",
-    "RequestInputInterrupt",
-    "ResumabilityConfig",
-    "build_long_running_workflow",
     # Pillar 5: Eval flywheel (loop-lab-table pattern)
     "Pillar5EvalFlywheel",
+    "RequestInputInterrupt",
+    "ResumabilityConfig",
+    "build_collab_tutor_workflow",
+    "build_decompose_research_workflow",
     "build_eval_flywheel",
+    "build_long_running_workflow",
+    "build_pillar1_grading_workflow",
+    "decompose_into_subquestions",
+    "grade_criterion",
+    "join_outputs",
+    "synthesize_research",
 ]

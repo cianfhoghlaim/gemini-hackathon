@@ -15,12 +15,11 @@ import importlib.util
 import pathlib
 import sys
 
-import pytest
-
 
 def _load(name: str, path: pathlib.Path):
     spec = importlib.util.spec_from_file_location(name, str(path))
-    assert spec is not None and spec.loader is not None
+    assert spec is not None
+    assert spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)
@@ -206,7 +205,8 @@ def test_default_invoker_falls_back_to_stub_when_no_call_llm() -> None:
     assert parsed is not None
     assert parsed["stub"] is True
     assert parsed["model"] == "gemini-3.5-flash"
-    assert tin > 0 and tout > 0
+    assert tin > 0
+    assert tout > 0
 
 
 def test_try_parse_handles_json_fences() -> None:

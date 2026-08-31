@@ -36,6 +36,7 @@ Firestore is the default because it needs zero standing infrastructure —
 appropriate for a hackathon demo path where CocoIndex Apps run
 intermittently (ingestion jobs, not a steady-state service).
 """
+
 from __future__ import annotations
 
 import os
@@ -135,7 +136,9 @@ class FirestoreVectorTarget:
         self._client: firestore.Client | None = None  # type: ignore[valid-type]
 
         if not FIRESTORE_AVAILABLE:
-            logger.warning("FirestoreVectorTarget constructed without google-cloud-firestore installed")
+            logger.warning(
+                "FirestoreVectorTarget constructed without google-cloud-firestore installed"
+            )
             return
         if not self._project:
             logger.warning("FirestoreVectorTarget constructed without GCP_PROJECT_ID set")
@@ -215,8 +218,8 @@ class FirestoreVectorTarget:
         """
         if not self.available:
             return 0
-        import asyncio  # noqa: PLC0415
-        from concurrent.futures import ThreadPoolExecutor  # noqa: PLC0415
+        import asyncio
+        from concurrent.futures import ThreadPoolExecutor
 
         row = VectorRow(
             id=key,
@@ -250,7 +253,7 @@ class FirestoreVectorTarget:
         """
         if not self.available:
             return []
-        import asyncio  # noqa: PLC0415
+        import asyncio
 
         results = asyncio.run(
             self.find_nearest(
@@ -333,13 +336,11 @@ class VertexVectorSearchTarget:
             "VERTEX_VECTOR_SEARCH_DEPLOYED_INDEX_ID"
         )
         # Display names — Phase 2 env-var shape from the task spec.
-        self._index_display_name = (
-            index_display_name
-            or os.environ.get("VERTEX_VECTOR_SEARCH_INDEX", "gemini-hackathon-index")
+        self._index_display_name = index_display_name or os.environ.get(
+            "VERTEX_VECTOR_SEARCH_INDEX", "gemini-hackathon-index"
         )
-        self._endpoint_display_name = (
-            endpoint_display_name
-            or os.environ.get("VERTEX_VECTOR_SEARCH_ENDPOINT", "gemini-hackathon-endpoint")
+        self._endpoint_display_name = endpoint_display_name or os.environ.get(
+            "VERTEX_VECTOR_SEARCH_ENDPOINT", "gemini-hackathon-endpoint"
         )
         self._dimensions = (
             int(dimensions)
@@ -350,9 +351,13 @@ class VertexVectorSearchTarget:
         self._endpoint: Any = None
 
         if not VERTEX_VECTOR_SEARCH_AVAILABLE:
-            logger.warning("VertexVectorSearchTarget constructed without google-cloud-aiplatform installed")
+            logger.warning(
+                "VertexVectorSearchTarget constructed without google-cloud-aiplatform installed"
+            )
             return
-        if not (self._project and self._index_id and self._index_endpoint_id and self._deployed_index_id):
+        if not (
+            self._project and self._index_id and self._index_endpoint_id and self._deployed_index_id
+        ):
             logger.warning(
                 "VertexVectorSearchTarget constructed without a fully deployed index "
                 "(index_id / index_endpoint_id / deployed_index_id all required)"
@@ -400,7 +405,7 @@ class VertexVectorSearchTarget:
     ) -> list[VectorMatch]:
         if not self.available:
             return []
-        from google.cloud.aiplatform.matching_engine.matching_engine_index_endpoint import (  # noqa: PLC0415
+        from google.cloud.aiplatform.matching_engine.matching_engine_index_endpoint import (
             Namespace,
         )
 
@@ -446,7 +451,7 @@ class VertexVectorSearchTarget:
         # Reuse the async path synchronously via `asyncio.run` — the
         # vector target is not a hot path (per-key writes happen in the
         # DualWriteTarget fan-out, not in a 1k-QPS loop).
-        import asyncio  # noqa: PLC0415
+        import asyncio
 
         row = VectorRow(
             id=key,
@@ -465,7 +470,9 @@ class VertexVectorSearchTarget:
             # direct sync code path below.
             return self._sync_upsert_one(key, vector, metadata)
 
-    def _sync_upsert_one(self, key: str, vector: list[float], metadata: dict[str, Any] | None) -> int:
+    def _sync_upsert_one(
+        self, key: str, vector: list[float], metadata: dict[str, Any] | None
+    ) -> int:
         """Direct sync upsert (called when the asyncio shim can't run)."""
         if not self.available or not self._index:
             return 0
@@ -504,7 +511,7 @@ class VertexVectorSearchTarget:
         # — only import it if the SDK is actually installed. The
         # graceful-degrade pattern matches the rest of this module.
         try:
-            from google.cloud.aiplatform.matching_engine.matching_engine_index_endpoint import (  # noqa: PLC0415
+            from google.cloud.aiplatform.matching_engine.matching_engine_index_endpoint import (
                 Namespace,
             )
         except ImportError:
@@ -518,7 +525,7 @@ class VertexVectorSearchTarget:
         # SDK at the MatchingEngineIndexEndpoint level (ScaNN runs the
         # same algorithm regardless; the strategy is purely a scoring
         # convention). Other strategies are accepted but ignored.
-        _ = distance_strategy  # noqa: F841 — reserved for future per-call override
+        _ = distance_strategy
 
         response = self._endpoint.find_neighbors(  # type: ignore[union-attr]
             deployed_index_id=self._deployed_index_id,
@@ -621,7 +628,7 @@ class DualWriteTarget:
         for target in self._targets:
             try:
                 target.upsert(key, vector, metadata)  # type: ignore[attr-defined]
-            except Exception as exc:  # noqa: BLE001 — fan-out must not abort on partial failure
+            except Exception as exc:
                 errors.append((type(target).__name__, str(exc)))
                 logger.warning(
                     "DualWriteTarget.upsert: %s failed for key=%s: %s",
@@ -666,7 +673,7 @@ class DualWriteTarget:
         for target in self._targets:
             try:
                 target.delete(key)  # type: ignore[attr-defined]
-            except Exception as exc:  # noqa: BLE001 — best-effort
+            except Exception as exc:
                 logger.warning(
                     "DualWriteTarget.delete: %s failed for key=%s: %s",
                     type(target).__name__,
@@ -704,6 +711,7 @@ def get_vector_target(*, backend: str | None = None) -> VectorTarget:
         from gemini_hackathon_backend.lakehouse.lance_vector_target import (
             LanceVectorTarget,
         )
+
         return LanceVectorTarget(namespace=namespace_from_env())
 
     resolved = (backend or os.environ.get("VECTOR_BACKEND", "firestore")).lower()
@@ -730,11 +738,10 @@ def get_vector_target(*, backend: str | None = None) -> VectorTarget:
 
 
 __all__ = [
-    "DualWriteTarget",
     "FIRESTORE_AVAILABLE",
     "VERTEX_VECTOR_SEARCH_AVAILABLE",
+    "DualWriteTarget",
     "FirestoreVectorTarget",
-    "LanceVectorTarget",
     "VectorMatch",
     "VectorRow",
     "VectorTarget",

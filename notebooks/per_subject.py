@@ -26,7 +26,8 @@ app = marimo.App(width="full", app_title="gemini_hackathon - Subject Notebook")
 @app.cell
 def _intro():
     import marimo as mo
-    return mo,
+
+    return (mo,)
 
 
 @app.cell
@@ -49,8 +50,15 @@ def _controls(mo):
         label="Subnation",
     )
     cycle = mo.ui.dropdown(
-        options=["leaving_cycle", "junior_cycle", "gcse", "a_level",
-                 "national_5", "higher", "advanced_higher"],
+        options=[
+            "leaving_cycle",
+            "junior_cycle",
+            "gcse",
+            "a_level",
+            "national_5",
+            "higher",
+            "advanced_higher",
+        ],
         value="leaving_cycle",
         label="Cycle",
     )
@@ -62,24 +70,26 @@ def _controls(mo):
 def _outcomes_table(mo, subnation, cycle, subject):
     """Current syllabus outcomes for the chosen (subnation, cycle, subject)."""
     fallback_outcomes = [
-        {"code": "LC-MATHS-1.1", "topic": "Algebra",
-         "descriptor": "In line with expectations"},
-        {"code": "LC-MATHS-1.2", "topic": "Functions",
-         "descriptor": "Above expectations"},
-        {"code": "LC-MATHS-2.1", "topic": "Differentiation",
-         "descriptor": "In line with expectations"},
-        {"code": "LC-MATHS-2.2", "topic": "Integration",
-         "descriptor": "Exceptional"},
-        {"code": "LC-MATHS-3.1", "topic": "Complex Numbers",
-         "descriptor": "Above expectations"},
+        {"code": "LC-MATHS-1.1", "topic": "Algebra", "descriptor": "In line with expectations"},
+        {"code": "LC-MATHS-1.2", "topic": "Functions", "descriptor": "Above expectations"},
+        {
+            "code": "LC-MATHS-2.1",
+            "topic": "Differentiation",
+            "descriptor": "In line with expectations",
+        },
+        {"code": "LC-MATHS-2.2", "topic": "Integration", "descriptor": "Exceptional"},
+        {"code": "LC-MATHS-3.1", "topic": "Complex Numbers", "descriptor": "Above expectations"},
     ]
-    return mo.ui.table(fallback_outcomes, label="Syllabus outcomes (stub fallback)"), fallback_outcomes
+    return mo.ui.table(
+        fallback_outcomes, label="Syllabus outcomes (stub fallback)"
+    ), fallback_outcomes
 
 
 @app.cell
 def _descriptor_chart(mo, fallback_outcomes):
-    import pandas as pd
     import altair as alt
+    import pandas as pd
+
     counts = pd.DataFrame(
         [(d["descriptor"], 1) for d in fallback_outcomes],
         columns=["descriptor", "count"],
@@ -102,8 +112,7 @@ def _study_suggestions(mo, subnation, cycle, subject):
         f"For {subnation.upper()}: review your awarding body's marking scheme",
     ]
     return mo.vstack(
-        [mo.md(f"### Study suggestions for **{subject}**")] +
-        [mo.md(f"- {s}") for s in suggestions]
+        [mo.md(f"### Study suggestions for **{subject}**")] + [mo.md(f"- {s}") for s in suggestions]
     )
 
 

@@ -63,10 +63,10 @@ EDUCATION_PALETTE: dict[str, str] = {
     "ollscoil_soft": "#9b93e6",
     "ollscoil_ink": "#221e5c",
     # Common
-    "stone": "#bcb8b0",          # NCCA stone gray (borders)
-    "paper": "#fdfaf3",          # parchment (certificates)
-    "crimson": "#a83a2a",        # Pobal DEIS crimson (safeguarding accent)
-    "bronze": "#a67c52",         # seal/badge accent
+    "stone": "#bcb8b0",  # NCCA stone gray (borders)
+    "paper": "#fdfaf3",  # parchment (certificates)
+    "crimson": "#a83a2a",  # Pobal DEIS crimson (safeguarding accent)
+    "bronze": "#a67c52",  # seal/badge accent
 }
 
 # Hades Shadow-First base (kept verbatim from the Celtic theme — the
@@ -298,9 +298,9 @@ def stage_class(stage: str) -> str:
         return "stage-aistear"
     if "primary" in norm or "bunscoil" in norm or "primary" in norm:
         return "stage-bunscoil"
-    if "junior" in norm or "meanscoil" in norm or "jc" == norm:
+    if "junior" in norm or "meanscoil" in norm or norm == "jc":
         return "stage-meanscoil"
-    if "senior" in norm or "leaving" in norm or "lc" == norm or "sinsearach" in norm:
+    if "senior" in norm or "leaving" in norm or norm == "lc" or "sinsearach" in norm:
         return "stage-scoil-sinsearach"
     if "tert" in norm or "ollscoil" in norm or "university" in norm:
         return "stage-ollscoil"

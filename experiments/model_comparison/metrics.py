@@ -24,7 +24,9 @@ try:
         is_local_model,
     )
 except ImportError:  # pragma: no cover — standalone-load fallback
-    import importlib.util as _iu, sys as _sys, pathlib as _pl
+    import importlib.util as _iu
+    import pathlib as _pl
+
     _spec = _iu.spec_from_file_location(
         "_pricing_mod",
         _pl.Path(__file__).resolve().parent / "pricing.py",

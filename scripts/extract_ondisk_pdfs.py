@@ -47,17 +47,20 @@ REPO_ROOT: Path = Path(__file__).resolve().parents[1]
 PDF_BAML_MAP: list[tuple[Path, str, int | None]] = [
     # NCCE learning graphs (3 CS PDFs)
     (
-        REPO_ROOT / "data/bi_ep/syllabi_raw/uk_ncce/curriculum/learning_graph_intro_to_python_programming_y8.pdf",
+        REPO_ROOT
+        / "data/bi_ep/syllabi_raw/uk_ncce/curriculum/learning_graph_intro_to_python_programming_y8.pdf",
         "ExtractCSLearningGraph",
         8,
     ),
     (
-        REPO_ROOT / "data/bi_ep/syllabi_raw/uk_ncce/curriculum/learning_graph_programming_essentials_in_scratch_parts_i_ii_y7.pdf",
+        REPO_ROOT
+        / "data/bi_ep/syllabi_raw/uk_ncce/curriculum/learning_graph_programming_essentials_in_scratch_parts_i_ii_y7.pdf",
         "ExtractCSLearningGraph",
         7,
     ),
     (
-        REPO_ROOT / "data/bi_ep/syllabi_raw/uk_ncce/curriculum/learning_graph_variables_in_games_y6.pdf",
+        REPO_ROOT
+        / "data/bi_ep/syllabi_raw/uk_ncce/curriculum/learning_graph_variables_in_games_y6.pdf",
         "ExtractCSLearningGraph",
         6,
     ),
@@ -112,7 +115,7 @@ def _try_import_baml() -> tuple[bool, str | None]:
     if str(baml_dir) not in sys.path:
         sys.path.insert(0, str(baml_dir))
     try:
-        from baml_client.sync_client import b  # noqa: PLC0415
+        from baml_client.sync_client import b
     except ImportError as exc:
         return False, f"baml_client import failed: {exc}"
     if not hasattr(b, "ExtractPedagogyPrinciples"):
@@ -149,9 +152,10 @@ def _read_pdf_text(pdf_path: Path, md_root: Path) -> str:
     # Last resort: try to read the PDF directly (best-effort text extraction).
     try:
         from pypdf import PdfReader  # type: ignore[import-not-found]
+
         reader = PdfReader(str(pdf_path))
         return "\n\n".join(page.extract_text() or "" for page in reader.pages)
-    except Exception:  # noqa: BLE001 — best-effort
+    except Exception:
         return f"[PDF read failed: {pdf_path}]"
 
 
@@ -161,7 +165,7 @@ def _call_baml(
     year_level: int | None,
 ) -> dict[str, object]:
     """Invoke one BAML function. Returns a dict ready for JSON serialisation."""
-    from baml_client.sync_client import b  # noqa: PLC0415
+    from baml_client.sync_client import b
 
     fn = getattr(b, fn_name)
     if fn_name == "ExtractCSLearningGraph":
@@ -172,7 +176,9 @@ def _call_baml(
         result = fn(pdf_text=pdf_text)
     elif fn_name == "ExtractSourcePalette":
         # ExtractSourcePalette takes (source_url, pdf_path); we pass the local path twice.
-        result = fn(source_url=f"file://{pdf_text[:0]}", pdf_path=str(year_level) if year_level else "")
+        result = fn(
+            source_url=f"file://{pdf_text[:0]}", pdf_path=str(year_level) if year_level else ""
+        )
     else:
         raise ValueError(f"unknown baml function {fn_name!r}")
     # `result` is a Pydantic model — dump to dict
@@ -205,7 +211,8 @@ def _confidence_avg(payload: object) -> float:
 def main() -> int:
     """Run the extraction. Returns 0 on success, 1 on hard failure."""
     logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s",
+        level=logging.INFO,
+        format="%(asctime)s %(name)s %(levelname)s %(message)s",
     )
 
     SQLITE_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -240,9 +247,11 @@ def main() -> int:
                 payload = _call_baml(fn_name, pdf_text, year_level)
                 stub = 0
                 confidence = _confidence_avg(payload)
-            except Exception as exc:  # noqa: BLE001 — keep going on LLM failure
+            except Exception as exc:
                 logger.warning(
-                    "baml call failed for %s (%s); writing stub", pdf_path.name, exc,
+                    "baml call failed for %s (%s); writing stub",
+                    pdf_path.name,
+                    exc,
                 )
                 payload = {
                     "_stub": True,
@@ -281,19 +290,23 @@ def main() -> int:
             inserted += 1
             logger.info(
                 "extracted %s via %s (stub=%d, conf=%.2f)",
-                pdf_path.name, fn_name, stub, confidence,
+                pdf_path.name,
+                fn_name,
+                stub,
+                confidence,
             )
         except sqlite3.Error as exc:
             logger.error("sqlite insert failed for %s: %s", pdf_path, exc)
 
     conn.commit()
     total = conn.execute("SELECT COUNT(*) FROM extracted_syllabi").fetchone()[0]
-    stubs = conn.execute(
-        "SELECT COUNT(*) FROM extracted_syllabi WHERE stub=1"
-    ).fetchone()[0]
+    stubs = conn.execute("SELECT COUNT(*) FROM extracted_syllabi WHERE stub=1").fetchone()[0]
     logger.info(
         "extract_ondisk_pdfs: inserted=%d total_rows=%d stub_rows=%d → %s",
-        inserted, total, stubs, SQLITE_PATH,
+        inserted,
+        total,
+        stubs,
+        SQLITE_PATH,
     )
     conn.close()
     return 0

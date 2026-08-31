@@ -28,13 +28,11 @@ from .._common import (
     apply_education_theme,
     render_anam_bonneagar_footer,
     set_lang,
-    translate,
 )
 from .._common.i18n import translate as t
 from .._common.pclm_emitter import emit_pclm_pdf_bytes, emit_pclm_xml
 from .extraction import MarkingSchemeExtraction, extract_circular
 from .heatmap import render_heatmap, render_pclm_html
-
 
 _log = logging.getLogger("an_scrudu.app")
 set_lang("en")
@@ -92,7 +90,7 @@ def _on_extract(
                     f"File: {filename}. For the demo, click 'Use sample paper' "
                     f"to extract from the built-in LC Chemistry 2024 sample.",
                 )
-            with open(file_obj.name, "r", encoding="utf-8", errors="replace") as f:
+            with open(file_obj.name, encoding="utf-8", errors="replace") as f:
                 text = f.read()
         except (AttributeError, OSError) as e:
             return ("", "", "", f"**Error reading file:** {e}")
@@ -121,7 +119,7 @@ def _on_download_pdf(file_obj: gr.File | None, use_sample: bool) -> str:
         filename, text = _SAMPLE_FILENAME, _SAMPLE_TEXT
     else:
         filename = file_obj.name.split("/")[-1]
-        with open(file_obj.name, "r", encoding="utf-8", errors="replace") as f:
+        with open(file_obj.name, encoding="utf-8", errors="replace") as f:
             text = f.read()
 
     ext = extract_circular(text, filename)
@@ -141,12 +139,9 @@ def build_app():
     """
     if gr is None:
         raise ImportError(
-            "Gradio is required for build_app(); install with "
-            "`pip install gradio>=6.0,<7.0`"
+            "Gradio is required for build_app(); install with `pip install gradio>=6.0,<7.0`"
         )
-    with gr.Blocks(
-        theme=apply_education_theme(), css=GRADIO_CSS, title="An Scrudu"
-    ) as demo:
+    with gr.Blocks(theme=apply_education_theme(), css=GRADIO_CSS, title="An Scrudu") as demo:
         gr.Markdown(
             f"""# {t("an_scrudu.title")}
 ### *{t("an_scrudu.subtitle")}*

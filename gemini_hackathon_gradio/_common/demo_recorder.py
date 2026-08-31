@@ -29,7 +29,6 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
-
 # The 5-stage palette (matches theme.EDUCATION_PALETTE)
 STAGE_LABELS: dict[str, str] = {
     "aistear": "Aistear (Early Years)",
@@ -139,8 +138,6 @@ def render_storyboard(
     use FFmpeg / the Hackathon video tools. The output PNG is suitable for
     upload as a "demo flow" social-card image.
     """
-    import struct
-    import zlib
 
     # Layout constants
     padding = 40
@@ -236,7 +233,7 @@ def _write_png(path: str, width: int, height: int, data: bytes) -> None:
     stride = width * 3
     for y in range(height):
         raw.append(0)
-        raw.extend(data[y * stride:(y + 1) * stride])
+        raw.extend(data[y * stride : (y + 1) * stride])
 
     png = b"\x89PNG\r\n\x1a\n"
     png += chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
@@ -293,9 +290,9 @@ _MINI_FONT: dict[str, tuple[int, ...]] = {
 
 
 __all__ = [
-    "DemoStep",
-    "DemoSequence",
     "STAGE_LABELS",
+    "DemoSequence",
+    "DemoStep",
     "record_interaction",
     "render_storyboard",
 ]

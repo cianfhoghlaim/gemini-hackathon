@@ -32,7 +32,6 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-
 _log = logging.getLogger("an_scrudu.extraction")
 
 # Stage 1 — the LC past-paper corpus directory.
@@ -202,9 +201,7 @@ def extract_circular(pdf_text: str, filename: str) -> MarkingSchemeExtraction:
         },
         {
             "role": "user",
-            "content": _BAML_PROMPT_TEMPLATE.format(
-                filename=filename, pdf_text=pdf_text[:8000]
-            ),
+            "content": _BAML_PROMPT_TEMPLATE.format(filename=filename, pdf_text=pdf_text[:8000]),
         },
     ]
     record = extract_with_fallback(
@@ -268,8 +265,17 @@ def _offline_extraction(pdf_text: str, filename: str) -> MarkingSchemeExtraction
     # Detect subject from filename
     name_lower = filename.lower()
     subject = "Unknown"
-    for token in ("chemistry", "mathematics", "english", "gaeilge",
-                  "geography", "physics", "biology", "french", "history"):
+    for token in (
+        "chemistry",
+        "mathematics",
+        "english",
+        "gaeilge",
+        "geography",
+        "physics",
+        "biology",
+        "french",
+        "history",
+    ):
         if token in name_lower:
             subject = token.title()
             break
@@ -329,10 +335,10 @@ def _offline_extraction(pdf_text: str, filename: str) -> MarkingSchemeExtraction
 
 
 __all__ = [
-    "TopicDistribution",
-    "CircularReference",
-    "MarkingSchemeSummary",
-    "MarkingSchemeExtraction",
-    "extract_circular",
     "LC_PAST_PAPER_CORPUS_DIR",
+    "CircularReference",
+    "MarkingSchemeExtraction",
+    "MarkingSchemeSummary",
+    "TopicDistribution",
+    "extract_circular",
 ]

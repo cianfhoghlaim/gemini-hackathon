@@ -122,7 +122,7 @@ await client.add_episode(
     """,
     source=EpisodeType.text,
     source_description="NCCA Curriculum Update",
-    reference_time=datetime(2024, 9, 1)  # Valid time
+    reference_time=datetime(2024, 9, 1),  # Valid time
 )
 
 # JSON episode for structured data
@@ -131,10 +131,10 @@ await client.add_episode(
     episode_body={
         "name": "Alice Murphy",
         "subjects": ["Mathematics", "Physics", "Chemistry"],
-        "target_points": 550
+        "target_points": 550,
     },
     source=EpisodeType.json,
-    reference_time=datetime.now()
+    reference_time=datetime.now(),
 )
 ```
 
@@ -142,11 +142,11 @@ await client.add_episode(
 
 ```python
 class TemporalEdge:
-    source: str           # Source entity UUID
-    target: str           # Target entity UUID
-    relation_type: str    # e.g., "TEACHES", "REQUIRES"
-    fact: str             # Human-readable description
-    valid_at: datetime    # When fact became true
+    source: str  # Source entity UUID
+    target: str  # Target entity UUID
+    relation_type: str  # e.g., "TEACHES", "REQUIRES"
+    fact: str  # Human-readable description
+    valid_at: datetime  # When fact became true
     invalid_at: datetime  # When fact ceased being true (or None)
     created_at: datetime  # System ingestion time
     expired_at: datetime  # System expiration time (or None)
@@ -187,14 +187,14 @@ class TemporalEdge:
 await client.add_episode(
     name="maths_policy_2011",
     episode_body="Higher Level Maths grade H6 awards standard points only.",
-    reference_time=datetime(2011, 9, 1)
+    reference_time=datetime(2011, 9, 1),
 )
 
 # 2012: Bonus points introduced
 await client.add_episode(
     name="maths_bonus_2012",
     episode_body="Higher Level Maths grade H6 or above now awards 25 bonus points.",
-    reference_time=datetime(2012, 9, 1)
+    reference_time=datetime(2012, 9, 1),
 )
 ```
 
@@ -292,23 +292,29 @@ async def resolve_entities(extracted_entities: list[Entity]) -> list[Entity]:
 from pydantic import BaseModel, Field
 from typing import Optional
 
+
 class CurriculumStandard(BaseModel):
     """An educational curriculum standard or specification."""
+
     name: str = Field(description="Name of the curriculum standard")
     code: str = Field(description="Official code, e.g., MA-H-1.2")
     level: str = Field(description="Primary, Junior Cycle, Senior Cycle")
     subject: str = Field(description="Subject area")
 
+
 class ExamQuestion(BaseModel):
     """A specific examination question."""
+
     question_id: str = Field(description="Unique identifier")
     year: int = Field(description="Examination year")
     paper: int = Field(description="Paper number (1 or 2)")
     level: str = Field(description="Higher, Ordinary, Foundation")
     marks: int = Field(description="Total marks available")
 
+
 class MathTheorem(BaseModel):
     """A mathematical theorem or concept."""
+
     name: str = Field(description="Theorem name, e.g., Pythagoras")
     latex_def: str = Field(description="LaTeX definition")
     prerequisites: list[str] = Field(default=[], description="Required concepts")
@@ -369,10 +375,7 @@ FalkorDB represents a radical departure from traditional graph databases by usin
 # FalkorDB connection
 from graphiti_core import Graphiti
 
-client = Graphiti(
-    uri="redis://localhost:6379",
-    driver="falkordb"
-)
+client = Graphiti(uri="redis://localhost:6379", driver="falkordb")
 ```
 
 ### 4.3 Memgraph: The C++ Powerhouse
@@ -390,12 +393,7 @@ client = Graphiti(
 # Memgraph connection via gqlalchemy
 from gqlalchemy import Memgraph
 
-memgraph = Memgraph(
-    host="localhost",
-    port=7687,
-    username="memgraph",
-    password="memgraph"
-)
+memgraph = Memgraph(host="localhost", port=7687, username="memgraph", password="memgraph")
 ```
 
 ### 4.4 Neo4j
@@ -407,11 +405,7 @@ memgraph = Memgraph(
 
 ```python
 # Neo4j connection
-client = Graphiti(
-    uri="neo4j://localhost:7687",
-    user="neo4j",
-    password="password"
-)
+client = Graphiti(uri="neo4j://localhost:7687", user="neo4j", password="password")
 ```
 
 ### 4.5 Decision Matrix
@@ -473,15 +467,15 @@ results = await client.search(
     filters={
         "entity_type": "ExamQuestion",
         "valid_time_after": datetime(2020, 1, 1),
-        "valid_time_before": datetime(2024, 12, 31)
+        "valid_time_before": datetime(2024, 12, 31),
     },
-    limit=10
+    limit=10,
 )
 
 # Time travel query - knowledge as of a specific date
 historical = await client.search(
     query="Matrix multiplication definition",
-    reference_time=datetime(2015, 6, 1)  # As known in 2015
+    reference_time=datetime(2015, 6, 1),  # As known in 2015
 )
 ```
 
@@ -646,15 +640,15 @@ from graphiti_core import Graphiti
 from graphiti_core.driver.falkordb_driver import FalkorDriver
 from cognee.infrastructure.databases.graph.graph_store import GraphStore
 
+
 class CustomGraphitiAdapter(GraphStore):
     def __init__(self):
         self.driver = FalkorDriver(
-            host=os.getenv("FALKORDB_HOST", "falkordb"),
-            port=int(os.getenv("FALKORDB_PORT", 6379))
+            host=os.getenv("FALKORDB_HOST", "falkordb"), port=int(os.getenv("FALKORDB_PORT", 6379))
         )
         self.graphiti = Graphiti(
             graph_driver=self.driver,
-            llm_client=...  # Configured LLM Client
+            llm_client=...,  # Configured LLM Client
         )
 
     async def initialize(self):
@@ -669,6 +663,7 @@ class CustomGraphitiAdapter(GraphStore):
 from cocoindex import flow_def, sources, targets
 from cocoindex.targets import Neo4j, Neo4jConnectionSpec
 
+
 @flow_def(name="CodebaseIngestion")
 def ingestion_flow(flow, scope):
     # 1. Source: Watch the codebase directory
@@ -681,12 +676,10 @@ def ingestion_flow(flow, scope):
         "knowledge_graph",
         targets.Neo4j(
             connection=Neo4jConnectionSpec(
-                url="bolt://memgraph:7687",
-                user="memgraph",
-                password="memgraph"
+                url="bolt://memgraph:7687", user="memgraph", password="memgraph"
             ),
-            mapping=targets.Mapping(...)
-        )
+            mapping=targets.Mapping(...),
+        ),
     )
 ```
 
@@ -699,12 +692,14 @@ from networkx.readwrite import json_graph
 
 app = FastAPI()
 
+
 @app.post("/api/ingest")
 async def ingest_document(content: str):
     """Ingest document into knowledge graph."""
     await cognee.add(content)
     await cognee.cognify()
     return {"status": "success"}
+
 
 @app.get("/api/knowledge-graph")
 async def get_graph_data():
@@ -715,6 +710,7 @@ async def get_graph_data():
     G = client.graph
 
     return json_graph.node_link_data(G)
+
 
 @app.get("/api/search")
 async def search_knowledge(query: str):
@@ -730,6 +726,7 @@ from mcp.server import Server
 
 app = Server("graphiti-memory")
 
+
 @app.call_tool("add_memory")
 async def add_memory(body: str, timestamp: str, source: str):
     """Add new memory to temporal knowledge graph."""
@@ -738,25 +735,19 @@ async def add_memory(body: str, timestamp: str, source: str):
         episode_body=body,
         source=EpisodeType.text,
         source_description=source,
-        reference_time=datetime.fromisoformat(timestamp)
+        reference_time=datetime.fromisoformat(timestamp),
     )
     return {"status": "success"}
+
 
 @app.call_tool("search_memory")
 async def search_memory(query: str, time_context: str = None):
     """Search temporal knowledge graph."""
     ref_time = datetime.fromisoformat(time_context) if time_context else None
 
-    results = await graphiti.search(
-        query=query,
-        reference_time=ref_time,
-        limit=10
-    )
+    results = await graphiti.search(query=query, reference_time=ref_time, limit=10)
 
-    return {
-        "nodes": [n.dict() for n in results.nodes],
-        "edges": [e.dict() for e in results.edges]
-    }
+    return {"nodes": [n.dict() for n in results.nodes], "edges": [e.dict() for e in results.edges]}
 ```
 
 ### 6.6 BAML Integration for Extraction
@@ -764,6 +755,7 @@ async def search_memory(query: str, time_context: str = None):
 ```python
 from baml_client import b
 from graphiti_core import Graphiti
+
 
 async def extract_and_ingest(text: str, reference_time: datetime):
     """Use BAML for extraction, Graphiti for persistence."""
@@ -775,7 +767,7 @@ async def extract_and_ingest(text: str, reference_time: datetime):
     episode_body = {
         "theorems": [t.dict() for t in extracted.theorems],
         "questions": [q.dict() for q in extracted.questions],
-        "standards": [s.dict() for s in extracted.standards]
+        "standards": [s.dict() for s in extracted.standards],
     }
 
     # Persist to temporal graph
@@ -783,7 +775,7 @@ async def extract_and_ingest(text: str, reference_time: datetime):
         name=f"extraction_{hash(text)[:8]}",
         episode_body=episode_body,
         source=EpisodeType.json,
-        reference_time=reference_time
+        reference_time=reference_time,
     )
 ```
 
@@ -854,26 +846,30 @@ async def export_search_result(results: SearchResult) -> dict:
     node_ids = set()
 
     for entity in results.nodes:
-        nodes.append({
-            "id": entity.uuid,
-            "label": entity.name,
-            "group": entity.entity_type,
-            "valid_at": entity.valid_at.isoformat() if entity.valid_at else None,
-            "invalid_at": entity.invalid_at.isoformat() if entity.invalid_at else None,
-            "score": entity.score
-        })
+        nodes.append(
+            {
+                "id": entity.uuid,
+                "label": entity.name,
+                "group": entity.entity_type,
+                "valid_at": entity.valid_at.isoformat() if entity.valid_at else None,
+                "invalid_at": entity.invalid_at.isoformat() if entity.invalid_at else None,
+                "score": entity.score,
+            }
+        )
         node_ids.add(entity.uuid)
 
     for edge in results.edges:
         if edge.source in node_ids and edge.target in node_ids:
-            links.append({
-                "source": edge.source,
-                "target": edge.target,
-                "label": edge.relation_type,
-                "fact": edge.fact,
-                "valid_at": edge.valid_at.isoformat() if edge.valid_at else None,
-                "invalid_at": edge.invalid_at.isoformat() if edge.invalid_at else None
-            })
+            links.append(
+                {
+                    "source": edge.source,
+                    "target": edge.target,
+                    "label": edge.relation_type,
+                    "fact": edge.fact,
+                    "valid_at": edge.valid_at.isoformat() if edge.valid_at else None,
+                    "invalid_at": edge.invalid_at.isoformat() if edge.invalid_at else None,
+                }
+            )
 
     return {"nodes": nodes, "links": links}
 ```

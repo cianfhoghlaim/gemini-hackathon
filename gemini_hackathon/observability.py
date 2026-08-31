@@ -22,7 +22,7 @@ import os
 import time
 import uuid
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -31,15 +31,14 @@ import structlog
 logger = structlog.get_logger(__name__)
 
 # Bridge structlog to stdlib logging so caplog still works.
-try:
+with suppress(Exception):
     logging.basicConfig(level=logging.INFO)
-except Exception:
-    pass
 
 
 @dataclass
 class TraceContext:
     """A trace span for a single agent invocation."""
+
     agent: str
     trace_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     session_id: str | None = None
@@ -105,6 +104,7 @@ def try_init_langfuse() -> Any:
         return None
     try:
         from langfuse import Langfuse  # type: ignore[import-not-found]
+
         client = Langfuse(
             public_key=os.environ["LANGFUSE_PUBLIC_KEY"],
             secret_key=os.environ["LANGFUSE_SECRET_KEY"],
@@ -125,6 +125,7 @@ def try_init_mlflow() -> Any:
         return None
     try:
         import mlflow  # type: ignore[import-not-found]
+
         mlflow.set_tracking_uri(uri)
         logger.info(f"observability.mlflow_initialised tracking_uri={uri}")
         return mlflow
@@ -144,7 +145,7 @@ def try_init_cloud_logging() -> Any:
         logger.info("observability.cloud_logging_skipped reason='GCP_PROJECT_ID unset'")
         return None
     try:
-        from google.cloud import logging as cloud_logging  # noqa: PLC0415
+        from google.cloud import logging as cloud_logging
 
         client = cloud_logging.Client(project=project_id)
         client.setup_logging(log_level=logging.INFO)
@@ -169,13 +170,15 @@ def try_init_cloud_trace() -> Any:
         logger.info("observability.cloud_trace_skipped reason='GCP_PROJECT_ID unset'")
         return None
     try:
-        from opentelemetry import trace  # noqa: PLC0415
-        from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter  # noqa: PLC0415
-        from opentelemetry.sdk.trace import TracerProvider  # noqa: PLC0415
-        from opentelemetry.sdk.trace.export import BatchSpanProcessor  # noqa: PLC0415
+        from opentelemetry import trace
+        from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
+        from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
         provider = TracerProvider()
-        provider.add_span_processor(BatchSpanProcessor(CloudTraceSpanExporter(project_id=project_id)))
+        provider.add_span_processor(
+            BatchSpanProcessor(CloudTraceSpanExporter(project_id=project_id))
+        )
         trace.set_tracer_provider(provider)
         logger.info("observability.cloud_trace_initialised", project_id=project_id)
         return trace.get_tracer(__name__)

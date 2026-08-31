@@ -11,12 +11,9 @@ test suite).
 
 from __future__ import annotations
 
-import asyncio
 import base64
 import dataclasses
 from unittest.mock import MagicMock
-
-import pytest
 
 from gemini_hackathon.certificate.backends import (
     CompositorResult,
@@ -30,8 +27,17 @@ from gemini_hackathon.certificate.backends.compositor_base import (
 def test_compositor_result_carries_eight_fields():
     """`CompositorResult` has 9 dataclass fields."""
     fields = {f.name for f in dataclasses.fields(CompositorResult)}
-    expected = {"backend", "model_key", "image_b64", "seed", "duration_ms",
-                "cost_usd", "success", "error", "metadata"}
+    expected = {
+        "backend",
+        "model_key",
+        "image_b64",
+        "seed",
+        "duration_ms",
+        "cost_usd",
+        "success",
+        "error",
+        "metadata",
+    }
     assert fields == expected
 
 
@@ -53,17 +59,21 @@ def test_compositor_result_defaults_metadata_to_empty_dict():
 def test_compositor_result_default_error_is_none():
     """`error` defaults to None; only populated when `success` is False."""
     err_out = CompositorResult(
-        backend="x", model_key="y", image_b64="", seed=0,
-        duration_ms=0, cost_usd=0.0, success=False, error="bad",
+        backend="x",
+        model_key="y",
+        image_b64="",
+        seed=0,
+        duration_ms=0,
+        cost_usd=0.0,
+        success=False,
+        error="bad",
     )
     assert err_out.error == "bad"
 
 
 def test_make_stub_result_returns_1x1_png():
     """`_make_stub_result` returns a base64-encoded 1×1 PNG (~70 chars)."""
-    result = _make_stub_result(
-        backend="stub", model_key="stub/1x1", seed=42, duration_ms=0
-    )
+    result = _make_stub_result(backend="stub", model_key="stub/1x1", seed=42, duration_ms=0)
     assert result.backend == "stub"
     assert result.model_key == "stub/1x1"
     assert result.seed == 42
@@ -77,16 +87,16 @@ def test_make_stub_result_returns_1x1_png():
 
 def test_make_stub_result_duration_passes_through():
     """`_make_stub_result` carries the supplied `duration_ms` through verbatim."""
-    result = _make_stub_result(
-        backend="s", model_key="s/k", seed=1, duration_ms=1234
-    )
+    result = _make_stub_result(backend="s", model_key="s/k", seed=1, duration_ms=1234)
     assert result.duration_ms == 1234
 
 
 def test_build_prompt_from_concept_with_minimal_concept():
     """`build_prompt_from_concept` doesn't crash on a bare-None concept."""
+
     class _Bare:
         pass
+
     out = build_prompt_from_concept(_Bare())
     assert "Educational asset" in out
     assert "subject" in out  # the default value
@@ -126,8 +136,13 @@ def test_build_prompt_from_concept_uses_getattr_defaults_for_missing_fields():
 def test_compositor_result_is_not_a_frozen_dataclass():
     """`CompositorResult` is mutable (callers set `error` after construction)."""
     out = CompositorResult(
-        backend="x", model_key="y", image_b64="", seed=0,
-        duration_ms=0, cost_usd=0.0, success=True,
+        backend="x",
+        model_key="y",
+        image_b64="",
+        seed=0,
+        duration_ms=0,
+        cost_usd=0.0,
+        success=True,
     )
     # Mutating a non-frozen dataclass is allowed.
     out.error = "late-bound"

@@ -22,7 +22,6 @@ import pytest
 
 from gemini_hackathon.agents.fleet import IdentityContext
 
-
 # ---------------------------------------------------------------------------
 # Marking Grader Workflow
 # ---------------------------------------------------------------------------
@@ -79,7 +78,10 @@ def test_marking_grader_workflow_returns_breakdown(
         subject="Mathematics",
         marking_scheme=[
             MarkingSchemeQuestion(
-                question_id="Q1", prompt="Differentiate x^2.", max_marks=10, rubric="2 marks per derivative step"
+                question_id="Q1",
+                prompt="Differentiate x^2.",
+                max_marks=10,
+                rubric="2 marks per derivative step",
             ),
             MarkingSchemeQuestion(
                 question_id="Q2",
@@ -188,10 +190,10 @@ def test_equivalency_generator_maps_across_5_targets(
     """
     from gemini_hackathon.agents.ideas import (
         ALL_TARGET_JURISDICTIONS,
+        JURISDICTION_AWARDING_BODY,
         EquivalencyGenerator,
         EquivalencyRequest,
         EquivalencyRow,
-        JURISDICTION_AWARDING_BODY,
     )
 
     # The canned LLM response lists 5 target jurisdictions.

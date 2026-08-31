@@ -10,8 +10,11 @@ def __getattr__(name: str):
     """Lazily import the studio app (requires Gradio)."""
     if name == "build_app":
         from gemini_hackathon_gradio.anam_education.app import build_app as _b
+
         return _b
-    raise AttributeError(f"module 'gemini_hackathon_gradio.anam_education' has no attribute {name!r}")
+    raise AttributeError(
+        f"module 'gemini_hackathon_gradio.anam_education' has no attribute {name!r}"
+    )
 
 
 __all__ = ["build_app"]

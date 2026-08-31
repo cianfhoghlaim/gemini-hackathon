@@ -28,7 +28,6 @@ from __future__ import annotations
 
 from typing import Final
 
-
 # Supported languages
 LANGS: Final[tuple[str, ...]] = ("en", "ga", "cy", "gd", "gv", "kw", "br")
 LANG_NAMES: Final[dict[str, str]] = {

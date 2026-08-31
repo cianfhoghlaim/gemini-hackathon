@@ -474,7 +474,7 @@ def build_model_list(
 
 def _build_router() -> Router:
     """Build (and cache) the LiteLLM router for the active profile."""
-    global _ROUTER  # noqa: PLW0603
+    global _ROUTER
     if _ROUTER is not None:
         return _ROUTER
 
@@ -571,7 +571,7 @@ def _build_litellm_params(entry: ModelRegistryEntry) -> dict[str, Any]:
 
 def reset_router() -> None:
     """Reset the cached router. Required after a profile or backend swap."""
-    global _ROUTER  # noqa: PLW0603
+    global _ROUTER
     _ROUTER = None
 
 

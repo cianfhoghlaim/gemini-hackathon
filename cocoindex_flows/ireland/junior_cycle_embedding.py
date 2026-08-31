@@ -24,7 +24,6 @@ Reference: openspec/changes/2026-07-20-biep-v2-junior-cycle-extraction-v1/
 
 from __future__ import annotations
 
-import os
 import pathlib
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
@@ -37,9 +36,12 @@ logger = structlog.get_logger(__name__)
 
 # CocoIndex is optional — degrade gracefully if not installed.
 try:
+    from cocoindex.connectors import (
+        lancedb,  # type: ignore[import-not-found]
+        localfs,  # type: ignore[import-not-found]
+    )
+
     import cocoindex as coco  # type: ignore[import-not-found]
-    from cocoindex.connectors import lancedb  # type: ignore[import-not-found]
-    from cocoindex.connectors import localfs  # type: ignore[import-not-found]
 
     COCOINDEX_AVAILABLE = True
 except ImportError as e:
@@ -54,7 +56,7 @@ except ImportError as e:
 # Falls back to a stub if cocoindex is unavailable so the module is still
 # importable (needed for the dagster `dg check yaml` and lint steps).
 if COCOINDEX_AVAILABLE:
-    from .._shared._lifespan import (  # type: ignore[attr-defined]  # noqa: E402
+    from .._shared._lifespan import (  # type: ignore[attr-defined]
         EMBEDDER,
         LANCE_DB,
         shared_lifespan,
@@ -65,7 +67,7 @@ else:
 
     @dataclass
     class _StubLifespan:
-        async def __aenter__(self) -> "_StubLifespan":
+        async def __aenter__(self) -> _StubLifespan:
             return self
 
         async def __aexit__(self, *_args: Any) -> None:
@@ -156,8 +158,7 @@ def _lc_table_count() -> int:
 
 if COCOINDEX_AVAILABLE:
     # R4 — `@coco.fn` decorator + `lancedb.mount_table_target(LANCE_DB, ...)`.
-    @coco.fn(
-        )
+    @coco.fn()
     async def jc_subject_embedding_flow(
         subject: str,
         year: int,
@@ -169,7 +170,7 @@ if COCOINDEX_AVAILABLE:
         lo_id: str = "",
         lo_text: str = "",
         content_hash: str = "",
-    ) -> AsyncIterator[JCChunk]:
+    ) -> AsyncIterator[JuniorCycleChunk]:
         """Embed one Junior Cycle specification into the per-subject per-year per-language LanceDB table.
 
         The DAG materialisation calls this function once per BAML-extracted
@@ -178,15 +179,15 @@ if COCOINDEX_AVAILABLE:
         """
         # Mount the per-subject per-year per-language LanceDB table.
         table_name = _table_name(subject, f"year_{year}", language)
-        target = lancedb.mount_table_target(  # type: ignore[union-attr]
+        lancedb.mount_table_target(  # type: ignore[union-attr]
             LANCE_DB,
             table_name,
-            schema=JCChunk,
+            schema=JuniorCycleChunk,
         )
 
         chunk_id = f"{subject}/year_{year}/{language}/{content_hash[:16]}/{lo_id}"
         embedding = await EMBEDDER.embed(chunk_text)  # type: ignore[union-attr]
-        yield JCChunk(
+        yield JuniorCycleChunk(
             chunk_id=chunk_id,
             subject=subject,
             year=year,
@@ -202,24 +203,35 @@ if COCOINDEX_AVAILABLE:
         )
 
 else:
-    async def jc_subject_embedding_flow(*args: Any, **kwargs: Any) -> AsyncIterator[JCChunk]:
+
+    async def jc_subject_embedding_flow(
+        *args: Any, **kwargs: Any
+    ) -> AsyncIterator[JuniorCycleChunk]:
         """Stub when cocoindex is unavailable."""
         if False:  # pragma: no cover - no-op for type checker
-            yield JCChunk(  # type: ignore[call-arg]
-                chunk_id="", subject="", year=0, language="",
-                topic="", strand="", learning_outcome_id="",
-                learning_outcome_text="", source_pdf="", content_hash="",
-                chunk_text="", embedding=None,  # type: ignore[arg-type]
+            yield JuniorCycleChunk(  # type: ignore[call-arg]
+                chunk_id="",
+                subject="",
+                year=0,
+                language="",
+                topic="",
+                strand="",
+                learning_outcome_id="",
+                learning_outcome_text="",
+                source_pdf="",
+                content_hash="",
+                chunk_text="",
+                embedding=None,  # type: ignore[arg-type]
             )
 
 
 __all__: list[str] = [
+    "JC_LANGUAGES",
     "JC_SUBJECTS",
     "JC_YEARS",
-    "JC_LANGUAGES",
-    "JCChunk",
-    "jc_subject_embedding_flow",
+    "JuniorCycleChunk",
     "app",
+    "jc_subject_embedding_flow",
 ]
 
 

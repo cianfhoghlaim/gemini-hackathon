@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import importlib.util
-import json
 from pathlib import Path
 from typing import Any
 
@@ -35,9 +34,19 @@ def load_palette(source_key: str) -> dict[str, Any]:
     if pal is None:
         return {}
     keys = [
-        "source_key", "source_name", "jurisdiction", "level",
-        "primary", "secondary", "accent", "background", "text",
-        "heading_font", "body_font", "logo_url", "flag",
+        "source_key",
+        "source_name",
+        "jurisdiction",
+        "level",
+        "primary",
+        "secondary",
+        "accent",
+        "background",
+        "text",
+        "heading_font",
+        "body_font",
+        "logo_url",
+        "flag",
     ]
     return {k: getattr(pal, k, None) for k in keys}
 

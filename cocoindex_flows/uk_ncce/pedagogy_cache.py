@@ -65,32 +65,22 @@ try:
 except ImportError:
     coco = None  # type: ignore[assignment]
     COCOINDEX_AVAILABLE = False
-    logger.warning(
-        "pedagogy_cache: cocoindex not installed; falling back to plain run()"
-    )
+    logger.warning("pedagogy_cache: cocoindex not installed; falling back to plain run()")
 
 
 #: Default input PDF (the NCCE pedagogy principles document). The output is
 #: keyed on the sha256 of this file, so cache invalidation is automatic on
 #: content change (no version number to bump).
 RAW_ROOT: pathlib.Path = pathlib.Path(
-    os.environ.get(
-        "BI_EP_PDF_RAW_ROOT", pathlib.Path.cwd() / "data" / "bi_ep" / "syllabi_raw"
-    )
+    os.environ.get("BI_EP_PDF_RAW_ROOT", pathlib.Path.cwd() / "data" / "bi_ep" / "syllabi_raw")
 )
-PEDAGOGY_PDF: pathlib.Path = (
-    RAW_ROOT / "uk_ncce" / "curriculum" / "pedagogy_principles.pdf"
-)
+PEDAGOGY_PDF: pathlib.Path = RAW_ROOT / "uk_ncce" / "curriculum" / "pedagogy_principles.pdf"
 
 #: Default output directory (reuses the Phase 2b markdown root).
 MD_ROOT: pathlib.Path = pathlib.Path(
-    os.environ.get(
-        "BI_EP_PDF_MD_ROOT", pathlib.Path.cwd() / "data" / "bi_ep" / "syllabi_md"
-    )
+    os.environ.get("BI_EP_PDF_MD_ROOT", pathlib.Path.cwd() / "data" / "bi_ep" / "syllabi_md")
 )
-PEDAGOGY_CACHE_PATH: pathlib.Path = (
-    MD_ROOT / "uk_ncce" / "pedagogy_principles.json"
-)
+PEDAGOGY_CACHE_PATH: pathlib.Path = MD_ROOT / "uk_ncce" / "pedagogy_principles.json"
 
 #: Cognee dataset name (the canonical cross-cutting pedagogy dataset
 #: referenced in the gemini-hackathon platforms skill).
@@ -356,11 +346,10 @@ def _cognee_upload(principles: list[dict[str, Any]], sha: str) -> bool:
     upload fails (non-fatal — disk is the source of truth).
     """
     try:
-        import cognee  # type: ignore[import-not-found]  # noqa: F401
+        import cognee  # type: ignore[import-not-found]
     except ImportError:
         logger.warning(
-            "pedagogy_cache.cognee_missing dataset=%s — "
-            "falling back to disk-only cache",
+            "pedagogy_cache.cognee_missing dataset=%s — falling back to disk-only cache",
             COGNEE_DATASET,
         )
         return False
@@ -385,13 +374,13 @@ def _cognee_upload(principles: list[dict[str, Any]], sha: str) -> bool:
         asyncio.run(_upload_all())
         logger.info(
             "pedagogy_cache.cognee_uploaded dataset=%s n=%d sha=%s",
-            COGNEE_DATASET, len(principles), sha[:12],
+            COGNEE_DATASET,
+            len(principles),
+            sha[:12],
         )
         return True
-    except Exception as exc:  # noqa: BLE001 — cognee failures must not abort the cache
-        logger.warning(
-            "pedagogy_cache.cognee_failed dataset=%s reason=%s", COGNEE_DATASET, exc
-        )
+    except Exception as exc:
+        logger.warning("pedagogy_cache.cognee_failed dataset=%s reason=%s", COGNEE_DATASET, exc)
         return False
 
 
@@ -413,7 +402,8 @@ def _load_disk_cache(path: pathlib.Path) -> PedagogyCache | None:
     if not isinstance(raw, list) or len(raw) != 12:
         logger.warning(
             "pedagogy_cache.wrong_count path=%s got=%d expected=12",
-            path, len(raw) if isinstance(raw, list) else -1,
+            path,
+            len(raw) if isinstance(raw, list) else -1,
         )
         return None
     return PedagogyCache(
@@ -468,12 +458,12 @@ def build_pedagogy_cache(
     Returns a stats dict::
 
         {
-            "extracted": bool,           # True iff a fresh BAML call happened
-            "from_cache": bool,          # True iff the disk cache was a hit
-            "n_principles": int,         # number of principles persisted
-            "source_pdf_sha256": str,    # sha256 prefix (12 chars) for logs
-            "cognee_uploaded": bool,     # True iff Cognee was reachable
-            "source": str,               # "live_pdf" | "cache" | "cognee"
+            "extracted": bool,  # True iff a fresh BAML call happened
+            "from_cache": bool,  # True iff the disk cache was a hit
+            "n_principles": int,  # number of principles persisted
+            "source_pdf_sha256": str,  # sha256 prefix (12 chars) for logs
+            "cognee_uploaded": bool,  # True iff Cognee was reachable
+            "source": str,  # "live_pdf" | "cache" | "cognee"
         }
     """
     pdf = pdf_path or PEDAGOGY_PDF
@@ -530,9 +520,7 @@ def build_pedagogy_cache(
         logger.warning("pedagogy_cache.write_failed path=%s reason=%s", cache, exc)
 
     # Cognee is best-effort; the spec allows it to fail without aborting.
-    stats["cognee_uploaded"] = _cognee_upload(
-        [asdict(p) for p in principles], sha
-    )
+    stats["cognee_uploaded"] = _cognee_upload([asdict(p) for p in principles], sha)
 
     stats["extracted"] = True
     stats["n_principles"] = len(principles)
@@ -587,9 +575,7 @@ def run() -> dict[str, Any]:
 
 def main() -> int:
     """CLI entry: ``python -m cocoindex_flows.uk_ncce.pedagogy_cache``."""
-    parser = argparse.ArgumentParser(
-        description="Build / hit the NCCE pedagogy-principles cache."
-    )
+    parser = argparse.ArgumentParser(description="Build / hit the NCCE pedagogy-principles cache.")
     parser.add_argument("--pdf", type=pathlib.Path, default=None)
     parser.add_argument("--cache", type=pathlib.Path, default=None)
     args = parser.parse_args()
@@ -608,14 +594,14 @@ if __name__ == "__main__":  # pragma: no cover
 
 
 __all__ = [
-    "COGNEE_DATASET",
     "COCOINDEX_AVAILABLE",
+    "COGNEE_DATASET",
     "MD_ROOT",
     "PEDAGOGY_CACHE_PATH",
     "PEDAGOGY_PDF",
+    "RAW_ROOT",
     "PedagogyCache",
     "PedagogyPrinciple",
-    "RAW_ROOT",
     "app",
     "build_pedagogy_cache",
     "main",

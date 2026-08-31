@@ -16,7 +16,6 @@ from __future__ import annotations
 import os
 from typing import Any
 
-
 # Canonical named destinations in gemini_hackathon
 _NAMED_DESTINATIONS: dict[str, str] = {
     # Local DuckDB — the default in dev / offline mode.
@@ -45,10 +44,7 @@ def named_destinations(name: str, **kwargs: Any) -> str:
         ValueError: If `name` is not a recognised destination.
     """
     if name not in _NAMED_DESTINATIONS:
-        raise ValueError(
-            f"Unknown destination {name!r}; "
-            f"valid: {sorted(_NAMED_DESTINATIONS)}"
-        )
+        raise ValueError(f"Unknown destination {name!r}; valid: {sorted(_NAMED_DESTINATIONS)}")
     return _NAMED_DESTINATIONS[name]
 
 
@@ -67,4 +63,4 @@ def get_default_destination() -> str:
     return named_destinations("duckdb")
 
 
-__all__ = ["named_destinations", "get_default_destination"]
+__all__ = ["get_default_destination", "named_destinations"]

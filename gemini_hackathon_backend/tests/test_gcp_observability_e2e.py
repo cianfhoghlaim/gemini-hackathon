@@ -27,11 +27,8 @@ from __future__ import annotations
 import importlib
 import os
 import pathlib
-import sys
-from unittest.mock import MagicMock, patch
 
 import pytest
-
 
 # --- 1. The 6 Stackdriver env vars (re-verified with the OTLP pipeline) ----
 
@@ -117,9 +114,7 @@ def test_otlp_endpoint_is_unified_telemetry_api(
 
 def test_iam_gcp_ai_agent_adk_module_has_4_roles() -> None:
     """The 4 Stackdriver AI Agent ADK roles are bound by the module."""
-    main_tf = pathlib.Path(
-        "cloud/terraform/modules/iam_gcp_ai_agent_adk/main.tf"
-    ).read_text()
+    main_tf = pathlib.Path("cloud/terraform/modules/iam_gcp_ai_agent_adk/main.tf").read_text()
     for role in [
         "roles/telemetry.tracesWriter",
         "roles/logging.logWriter",
@@ -134,9 +129,7 @@ def test_iam_gcp_ai_agent_adk_module_has_4_roles() -> None:
 
 def test_observability_apis_module_has_6_apis() -> None:
     """The 6 observability APIs are enabled by the module."""
-    main_tf = pathlib.Path(
-        "cloud/terraform/modules/observability_apis/main.tf"
-    ).read_text()
+    main_tf = pathlib.Path("cloud/terraform/modules/observability_apis/main.tf").read_text()
     for api in [
         "aiplatform.googleapis.com",
         "serviceusage.googleapis.com",
@@ -226,7 +219,11 @@ def test_full_observability_state_dict_is_stable(
 
     # Same keys, same values (idempotent)
     assert set(state1.keys()) == {
-        "adk_otel", "openinference", "langfuse", "mlflow", "cloud_logging"
+        "adk_otel",
+        "openinference",
+        "langfuse",
+        "mlflow",
+        "cloud_logging",
     }
     assert state1 == state2
 
@@ -234,6 +231,7 @@ def test_full_observability_state_dict_is_stable(
 def test_state_dict_serializable_to_json() -> None:
     """The 5-key state dict is JSON-serializable (the /healthz contract)."""
     import json
+
     from gemini_hackathon_backend import observability
 
     importlib.reload(observability)

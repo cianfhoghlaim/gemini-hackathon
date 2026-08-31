@@ -17,14 +17,13 @@ Tests:
   6. The FastAPI app from `build_app()` exposes the AG-UI SSE route at
      `/` plus the healthz probe at `/healthz`.
 """
+
 from __future__ import annotations
 
 import json
-import sys
 import warnings
 
 import pytest
-
 
 # ADK's feature-registry emits UserWarning + DeprecationWarning at import
 # time (inside `build_app()`'s `ADKAgent(...)` constructor). Suppress
@@ -61,8 +60,9 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # ─── T1 #7: tool-level tests (no LLM needed) ─────────────────────────
 
+
 def test_cite_pdf_records_citation():
-    from gemini_hackathon_backend.agents.ncca_panel import cite_pdf, _NCCA_PDFS
+    from gemini_hackathon_backend.agents.ncca_panel import cite_pdf
 
     tc = _FakeTC()
     result = cite_pdf(
@@ -148,6 +148,7 @@ def test_build_ncca_panel_agent_constructs_with_3_server_tools():
 
 # ─── T1 #10: A2UI catalog contract ──────────────────────────────────
 
+
 def test_ncca_catalog_declares_all_6_components():
     from pathlib import Path
 
@@ -198,8 +199,9 @@ def test_ncca_catalog_examples_have_valid_a2ui_jsonl_shape():
         comp = unwrapped["updateComponents"]
         assert comp.get("surfaceId"), f"{surface_name}: missing surfaceId on updateComponents"
         component_ids = [c["id"] for c in comp["components"]]
-        assert len(component_ids) == len(set(component_ids)), \
+        assert len(component_ids) == len(set(component_ids)), (
             f"{surface_name}: duplicate component ids"
+        )
         # v0.9 components are flat dicts (no wrapper object) per §1.5
         for c in comp["components"]:
             assert "id" in c, f"{surface_name}: component missing id"
@@ -207,6 +209,7 @@ def test_ncca_catalog_examples_have_valid_a2ui_jsonl_shape():
 
 
 # ─── T1 #8: end-to-end A2UI streaming JSONL parses + has the expected key fields
+
 
 def test_a2ui_jsonl_overview_surface_has_all_required_fields():
     from pathlib import Path
@@ -230,11 +233,12 @@ def test_a2ui_jsonl_overview_surface_has_all_required_fields():
 
 # ─── T1 #8: build_app wires the AG-UI route correctly ────────────────
 
+
 def test_build_app_creates_fastapi_with_agui_route():
     from gemini_hackathon_backend.main import build_app
 
     app = build_app()
-    paths = sorted(set(getattr(r, "path", None) for r in app.routes))
+    paths = sorted({getattr(r, "path", None) for r in app.routes})
     # The AG-UI endpoint is mounted at "/" (path default of add_adk_fastapi_endpoint).
     # Plus the experimental /agents/state endpoint.
     # Plus /healthz (this module).

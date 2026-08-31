@@ -1,16 +1,18 @@
 """app.py — Level 1 standalone Gradio launcher (per Way Back Home pattern)."""
+
 from __future__ import annotations
 
 import json
 
 try:
     import gradio as gr  # type: ignore[import-not-found]
+
     GRADIO_AVAILABLE = True
 except ImportError:
     gr = None  # type: ignore[assignment]
     GRADIO_AVAILABLE = False
 
-from gemini_hackathon.journey.level_1_syllabus_extraction import run_level_1, Level1Result
+from gemini_hackathon.journey.level_1_syllabus_extraction import run_level_1
 
 
 def _run_pipeline(
@@ -44,15 +46,36 @@ def build_app():
         with gr.Row():
             subnation = gr.Dropdown(
                 label="Subnation",
-                choices=["ireland", "england", "northern_ireland", "scotland", "wales", "jersey", "guernsey", "isle_of_man"],
+                choices=[
+                    "ireland",
+                    "england",
+                    "northern_ireland",
+                    "scotland",
+                    "wales",
+                    "jersey",
+                    "guernsey",
+                    "isle_of_man",
+                ],
                 value="ireland",
             )
             subject = gr.Dropdown(
                 label="Subject",
                 choices=[
-                    "mathematics", "applied_mathematics", "chemistry", "physics",
-                    "biology", "geography", "english", "gaeilge", "french", "history",
-                    "business", "accounting", "art", "music", "computer_science",
+                    "mathematics",
+                    "applied_mathematics",
+                    "chemistry",
+                    "physics",
+                    "biology",
+                    "geography",
+                    "english",
+                    "gaeilge",
+                    "french",
+                    "history",
+                    "business",
+                    "accounting",
+                    "art",
+                    "music",
+                    "computer_science",
                 ],
                 value="mathematics",
             )
@@ -84,4 +107,5 @@ def main():
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

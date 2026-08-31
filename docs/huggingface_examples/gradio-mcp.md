@@ -38,24 +38,26 @@ LLMs are famously not great at counting the number of letters in a word (e.g., t
 ```python
 import gradio as gr
 
+
 def letter_counter(word, letter):
     """Count the occurrences of a specific letter in a word.
-    
+
     Args:
         word: The word or phrase to analyze
         letter: The letter to count occurrences of
-        
+
     Returns:
         The number of times the letter appears in the word
     """
     return word.lower().count(letter.lower())
+
 
 demo = gr.Interface(
     fn=letter_counter,
     inputs=["text", "text"],
     outputs="number",
     title="Letter Counter",
-    description="Count how many times a letter appears in a word"
+    description="Count how many times a letter appears in a word",
 )
 
 demo.launch(mcp_server=True)
@@ -121,33 +123,41 @@ Beyond tools, MCP supports resources (for exposing data) and prompts (for defini
 ```python
 import gradio as gr
 
+
 @gr.mcp.tool()  # Not needed as functions are registered as tools by default
 def add(a: int, b: int) -> int:
     """Add two numbers"""
     return a + b
+
 
 @gr.mcp.resource("greeting://{name}")
 def get_greeting(name: str) -> str:
     """Get a personalized greeting"""
     return f"Hello, {name}!"
 
+
 @gr.mcp.prompt()
 def greet_user(name: str, style: str = "friendly") -> str:
     """Generate a greeting prompt"""
     styles = {
         "friendly": "Please write a warm, friendly greeting",
-        "formal": "Please write a formal, professional greeting", 
+        "formal": "Please write a formal, professional greeting",
         "casual": "Please write a casual, relaxed greeting",
     }
     return f"{styles.get(style, styles['friendly'])} for someone named {name}."
+
 
 demo = gr.TabbedInterface(
     [
         gr.Interface(add, [gr.Number(value=1), gr.Number(value=2)], gr.Number()),
         gr.Interface(get_greeting, gr.Textbox("Abubakar"), gr.Textbox()),
-        gr.Interface(greet_user, [gr.Textbox("Abubakar"), gr.Dropdown(choices=["friendly", "formal", "casual"])], gr.Textbox()),
+        gr.Interface(
+            greet_user,
+            [gr.Textbox("Abubakar"), gr.Dropdown(choices=["friendly", "formal", "casual"])],
+            gr.Textbox(),
+        ),
     ],
-    ["Add", "Get Greeting", "Greet User"]
+    ["Add", "Get Greeting", "Greet User"],
 )
 
 demo.launch(mcp_server=True)
@@ -160,6 +170,7 @@ Gradio also allows you to create functions that only appear in the MCP server (n
 ```python
 import gradio as gr
 
+
 def slice_list(lst: list, start: int, end: int) -> list:
     """
     A tool that slices a list given a start and end index.
@@ -171,6 +182,7 @@ def slice_list(lst: list, start: int, end: int) -> list:
         The sliced list.
     """
     return lst[start:end]
+
 
 with gr.Blocks() as demo:
     gr.Markdown("This app includes MCP-only tools not visible in the UI.")

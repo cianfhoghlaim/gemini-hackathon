@@ -418,9 +418,7 @@ OPENSpec_CHANGES: list[dict] = [
             "Future work adds the awarding-body palettes (currently no "
             "Jersey/Guernsey-specific awarding body) + the DLT sources."
         ),
-        "acceptance": (
-            "DEFERRED_SUBNATIONS has 2 entries; get_active_subnations() returns 6."
-        ),
+        "acceptance": ("DEFERRED_SUBNATIONS has 2 entries; get_active_subnations() returns 6."),
     },
 ]
 
@@ -471,7 +469,9 @@ def write_change(changes_dir: Path, change: dict) -> Path:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate openspec changes for the gemini_hackathon refactor")
+    parser = argparse.ArgumentParser(
+        description="Generate openspec changes for the gemini_hackathon refactor"
+    )
     parser.add_argument("--changes-dir", default="openspec/changes", help="Output root directory")
     args = parser.parse_args()
 

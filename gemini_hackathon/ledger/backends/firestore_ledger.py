@@ -185,11 +185,13 @@ class FirestoreLedger:
     ) -> list[AchievementRecord]:
         """Return all achievements for a learner (optionally filtered by subject)."""
         if self.available:
-            collection = self._client.collection("learners").document(learner_id).collection("achievements")
-            query = collection.where("subject_slug", "==", subject_slug) if subject_slug else collection
-            results = [
-                AchievementRecord(**doc.to_dict()) for doc in query.stream()
-            ]
+            collection = (
+                self._client.collection("learners").document(learner_id).collection("achievements")
+            )
+            query = (
+                collection.where("subject_slug", "==", subject_slug) if subject_slug else collection
+            )
+            results = [AchievementRecord(**doc.to_dict()) for doc in query.stream()]
             return sorted(results, key=lambda r: r.mastery_score, reverse=True)
 
         results = []

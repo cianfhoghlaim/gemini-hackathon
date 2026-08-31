@@ -23,7 +23,9 @@ def build_app():
         theme=gr.themes.Soft(primary_hue="green", secondary_hue="emerald"),
     ) as demo:
         gr.Markdown("# MeanScoil — Junior Cycle (12-15)")
-        gr.Markdown("MeanScoil (Junior Cycle) — 18 NCCA subjects + 16 short courses + 36 CBAs. The formative exit-card studio + CBA descriptors.")
+        gr.Markdown(
+            "MeanScoil (Junior Cycle) — 18 NCCA subjects + 16 short courses + 36 CBAs. The formative exit-card studio + CBA descriptors."
+        )
         # The actual implementation lives in
         # `gemini_hackathon_gradio/editorial_studio/app.py`
         # (the canonical editorial canvas). This Space re-exports
@@ -32,6 +34,7 @@ def build_app():
         # full gemini_hackathon_gradio package at startup.
         try:
             from gemini_hackathon_gradio import build_editorial_studio_app
+
             editor = build_editorial_studio_app()
             gr.Markdown("## Editorial Studio preview")
             gr.Markdown(editor.__doc__ or "Editorial Studio (preview).")

@@ -41,6 +41,7 @@ class _MoUI:
                 # notebook can still work with the underlying dataframe/chart
                 return args[0]
             return None
+
         return _stub
 
 

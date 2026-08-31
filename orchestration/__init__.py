@@ -13,12 +13,14 @@ hackathon we ship slim shims:
 The full Dagster lift is deferred (Phase 2 in the plan).
 """
 
+# `defs` is a sub-package; importable as `orchestration.defs.<layer>.<module>`.
+from . import defs
 from .partitions import (
     LANGUAGES,
     LC_SUBJECTS,
-    PipelinePartition,
     STAGES,
     YEARS,
+    PipelinePartition,
     get_partition_name,
     pipeline_partitions,
     subject_partitions,
@@ -29,16 +31,12 @@ from .storage.ducklake_client import (
     write_to_named_destination,
 )
 
-
-# `defs` is a sub-package; importable as `orchestration.defs.<layer>.<module>`.
-from . import defs  # noqa: E402  (re-export)
-
 __all__ = [
     "LANGUAGES",
     "LC_SUBJECTS",
-    "PipelinePartition",
     "STAGES",
     "YEARS",
+    "PipelinePartition",
     "defs",
     "get_ducklake_client",
     "get_motherduck_client",

@@ -93,7 +93,7 @@ demo = gr.load_openapi(
     openapi_spec="<URL, file path, or Python dict>",
     base_url="<API base URL>",
     paths=["<optional regex patterns>"],  # e.g., ["/pet.*"]
-    methods=["get", "post"]  # optional HTTP methods filter
+    methods=["get", "post"],  # optional HTTP methods filter
 )
 
 demo.launch()

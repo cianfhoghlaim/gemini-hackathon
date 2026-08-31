@@ -128,15 +128,17 @@ def lift_corpus(
             dst_file.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src_file, dst_file)
             sha = _sha256(dst_file)
-            manifest_entries.append({
-                "src_path": str(src_file),
-                "dst_path": str(dst_file),
-                "subject": subject,
-                "language": language,
-                "basename": basename,
-                "sha256": sha,
-                "file_size_bytes": dst_file.stat().st_size,
-            })
+            manifest_entries.append(
+                {
+                    "src_path": str(src_file),
+                    "dst_path": str(dst_file),
+                    "subject": subject,
+                    "language": language,
+                    "basename": basename,
+                    "sha256": sha,
+                    "file_size_bytes": dst_file.stat().st_size,
+                }
+            )
             stats["lifted"] += 1
         else:
             # check mode: just verify sha256
@@ -148,19 +150,22 @@ def lift_corpus(
             dst_sha = _sha256(dst_file)
             if src_sha == dst_sha:
                 stats["verified"] += 1
-                manifest_entries.append({
-                    "src_path": str(src_file),
-                    "dst_path": str(dst_file),
-                    "subject": subject,
-                    "language": language,
-                    "basename": basename,
-                    "sha256": dst_sha,
-                    "file_size_bytes": dst_file.stat().st_size,
-                })
+                manifest_entries.append(
+                    {
+                        "src_path": str(src_file),
+                        "dst_path": str(dst_file),
+                        "subject": subject,
+                        "language": language,
+                        "basename": basename,
+                        "sha256": dst_sha,
+                        "file_size_bytes": dst_file.stat().st_size,
+                    }
+                )
             else:
                 logger.warning(
                     "sha256 mismatch: src=%s dst=%s",
-                    src_sha[:8], dst_sha[:8],
+                    src_sha[:8],
+                    dst_sha[:8],
                 )
 
     if not check:
@@ -186,15 +191,23 @@ def lift_corpus(
 def main() -> int:
     """CLI entry. Returns 0 on success, 1 on hard failure."""
     logging.basicConfig(
-        level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s",
+        level=logging.INFO,
+        format="%(asctime)s %(name)s %(levelname)s %(message)s",
     )
     parser = argparse.ArgumentParser(description="Lift the 134-PDF LC corpus.")
-    parser.add_argument("--src", type=Path, default=DEFAULT_SRC,
-                        help="Source root (default: cianfhoghlaim worktree)")
-    parser.add_argument("--dst", type=Path, default=DEFAULT_DST,
-                        help="Destination root (default: gemini_hackathon/data/ireland/leaving_certificate)")
-    parser.add_argument("--check", action="store_true",
-                        help="Verify sha256s without copying")
+    parser.add_argument(
+        "--src",
+        type=Path,
+        default=DEFAULT_SRC,
+        help="Source root (default: cianfhoghlaim worktree)",
+    )
+    parser.add_argument(
+        "--dst",
+        type=Path,
+        default=DEFAULT_DST,
+        help="Destination root (default: gemini_hackathon/data/ireland/leaving_certificate)",
+    )
+    parser.add_argument("--check", action="store_true", help="Verify sha256s without copying")
     args = parser.parse_args()
 
     stats = lift_corpus(src_root=args.src, dst_root=args.dst, check=args.check)

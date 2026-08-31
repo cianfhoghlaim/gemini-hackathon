@@ -20,13 +20,12 @@ Drives the W10 FIBO image generation + the W14 certificate pipeline
 background rendering.
 """
 
-from enum import Enum
-from typing import Optional
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
 
-class EducationAssetType(str, Enum):
+class EducationAssetType(StrEnum):
     """Types of education assets the FIBO pipeline generates.
 
     Generalises the Celtic AssetType (character_portrait, item_icon,
@@ -34,17 +33,17 @@ class EducationAssetType(str, Enum):
     British Isles education system.
     """
 
-    SYLLABUS_DIAGRAM = "syllabus_diagram"          # NCCA syllabus page with diagram
+    SYLLABUS_DIAGRAM = "syllabus_diagram"  # NCCA syllabus page with diagram
     EXPERIMENT_APPARATUS = "experiment_apparatus"  # chemistry apparatus diagram
-    FORMATIVE_EXIT_CARD = "formative_exit_card"    # formative assessment cover
-    CERTIFICATE = "certificate"                    # LC/JC certificate background (W14)
-    TOPIC_SUMMARY = "topic_summary"                # NCCA topic summary poster
-    MOLECULE_SVG = "molecule_svg"                  # chemistry molecule diagram
-    EQUATION_RENDER = "equation_render"            # math equation rendered image
-    MAP_DIAGRAM = "map_digram"                     # British Isles map diagram
+    FORMATIVE_EXIT_CARD = "formative_exit_card"  # formative assessment cover
+    CERTIFICATE = "certificate"  # LC/JC certificate background (W14)
+    TOPIC_SUMMARY = "topic_summary"  # NCCA topic summary poster
+    MOLECULE_SVG = "molecule_svg"  # chemistry molecule diagram
+    EQUATION_RENDER = "equation_render"  # math equation rendered image
+    MAP_DIAGRAM = "map_digram"  # British Isles map diagram
 
 
-class SubjectStyle(str, Enum):
+class SubjectStyle(StrEnum):
     """Subject / stage styles for generation.
 
     Replaces CelticStyle (La Tène / Ogham / Knotwork / Zoomorphic /
@@ -77,17 +76,19 @@ class SubjectStyle(str, Enum):
     STAGE_OLLSCOIL = "stage_ollscoil"
 
 
-class GenerationModel(str, Enum):
+class GenerationModel(StrEnum):
     """Available generation models."""
 
     FLUX_DEV = "black-forest-labs/FLUX.1-dev"
     FLUX_SCHNELL = "black-forest-labs/FLUX.1-schnell"
     SDXL_TURBO = "stabilityai/sdxl-turbo"
     QWEN_VL = "Qwen/Qwen2-VL-7B-Instruct"
-    UNSLOTH_STUDIO_FLUX = "unsloth_studio/flux"      # the gemini_hackathon Tier 2 (Gemma 4 26B-A4B → Flux)
+    UNSLOTH_STUDIO_FLUX = (
+        "unsloth_studio/flux"  # the gemini_hackathon Tier 2 (Gemma 4 26B-A4B → Flux)
+    )
 
 
-class Rarity(str, Enum):
+class Rarity(StrEnum):
     """Visual asset rarity levels.
 
     Kept from the Celtic AssetType (where it meant "item rarity") —
@@ -114,19 +115,19 @@ class AssetRequest(BaseModel):
     height: int = Field(default=512, ge=256, le=2048)
 
     # Generation parameters
-    prompt_override: Optional[str] = None
-    negative_prompt: Optional[str] = None
-    seed: Optional[int] = None
+    prompt_override: str | None = None
+    negative_prompt: str | None = None
+    seed: int | None = None
     steps: int = Field(default=20, ge=1, le=100)
     guidance_scale: float = Field(default=7.5, ge=1.0, le=20.0)
 
     # Asset-specific parameters
-    subject: Optional[str] = None  # for subject-specific diagrams
-    topic_code: Optional[str] = None  # learning outcome code (e.g. MA-LC-CH-1.2)
+    subject: str | None = None  # for subject-specific diagrams
+    topic_code: str | None = None  # learning outcome code (e.g. MA-LC-CH-1.2)
     detail_level: Rarity = Rarity.COMMON
 
     # Caching (the existing AssetCache from service.py)
-    cache_key: Optional[str] = None
+    cache_key: str | None = None
     use_cache: bool = True
 
     class Config:
@@ -140,8 +141,8 @@ class AssetResponse(BaseModel):
     asset_id: str
 
     # Image data
-    image_url: Optional[str] = None
-    image_base64: Optional[str] = None
+    image_url: str | None = None
+    image_base64: str | None = None
 
     # Metadata
     prompt_used: str
@@ -155,11 +156,11 @@ class AssetResponse(BaseModel):
     height: int
 
     # Storage (HF Hub — see gemini_hackathon_gradio._common.hf_hub_push)
-    hf_dataset_repo: Optional[str] = None  # cianfhoghlaim/gemini-hackathon-assets-<user>
-    hf_dataset_path: Optional[str] = None  # path within the repo
+    hf_dataset_repo: str | None = None  # cianfhoghlaim/gemini-hackathon-assets-<user>
+    hf_dataset_path: str | None = None  # path within the repo
 
     # Error handling
-    error: Optional[str] = None
+    error: str | None = None
 
     class Config:
         use_enum_values = True
@@ -170,7 +171,7 @@ class BatchAssetRequest(BaseModel):
 
     requests: list[AssetRequest]
     priority: int = Field(default=0, ge=0, le=10)
-    callback_url: Optional[str] = None
+    callback_url: str | None = None
 
     class Config:
         use_enum_values = True
@@ -196,19 +197,19 @@ class LiteLLMConfig(BaseModel):
     """
 
     api_base: str = "http://localhost:4000"
-    api_key: Optional[str] = None
+    api_key: str | None = None
     timeout: int = 120
     max_retries: int = 3
 
 
 __all__ = [
-    "EducationAssetType",
-    "SubjectStyle",
-    "GenerationModel",
-    "Rarity",
     "AssetRequest",
     "AssetResponse",
     "BatchAssetRequest",
     "BatchAssetResponse",
+    "EducationAssetType",
+    "GenerationModel",
     "LiteLLMConfig",
+    "Rarity",
+    "SubjectStyle",
 ]

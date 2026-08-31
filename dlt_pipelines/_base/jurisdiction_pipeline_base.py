@@ -82,14 +82,22 @@ class JurisdictionPipelineBase:
 
     # The 8 CocoIndex v1 Apps (LC × 6 subjects × 2 langs) + the cross-subject
     cocoindex_apps: tuple[str, ...] = (
-        "lc_mathematics_en", "lc_mathematics_ga",
-        "lc_english_en", "lc_english_ga",
-        "lc_gaeilge_en", "lc_gaeilge_ga",
-        "lc_chemistry_en", "lc_chemistry_ga",
-        "lc_physics_en", "lc_physics_ga",
-        "lc_biology_en", "lc_biology_ga",
-        "lc_geography_en", "lc_geography_ga",
-        "lc_computer_science_en", "lc_computer_science_ga",
+        "lc_mathematics_en",
+        "lc_mathematics_ga",
+        "lc_english_en",
+        "lc_english_ga",
+        "lc_gaeilge_en",
+        "lc_gaeilge_ga",
+        "lc_chemistry_en",
+        "lc_chemistry_ga",
+        "lc_physics_en",
+        "lc_physics_ga",
+        "lc_biology_en",
+        "lc_biology_ga",
+        "lc_geography_en",
+        "lc_geography_ga",
+        "lc_computer_science_en",
+        "lc_computer_science_ga",
         "cross_subject_competency_embedding",
     )
 
@@ -118,25 +126,59 @@ class IrelandJurisdictionPipeline(JurisdictionPipelineBase):
 
     # The 8 core NCCA LC subjects + 6 adjacent = 14 total
     lc_subjects: tuple[str, ...] = (
-        "mathematics", "english", "gaeilge", "chemistry",
-        "geography", "physics", "biology", "computer_science",
+        "mathematics",
+        "english",
+        "gaeilge",
+        "chemistry",
+        "geography",
+        "physics",
+        "biology",
+        "computer_science",
     )
     adjacent_subjects: tuple[str, ...] = (
-        "applied_mathematics", "history", "french",
-        "business", "accounting", "art",
+        "applied_mathematics",
+        "history",
+        "french",
+        "business",
+        "accounting",
+        "art",
     )
 
     # NCCA source URLs (curriculumonline.ie per stage × subject × language)
     ncca_source_urls: dict[str, dict[str, str]] = field(
         default_factory=lambda: {
-            "mathematics": {"en": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Mathematics/", "ga": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Matamaitic/"},
-            "english": {"en": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/English/", "ga": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Bearla/"},
-            "gaeilge": {"en": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Gaeilge/", "ga": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Gaeilge/"},
-            "chemistry": {"en": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Chemistry/", "ga": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Ceimic/"},
-            "geography": {"en": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Geography/", "ga": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Tireolaiocht/"},
-            "physics": {"en": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Physics/", "ga": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Fisic/"},
-            "biology": {"en": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Biology/", "ga": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Bitheolaiocht/"},
-            "computer_science": {"en": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Computer-Science/", "ga": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Computer-Science/"},
+            "mathematics": {
+                "en": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Mathematics/",
+                "ga": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Matamaitic/",
+            },
+            "english": {
+                "en": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/English/",
+                "ga": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Bearla/",
+            },
+            "gaeilge": {
+                "en": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Gaeilge/",
+                "ga": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Gaeilge/",
+            },
+            "chemistry": {
+                "en": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Chemistry/",
+                "ga": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Ceimic/",
+            },
+            "geography": {
+                "en": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Geography/",
+                "ga": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Tireolaiocht/",
+            },
+            "physics": {
+                "en": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Physics/",
+                "ga": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Fisic/",
+            },
+            "biology": {
+                "en": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Biology/",
+                "ga": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Bitheolaiocht/",
+            },
+            "computer_science": {
+                "en": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Computer-Science/",
+                "ga": "https://curriculumonline.ie/Senior-cycle/Senior-Cycle-Subjects/Computer-Science/",
+            },
         }
     )
 

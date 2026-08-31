@@ -14,6 +14,7 @@ The 3 `#REPLACE` markers a participant fills in:
 
 The codelab doc walks them through it: docs/journey/01_level_0_pick_subnation.md
 """
+
 from __future__ import annotations
 
 import argparse
@@ -24,6 +25,7 @@ from typing import Any
 
 try:
     import gradio as gr  # type: ignore[import-not-found]
+
     GRADIO_AVAILABLE = True
 except ImportError:
     gr = None  # type: ignore[assignment]
@@ -33,19 +35,19 @@ except ImportError:
 # gemini_hackathon/session/schema.py:ActiveSubnation.
 SUBNATIONS: tuple[tuple[str, str, str], ...] = (
     # (slug, display_name, palette_file)
-    ("ireland",          "Ireland (NCCA)",                  "ncca_palette.json"),
-    ("england",          "England (AQA + OCR + Pearson)",   "aqa_palette.json"),
-    ("northern_ireland", "Northern Ireland (CCEA)",        "northern_ireland_palette.json"),
-    ("scotland",         "Scotland (SQA)",                  "scotland_palette.json"),
-    ("wales",            "Wales (WJEC)",                    "wales_palette.json"),
-    ("jersey",           "Jersey (States of Jersey)",       "jersey_palette.json"),
-    ("guernsey",         "Guernsey (States of Guernsey)",   "guernsey_palette.json"),
-    ("isle_of_man",      "Isle of Man (DESC)",              "isle_of_man_palette.json"),
+    ("ireland", "Ireland (NCCA)", "ncca_palette.json"),
+    ("england", "England (AQA + OCR + Pearson)", "aqa_palette.json"),
+    ("northern_ireland", "Northern Ireland (CCEA)", "northern_ireland_palette.json"),
+    ("scotland", "Scotland (SQA)", "scotland_palette.json"),
+    ("wales", "Wales (WJEC)", "wales_palette.json"),
+    ("jersey", "Jersey (States of Jersey)", "jersey_palette.json"),
+    ("guernsey", "Guernsey (States of Guernsey)", "guernsey_palette.json"),
+    ("isle_of_man", "Isle of Man (DESC)", "isle_of_man_palette.json"),
 )
 
 
 def _now_iso() -> str:
-    return _dt.datetime.now(tz=_dt.timezone.utc).isoformat(timespec="seconds")
+    return _dt.datetime.now(tz=_dt.UTC).isoformat(timespec="seconds")
 
 
 def _get_firestore_client():
@@ -57,6 +59,7 @@ def _get_firestore_client():
         return None
     try:
         from google.cloud import firestore
+
         database = os.environ.get("JOURNEY_FIRESTORE_DATABASE", "(default)")
         return firestore.Client(project=project_id, database=database)
     except ImportError:
@@ -75,9 +78,9 @@ def _build_learner_doc(
         "display_name": display_name,
         "subnation": subnation,
         "palette_file": palette_file,
-        "active_subject": "mathematics",        # sensible default — Level 1 can override
+        "active_subject": "mathematics",  # sensible default — Level 1 can override
         "current_level": "0",
-        "progress": "010000",                 # 0x01 = Level 0 complete
+        "progress": "010000",  # 0x01 = Level 0 complete
         "created_at": _now_iso(),
         "last_updated": _now_iso(),
         # The journey orchestrator (Stream C.3) reads these on every level transition
@@ -176,7 +179,6 @@ def build_app() -> Any:
             )
             display_name_in = gr.Textbox(
                 label="Display name",
-
                 # REPLACE-3: replace this stub with your real codelab answer.
                 # The real implementation is one line — replace this whole
                 # assignment with whatever string the participant enters
@@ -213,14 +215,21 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--share", action="store_true", help="Generate a public HF Spaces URL")
     parser.add_argument("--port", type=int, default=7860)
-    parser.add_argument("--checklist", action="store_true",
-                        help="Print the 3 REPLACE markers + their context, then exit (for the codelab to scan)")
+    parser.add_argument(
+        "--checklist",
+        action="store_true",
+        help="Print the 3 REPLACE markers + their context, then exit (for the codelab to scan)",
+    )
     args = parser.parse_args()
 
     if args.checklist:
         # The codelab doc references these by name — keep them stable.
-        print("REPLACE-1: write_learner_profile() — the Firestore client.collection(...).document(...).set(...) call")
-        print("REPLACE-2: _apply_palette() — the gemini_hackathon.theming.apply_palette_for_subnation(subnation) call")
+        print(
+            "REPLACE-1: write_learner_profile() — the Firestore client.collection(...).document(...).set(...) call"
+        )
+        print(
+            "REPLACE-2: _apply_palette() — the gemini_hackathon.theming.apply_palette_for_subnation(subnation) call"
+        )
         print("REPLACE-3: display_name_in placeholder — your real display name")
         return 0
 

@@ -17,6 +17,7 @@ The 2 `#REPLACE-*` markers a workshop participant fills in are inside
   - **REPLACE-1** (in `embed_chunks`) — wire the `VertexEmbedder`:
     ```python
     from cocoindex_flows._shared._vertex_embedder import VertexEmbedder
+
     e = VertexEmbedder()
     vector = await e.embed(chunk_text)
     ```
@@ -26,6 +27,7 @@ The 2 `#REPLACE-*` markers a workshop participant fills in are inside
   - **REPLACE-2** (in `upsert_vector`) — wire the `VectorTarget`:
     ```python
     from cocoindex_flows._shared._vector_target import get_vector_target, VectorRow
+
     v = get_vector_target()  # honours VECTOR_BACKEND env (firestore | vertex)
     await v.upsert_batch([VectorRow(...)])
     ```

@@ -21,10 +21,8 @@ from pathlib import Path
 from typing import Any
 
 from ..session import (
-    DEFAULT_PALETTE_PER_SUBNATION,
     get_subnation_meta,
     is_valid_subject,
-    subjects_for,
 )
 
 logger = logging.getLogger(__name__)
@@ -52,7 +50,7 @@ def _load_cross_jurisdiction_index() -> dict[str, Any]:
     try:
         with _CROSS_JURISDICTION_PATH.open(encoding="utf-8") as fp:
             return json.load(fp)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning("Failed to load cross_jurisdiction.json: %s", exc)
         return {}
 
@@ -73,9 +71,7 @@ def _topic_matches(query: str, topic: str) -> bool:
         return True
     q_words = set(q.split())
     t_words = set(t.split())
-    if q_words & t_words and len(q_words & t_words) >= max(1, len(q_words) - 1):
-        return True
-    return False
+    return bool(q_words & t_words and len(q_words & t_words) >= max(1, len(q_words) - 1))
 
 
 # ---------------------------------------------------------------------------
@@ -180,47 +176,52 @@ def find_similar_resources(
                 if target_meta is None:
                     continue
                 for equiv in equivs:
-                    results.append({
-                        "source_subnation": target_code,
-                        "source_name": target_meta.name,
-                        "source_flag": target_meta.flag,
-                        "awarding_body": equiv.get("awarding_body"),
-                        "resource_type": "syllabus_unit",
-                        "title": f"{equiv.get('topic')} — {equiv.get('awarding_body')}",
-                        "url": equiv.get("url"),
-                        "score": 0.85,
-                        "rationale": (
-                            f"Your home topic '{t.get('topic')}' ({subject_block.get('subject_name')}, "
-                            f"{active_subnation.upper()}) is taught under '{equiv.get('topic')}' in "
-                            f"{target_meta.name}'s {equiv.get('awarding_body')} syllabus."
-                        ),
-                    })
+                    results.append(
+                        {
+                            "source_subnation": target_code,
+                            "source_name": target_meta.name,
+                            "source_flag": target_meta.flag,
+                            "awarding_body": equiv.get("awarding_body"),
+                            "resource_type": "syllabus_unit",
+                            "title": f"{equiv.get('topic')} — {equiv.get('awarding_body')}",
+                            "url": equiv.get("url"),
+                            "score": 0.85,
+                            "rationale": (
+                                f"Your home topic '{t.get('topic')}' ({subject_block.get('subject_name')}, "
+                                f"{active_subnation.upper()}) is taught under '{equiv.get('topic')}' in "
+                                f"{target_meta.name}'s {equiv.get('awarding_body')} syllabus."
+                            ),
+                        }
+                    )
 
     if results:
         return results[:k]
 
     # Fallback: per-other-subnation stub (preserves the legacy behaviour).
     for s in others:
-        results.append({
-            "source_subnation": s.code,
-            "source_name": s.name,
-            "source_flag": s.flag,
-            "awarding_body": s.awarding_body_short,
-            "resource_type": "exam_paper" if "paper" in topic.lower() else "textbook_chapter",
-            "title": f"{topic} — {s.awarding_body_short} reference",
-            "url": f"https://{s.code}.example/{subject_id}/{topic}",
-            "score": 0.80,
-            "rationale": (
-                f"Stub: {s.awarding_body_short} covers similar learning outcomes "
-                f"to your home subnation. In production, the RAG index returns "
-                f"actual ranked matches."
-            ),
-        })
+        results.append(
+            {
+                "source_subnation": s.code,
+                "source_name": s.name,
+                "source_flag": s.flag,
+                "awarding_body": s.awarding_body_short,
+                "resource_type": "exam_paper" if "paper" in topic.lower() else "textbook_chapter",
+                "title": f"{topic} — {s.awarding_body_short} reference",
+                "url": f"https://{s.code}.example/{subject_id}/{topic}",
+                "score": 0.80,
+                "rationale": (
+                    f"Stub: {s.awarding_body_short} covers similar learning outcomes "
+                    f"to your home subnation. In production, the RAG index returns "
+                    f"actual ranked matches."
+                ),
+            }
+        )
     return results[:k]
 
 
 def _other_subnations(active_subnation: str) -> list[Any]:
     from ..session import SUBNATIONS
+
     return [s for s in SUBNATIONS if s.code != active_subnation and s.available]
 
 
@@ -308,7 +309,6 @@ def build_adk_tools() -> list[Any]:
 __all__ = [
     "build_adk_tools",
     "find_similar_resources",
-    "list_subnations",
     "lookup_outcome",
     "mark_answer",
     "retrieve_resources",

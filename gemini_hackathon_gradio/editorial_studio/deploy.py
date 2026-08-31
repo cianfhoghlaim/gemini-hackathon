@@ -37,12 +37,12 @@ _log = logging.getLogger(__name__)
 # VECTOR_BACKEND, since Firestore/Vertex AI Vector Search need no
 # per-service URL — just a project ID and ADC).
 CLOUD_RUN_REQUIRED_VARS: tuple[str, ...] = (
-    "GEMINI_API_KEY",            # or GOOGLE_GENAI_USE_VERTEXAI=True
-    "HF_TOKEN",                  # HF Inference Providers fallback
-    "UNSLOTH_BASE_URL",          # Unsloth Studio (Gemma 4 26B-A4B)
-    "GCP_PROJECT_ID",            # Firestore + Vertex AI Vector Search + Document AI
-    "VECTOR_BACKEND",            # "firestore" (default) or "vertex"
-    "EMBED_BACKEND",             # "vertex" (default) or "sentence_transformers"
+    "GEMINI_API_KEY",  # or GOOGLE_GENAI_USE_VERTEXAI=True
+    "HF_TOKEN",  # HF Inference Providers fallback
+    "UNSLOTH_BASE_URL",  # Unsloth Studio (Gemma 4 26B-A4B)
+    "GCP_PROJECT_ID",  # Firestore + Vertex AI Vector Search + Document AI
+    "VECTOR_BACKEND",  # "firestore" (default) or "vertex"
+    "EMBED_BACKEND",  # "vertex" (default) or "sentence_transformers"
 )
 
 
@@ -252,7 +252,10 @@ class EditorialStudioCloudRun:
         """The gcloud run deploy command (for local + CI use)."""
         cfg = self.config
         cmd = [
-            "gcloud", "run", "deploy", cfg.service_name,
+            "gcloud",
+            "run",
+            "deploy",
+            cfg.service_name,
             f"--project={cfg.project_id}",
             f"--region={cfg.region}",
             "--platform=managed",
@@ -263,7 +266,9 @@ class EditorialStudioCloudRun:
             f"--concurrency={cfg.concurrency}",
             f"--min-instances={cfg.min_instances}",
             f"--max-instances={cfg.max_instances}",
-            "--allow-unauthenticated" if cfg.allow_unauthenticated else "--no-allow-unauthenticated",
+            "--allow-unauthenticated"
+            if cfg.allow_unauthenticated
+            else "--no-allow-unauthenticated",
             f"--port={cfg.container_port}",
             "--set-env-vars=MODEL_PROFILE=hackathon,GEMINI_BACKEND=vertex",
         ]
@@ -296,15 +301,14 @@ def build_app() -> Any:
     # The editorial_studio.build_workflow_canvas() (from W3) returns the
     # LC/JC certificate workflow — the headline of the editorial canvas.
     # Lazy-import: build_workflow_canvas requires gradio which is optional.
-    workflow = None
     try:
         import importlib
+
         es_app = importlib.import_module("gemini_hackathon_gradio.editorial_studio.app")
         if hasattr(es_app, "build_workflow_canvas"):
-            workflow = es_app.build_workflow_canvas()
+            es_app.build_workflow_canvas()
     except (ImportError, Exception) as e:
         _log.warning("editorial_studio workflow not available: %s; continuing without it", e)
-        workflow = None
 
     return get_fast_api_app(
         agents_dir="gemini_hackathon/agents",
@@ -334,18 +338,21 @@ except Exception:
     # If google-adk[fastapi] is not installed OR the signature has
     # changed in this version, defer the error to runtime.
     import logging
-    logging.getLogger(__name__).debug("Editorial studio app could not be built at import time", exc_info=True)
+
+    logging.getLogger(__name__).debug(
+        "Editorial studio app could not be built at import time", exc_info=True
+    )
     app = None  # type: ignore[assignment]
 
 
 __all__ = [
-    "CLOUD_RUN_REQUIRED_VARS",
-    "CloudRunConfig",
-    "default_cloud_run_config",
-    "CLOUDBUILD_SUBSTITUTIONS",
-    "DOCKERFILE_CLOUDRUN",
     "CLOUDBUILD_CLOUDRUN",
+    "CLOUDBUILD_SUBSTITUTIONS",
+    "CLOUD_RUN_REQUIRED_VARS",
+    "DOCKERFILE_CLOUDRUN",
+    "CloudRunConfig",
     "EditorialStudioCloudRun",
-    "build_app",
     "app",
+    "build_app",
+    "default_cloud_run_config",
 ]

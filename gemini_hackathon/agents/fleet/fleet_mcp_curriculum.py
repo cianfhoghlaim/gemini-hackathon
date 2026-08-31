@@ -43,7 +43,6 @@ Usage from a downstream agent::
 from __future__ import annotations
 
 import json
-import os
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -245,8 +244,7 @@ class MCPCurriculumServer:
             A list of :class:`EquivalentTopicHit` rows.
         """
         targets = list(
-            target_jurisdictions
-            or [j for j in JURISDICTION_SOURCES if j != source_jurisdiction]
+            target_jurisdictions or [j for j in JURISDICTION_SOURCES if j != source_jurisdiction]
         )
         hits: list[EquivalentTopicHit] = []
         for target in targets:
@@ -265,9 +263,7 @@ class MCPCurriculumServer:
         )
         return hits
 
-    def list_active_sources(
-        self, *, include_safeguarding: bool = True
-    ) -> list[ActiveSource]:
+    def list_active_sources(self, *, include_safeguarding: bool = True) -> list[ActiveSource]:
         """Return the list of active source palettes.
 
         Args:
@@ -346,8 +342,7 @@ class MCPCurriculumServer:
                 _MCPTool(
                     name="find_equivalent_topics",
                     description=(
-                        "Find equivalent topics across jurisdictions "
-                        "for the given source topic."
+                        "Find equivalent topics across jurisdictions for the given source topic."
                     ),
                     inputSchema={
                         "type": "object",
@@ -365,8 +360,7 @@ class MCPCurriculumServer:
                 _MCPTool(
                     name="list_active_sources",
                     description=(
-                        "List the active source palettes (jurisdictions "
-                        "+ safeguarding bodies)."
+                        "List the active source palettes (jurisdictions + safeguarding bodies)."
                     ),
                     inputSchema={
                         "type": "object",
@@ -389,17 +383,13 @@ class MCPCurriculumServer:
             if name == "find_equivalent_topics":
                 hits = self.find_equivalent_topics(
                     topic=arguments.get("topic", ""),
-                    source_jurisdiction=arguments.get(
-                        "source_jurisdiction", "Ireland"
-                    ),
+                    source_jurisdiction=arguments.get("source_jurisdiction", "Ireland"),
                     target_jurisdictions=arguments.get("target_jurisdictions"),
                 )
                 return _equivalent_hits_to_text(hits)
             if name == "list_active_sources":
                 sources = self.list_active_sources(
-                    include_safeguarding=arguments.get(
-                        "include_safeguarding", True
-                    )
+                    include_safeguarding=arguments.get("include_safeguarding", True)
                 )
                 return _active_sources_to_text(sources)
             raise ValueError(f"Unknown MCP tool: {name!r}")
@@ -407,9 +397,7 @@ class MCPCurriculumServer:
     async def run_stdio_async(self) -> None:
         """Run the MCP server over stdio (canonical CLI transport)."""
         if not _MCP_AVAILABLE or _stdio_server is None:  # pragma: no cover
-            raise RuntimeError(
-                "mcp SDK not installed; install with `uv add mcp`."
-            )
+            raise RuntimeError("mcp SDK not installed; install with `uv add mcp`.")
         if self._server is None:
             raise RuntimeError("MCP server was not initialised.")
         async with _stdio_server() as (read_stream, write_stream):
@@ -433,9 +421,7 @@ class MCPCurriculumServer:
             port: The bind port (default 8765).
         """
         if not _MCP_AVAILABLE:  # pragma: no cover
-            raise RuntimeError(
-                "mcp SDK not installed; install with `uv add mcp`."
-            )
+            raise RuntimeError("mcp SDK not installed; install with `uv add mcp`.")
         # The MCP Python SDK ships a Starlette app for HTTP+SSE.
         try:
             import uvicorn  # type: ignore[import-not-found]
@@ -453,9 +439,10 @@ class MCPCurriculumServer:
         server = self._server
 
         async def _handle_sse(request: Any) -> Any:  # type: ignore[no-untyped-def]
-            async with sse.connect_sse(
-                request.scope, request.receive, request._send  # noqa: SLF001
-            ) as (read_stream, write_stream):
+            async with sse.connect_sse(request.scope, request.receive, request._send) as (
+                read_stream,
+                write_stream,
+            ):
                 await server.run(
                     read_stream,
                     write_stream,
@@ -476,9 +463,7 @@ class MCPCurriculumServer:
 # ---------------------------------------------------------------------------
 
 
-def _stub_learning_outcomes(
-    topic: str, jurisdiction: str, level: str
-) -> list[str]:
+def _stub_learning_outcomes(topic: str, jurisdiction: str, level: str) -> list[str]:
     """Return a deterministic placeholder for learning outcomes."""
     return [
         f"[stub:{jurisdiction}/{level}] students should be able to define {topic}",

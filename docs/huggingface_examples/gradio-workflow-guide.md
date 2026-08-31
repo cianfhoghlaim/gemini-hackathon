@@ -85,7 +85,7 @@ from gradio_client import Client
 client = Client("ysharma/gr-workflow-multi-endpoint-API")
 
 print(client.predict("hello there friend", api_name="/word_count"))  # -> 3
-print(client.predict(20, api_name="/fahrenheit"))                    # -> 68.0
+print(client.predict(20, api_name="/fahrenheit"))  # -> 68.0
 ```
 
 Endpoints that call a model or a Space run under a Hugging Face token, so pass one when you create the client:
@@ -117,8 +117,10 @@ The fastest way in is to open any demo above, click **Duplicate**, and start rew
 ```python
 import gradio as gr
 
+
 def your_function(text: str) -> str:
-  pass
+    pass
+
 
 gr.Workflow(bind=[your_function]).launch()
 ```

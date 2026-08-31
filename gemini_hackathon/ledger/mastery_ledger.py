@@ -67,6 +67,7 @@ class MasteryLedger:
         memory = None
         try:
             from gemini_hackathon.memory.markdown import MarkdownMemoryService
+
             memory = MarkdownMemoryService(root="/tmp/gemini_hackathon_memory")
         except ImportError:
             pass
@@ -125,18 +126,20 @@ class MasteryLedger:
                     record.subject_slug, record.learning_outcome_code
                 )
                 if next_outcome_code:
-                    self.skill_graph.upsert_edge(SkillGraphEdge(
-                        edge_type="UNLOCKS",
-                        from_node_id=f"exit_card_{record.learning_outcome_code}",
-                        to_node_id=next_outcome_code,
-                        weight=1.0,
-                        metadata={
-                            "type": "formative_exit_card",
-                            "learner_id": record.learner_id,
-                            "evidence_id": update.evidence_id,
-                            "source_module": update.source_module,
-                        },
-                    ))
+                    self.skill_graph.upsert_edge(
+                        SkillGraphEdge(
+                            edge_type="UNLOCKS",
+                            from_node_id=f"exit_card_{record.learning_outcome_code}",
+                            to_node_id=next_outcome_code,
+                            weight=1.0,
+                            metadata={
+                                "type": "formative_exit_card",
+                                "learner_id": record.learner_id,
+                                "evidence_id": update.evidence_id,
+                                "source_module": update.source_module,
+                            },
+                        )
+                    )
             except Exception as e:
                 _log.warning("Skill graph upsert failed: %s", e)
 
@@ -164,8 +167,8 @@ class MasteryLedger:
         if self.firestore_ledger is not None:
             try:
                 state["achievements"] = await self.firestore_ledger.get_achievements(learner_id)
-                state["summary"] = (
-                    await self.firestore_ledger.compute_skill_progression_summary(learner_id)
+                state["summary"] = await self.firestore_ledger.compute_skill_progression_summary(
+                    learner_id
                 )
             except Exception as e:
                 _log.warning("Firestore ledger read failed: %s", e)
@@ -191,9 +194,7 @@ class MasteryLedger:
         return state
 
     @staticmethod
-    def _infer_next_outcome(
-        subject_slug: str, current_outcome_code: str
-    ) -> str | None:
+    def _infer_next_outcome(subject_slug: str, current_outcome_code: str) -> str | None:
         """Infer the next outcome in the subject sequence.
 
         For "MA-LC-MA-1.1" -> "MA-LC-MA-1.2" (increment the trailing
@@ -220,12 +221,15 @@ class MasteryLedger:
         )
         content = gtypes.Content(role="user", parts=[gtypes.Part(text=text)])
         event = type("_E", (), {"content": content})()
-        session = type("_S", (), {
-            "id": f"update-{update.evidence_id}",
-            "user_id": r.learner_id,
-            "events": [event],
-        })()
-        return session
+        return type(
+            "_S",
+            (),
+            {
+                "id": f"update-{update.evidence_id}",
+                "user_id": r.learner_id,
+                "events": [event],
+            },
+        )()
 
 
 __all__ = ["MasteryLedger"]

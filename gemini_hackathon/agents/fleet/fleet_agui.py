@@ -42,13 +42,12 @@ This module is a wholesale port of the Cianfhoghlaim
 from __future__ import annotations
 
 import json
-import time
 import uuid
 from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Any, Literal
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import Any
 
 import structlog
 
@@ -62,7 +61,7 @@ logger = structlog.get_logger(__name__)
 # ---------------------------------------------------------------------------
 
 
-class AGUIEventType(str, Enum):
+class AGUIEventType(StrEnum):
     """The 16 canonical AG-UI event types."""
 
     RUN_STARTED = "run_started"
@@ -101,9 +100,7 @@ class AGUIEvent:
 
     type: AGUIEventType
     run_id: str
-    timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     data: dict[str, Any] = field(default_factory=dict)
 
     def to_sse(self) -> str:
@@ -312,9 +309,7 @@ class FleetAGUIBridge:
         for event in self.stream_events(response, run_id=run_id):
             yield event.to_sse()
 
-    def to_sse_events(
-        self, response: AgentResponse, *, run_id: str | None = None
-    ) -> str:
+    def to_sse_events(self, response: AgentResponse, *, run_id: str | None = None) -> str:
         """Concatenate the full event stream into one SSE string.
 
         Args:

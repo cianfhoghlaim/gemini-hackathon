@@ -14,7 +14,6 @@ Used by:
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
 
 
 @dataclass
@@ -24,7 +23,7 @@ class VisualRequirement:
     diagram_type: str  # "molecular", "process_flow", "experimental_setup", "equation_render", etc.
     description: str
     complexity: str  # "simple", "moderate", "complex"
-    style_preference: Optional[str] = None  # "photograph", "illustration", "diagram", etc.
+    style_preference: str | None = None  # "photograph", "illustration", "diagram", etc.
 
 
 @dataclass
@@ -58,11 +57,11 @@ class SyllabusPage:
 
     # Metadata
     specification_version: str = "current"  # "current" or "upcoming"
-    effective_from: Optional[str] = None
+    effective_from: str | None = None
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
 
     # Content
-    extracted_text: Optional[str] = None  # OCR/extracted text if available
+    extracted_text: str | None = None  # OCR/extracted text if available
     page_image_path: str = ""  # Path to rendered page image
 
 
@@ -78,7 +77,7 @@ class CurriculumConcept:
     id: str  # UUID
     subject: str  # "chemistry", "biology", "geography"
     topic_name: str
-    strand: Optional[str] = None  # Curriculum strand/unit
+    strand: str | None = None  # Curriculum strand/unit
 
     title: str = ""
     description: str = ""
@@ -118,7 +117,7 @@ class GeneratedAsset:
     image_path: str  # Path to generated image
 
     # Optional fields with defaults
-    seed: Optional[int] = None
+    seed: int | None = None
     image_embedding: list[float] = field(default_factory=list)  # CLIP embedding
 
     # Quality metrics (from VLM validation)
@@ -137,7 +136,7 @@ class GeneratedAsset:
 
     # Timestamps
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
-    validated_at: Optional[str] = None
+    validated_at: str | None = None
 
 
 @dataclass
@@ -181,10 +180,10 @@ class FiboConfig:
 
 
 __all__ = [
-    "VisualRequirement",
+    "CurriculumConcept",
+    "FiboConfig",
+    "GeneratedAsset",
     "LearningOutcome",
     "SyllabusPage",
-    "CurriculumConcept",
-    "GeneratedAsset",
-    "FiboConfig",
+    "VisualRequirement",
 ]

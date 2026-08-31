@@ -11,10 +11,6 @@ are tested for behavioral correctness.
 from __future__ import annotations
 
 import asyncio
-from unittest.mock import MagicMock
-
-import pytest
-
 
 # ---------------------------------------------------------------------------
 # Pillar 1 — Graph Workflow (parallel grading)
@@ -50,9 +46,9 @@ def test_pillar1_grade_criterion_returns_stub():
     """`grade_criterion(node_input)` returns the half-credit stub."""
     from gemini_hackathon.agents.workflows.pillar1_grading import grade_criterion
 
-    out = asyncio.run(grade_criterion({
-        "criterion_id": "C1", "max_marks": 100, "student_answer": "x"
-    }))
+    out = asyncio.run(
+        grade_criterion({"criterion_id": "C1", "max_marks": 100, "student_answer": "x"})
+    )
     assert out["criterion_id"] == "C1"
     assert out["marks_awarded"] == 70  # stub: 70% of 100
     assert out["max_marks"] == 100
@@ -63,12 +59,16 @@ def test_pillar1_join_outputs_sums_marks():
     """`join_outputs` sums the per-criterion marks."""
     from gemini_hackathon.agents.workflows.pillar1_grading import join_outputs
 
-    out = asyncio.run(join_outputs({
-        "criterion_grades": [
-            {"marks_awarded": 20, "max_marks": 30},
-            {"marks_awarded": 40, "max_marks": 70},
-        ]
-    }))
+    out = asyncio.run(
+        join_outputs(
+            {
+                "criterion_grades": [
+                    {"marks_awarded": 20, "max_marks": 30},
+                    {"marks_awarded": 40, "max_marks": 70},
+                ]
+            }
+        )
+    )
     assert out["total_marks_awarded"] == 60
     assert out["total_max_marks"] == 100
 
@@ -163,7 +163,9 @@ def _build_pillar_under_no_adk(pillar: str):
     """Helper that patches `google.adk` to fail to import."""
     import builtins
 
-    real_import = builtins.__import__ if isinstance(builtins, type(builtins)) else builtins["__import__"]
+    real_import = (
+        builtins.__import__ if isinstance(builtins, type(builtins)) else builtins["__import__"]
+    )
     saved = real_import
     blocked_modules = {"google.adk", "google.adk.workflow"}
 
@@ -179,6 +181,7 @@ def _build_pillar_under_no_adk(pillar: str):
                 Pillar1GradingWorkflow,
                 build_pillar1_grading_workflow,
             )
+
             return build_pillar1_grading_workflow(
                 Pillar1GradingWorkflow(subject="x", marking_criteria=())
             )

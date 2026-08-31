@@ -31,7 +31,7 @@ def test_official_doc_fetcher_writes_to_local_duckdb(
       PDF cache is missing; this matches the Phase 0 baseline expectation).
     """
     try:
-        import dlt  # noqa: F401  (verify dlt is importable)
+        import dlt
     except ImportError:
         pytest.skip("dlt is not installed; skipping the data-plane E2E test")
 
@@ -54,18 +54,11 @@ def test_official_doc_fetcher_writes_to_local_duckdb(
 
     con = duckdb.connect(str(db_path), read_only=True)
     try:
-        row_count = con.execute(
-            "SELECT COUNT(*) FROM raw.official_documents"
-        ).fetchone()[0]
-        assert row_count >= 1, (
-            f"raw.official_documents has 0 rows; load_info={load_info!r}"
-        )
+        row_count = con.execute("SELECT COUNT(*) FROM raw.official_documents").fetchone()[0]
+        assert row_count >= 1, f"raw.official_documents has 0 rows; load_info={load_info!r}"
         # Also verify the schema contract (the 12 canonical columns).
         cols = [
-            row[1]
-            for row in con.execute(
-                "PRAGMA table_info('raw.official_documents')"
-            ).fetchall()
+            row[1] for row in con.execute("PRAGMA table_info('raw.official_documents')").fetchall()
         ]
         expected = {
             "source_key",

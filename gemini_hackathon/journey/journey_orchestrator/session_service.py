@@ -6,6 +6,7 @@ Mirrors `docs/adk-examples/way-back-home/level_2/backend/api/routes/chat.py`
 dev path). Always falls back gracefully so a workshop host running without
 the Memory Bank setup still gets a working orchestrator.
 """
+
 from __future__ import annotations
 
 import logging
@@ -82,7 +83,9 @@ def make_session_service() -> Any:
             from google.adk.sessions import VertexAiSessionService
 
             svc = VertexAiSessionService(project=project_id, agent_engine_id=agent_engine_id)
-            logger.info("session_service: using VertexAiSessionService (Agent Engine %s)", agent_engine_id)
+            logger.info(
+                "session_service: using VertexAiSessionService (Agent Engine %s)", agent_engine_id
+            )
             return svc
         except Exception as exc:
             logger.warning(
@@ -98,9 +101,13 @@ def make_session_service() -> Any:
         logger.info("session_service: using DatabaseSessionService at %s", db_url)
         return svc
     except ImportError:
-        logger.debug("session_service: google.adk not importable (no DatabaseSessionService available)")
+        logger.debug(
+            "session_service: google.adk not importable (no DatabaseSessionService available)"
+        )
     except Exception as exc:
-        logger.warning("session_service: DatabaseSessionService init failed (%s); using in-memory", exc)
+        logger.warning(
+            "session_service: DatabaseSessionService init failed (%s); using in-memory", exc
+        )
 
     try:
         from google.adk.sessions import InMemorySessionService
@@ -109,7 +116,9 @@ def make_session_service() -> Any:
         logger.info("session_service: using InMemorySessionService (no persistence)")
         return svc
     except ImportError:
-        logger.debug("session_service: google.adk not importable (no InMemorySessionService available); using bundled offline stub")
+        logger.debug(
+            "session_service: google.adk not importable (no InMemorySessionService available); using bundled offline stub"
+        )
 
     svc = _OfflineSessionService()
     logger.info("session_service: using bundled _OfflineSessionService (google.adk not importable)")

@@ -29,6 +29,7 @@ app = marimo.App(width="medium", app_title="gemini_hackathon - Theming Extractio
 @app.cell
 def _intro():
     import marimo as mo
+
     mo.md(
         """
         # Theming Extraction — gemini_hackathon
@@ -44,6 +45,7 @@ def _intro():
 @app.cell
 def _load_palettes():
     from notebooks._shared.theme import load_all_palettes, palette_count
+
     palettes = load_all_palettes()
     count = palette_count()
     return count, palettes
@@ -51,10 +53,10 @@ def _load_palettes():
 
 @app.cell
 def _show_count(count, palettes, mo):
-    mo.md(f"**{count}** palettes loaded:\n\n" + "\n".join(
-        f"- `{p['sourceKey']}` ({p['jurisdiction']})" for p in palettes
-    ))
-    return
+    mo.md(
+        f"**{count}** palettes loaded:\n\n"
+        + "\n".join(f"- `{p['sourceKey']}` ({p['jurisdiction']})" for p in palettes)
+    )
 
 
 @app.cell
@@ -72,39 +74,45 @@ def _selector(palettes, mo):
 @app.cell
 def _render_palette(dropdown, palettes, mo):
     from notebooks._shared.theme import load_palette
+
     selected = dropdown.value
     palette = load_palette(selected)
     if not palette:
         return mo.md(f"Palette `{selected}` not found.")
-    return mo.vstack([
-        mo.md(f"### {palette.get('source_name', '')} {palette.get('flag', '')}"),
-        mo.md(f"**Jurisdiction:** {palette.get('jurisdiction', '')}"),
-        mo.md(f"**Level:** {palette.get('level', '')}"),
-        mo.md(
-            f"**Colors:** "
-            f"<span style='background:{palette.get('primary', '#000')};color:#fff;padding:2px 8px;border-radius:4px'>primary {palette.get('primary', '')}</span> "
-            f"<span style='background:{palette.get('secondary', '#000')};color:#fff;padding:2px 8px;border-radius:4px'>secondary {palette.get('secondary', '')}</span> "
-            f"<span style='background:{palette.get('accent', '#000')};color:#000;padding:2px 8px;border-radius:4px'>accent {palette.get('accent', '')}</span> "
-            f"<span style='background:{palette.get('background', '#fff')};color:{palette.get('text', '#000')};padding:2px 8px;border:1px solid #ddd;border-radius:4px'>bg {palette.get('background', '')}</span>"
-        ),
-        mo.md(
-            f"**Typography:** heading=`{palette.get('heading_font', '')}`, body=`{palette.get('body_font', '')}`"
-        ),
-    ])
+    return mo.vstack(
+        [
+            mo.md(f"### {palette.get('source_name', '')} {palette.get('flag', '')}"),
+            mo.md(f"**Jurisdiction:** {palette.get('jurisdiction', '')}"),
+            mo.md(f"**Level:** {palette.get('level', '')}"),
+            mo.md(
+                f"**Colors:** "
+                f"<span style='background:{palette.get('primary', '#000')};color:#fff;padding:2px 8px;border-radius:4px'>primary {palette.get('primary', '')}</span> "
+                f"<span style='background:{palette.get('secondary', '#000')};color:#fff;padding:2px 8px;border-radius:4px'>secondary {palette.get('secondary', '')}</span> "
+                f"<span style='background:{palette.get('accent', '#000')};color:#000;padding:2px 8px;border-radius:4px'>accent {palette.get('accent', '')}</span> "
+                f"<span style='background:{palette.get('background', '#fff')};color:{palette.get('text', '#000')};padding:2px 8px;border:1px solid #ddd;border-radius:4px'>bg {palette.get('background', '')}</span>"
+            ),
+            mo.md(
+                f"**Typography:** heading=`{palette.get('heading_font', '')}`, body=`{palette.get('body_font', '')}`"
+            ),
+        ]
+    )
 
 
 @app.cell
 def _all_palettes_chart(palettes):
     import altair as alt
     import pandas as pd
-    df = pd.DataFrame([
-        {
-            "source": p["sourceKey"],
-            "primary": p.get("primary", "#000000"),
-            "jurisdiction": p.get("jurisdiction", ""),
-        }
-        for p in palettes
-    ])
+
+    df = pd.DataFrame(
+        [
+            {
+                "source": p["sourceKey"],
+                "primary": p.get("primary", "#000000"),
+                "jurisdiction": p.get("jurisdiction", ""),
+            }
+            for p in palettes
+        ]
+    )
     chart = (
         alt.Chart(df)
         .mark_circle(size=400)
@@ -116,7 +124,6 @@ def _all_palettes_chart(palettes):
         .properties(width=600, height=300, title="All 13 palettes - primary color by jurisdiction")
     )
     chart
-    return
 
 
 @app.cell
@@ -134,6 +141,7 @@ def _side_by_side(palettes, mo):
 @app.cell
 def _compare_render(multi, options):
     from notebooks._shared.theme import load_palette
+
     cols = []
     for source_key in multi.value:
         palette = load_palette(source_key)
@@ -149,6 +157,7 @@ def _compare_render(multi, options):
             f"</div>"
         )
     import marimo as mo
+
     mo.Html(f"<div style='display:flex'>{''.join(cols)}</div>")
 
 

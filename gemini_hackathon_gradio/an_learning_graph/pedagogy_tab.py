@@ -37,15 +37,16 @@ import sqlite3
 from typing import Any
 
 try:
-    import gradio as gr
     import plotly.graph_objects as go
+
+    import gradio as gr
+
     PLOTLY_AVAILABLE = True
 except ImportError:
     gr = None  # type: ignore[assignment]
     go = None  # type: ignore[assignment]
     PLOTLY_AVAILABLE = False
 
-from .theme import STUDIO_THEME_CSS
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +56,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 REPO_ROOT: pathlib.Path = pathlib.Path(__file__).resolve().parent.parent.parent.parent
-SQLITE_PATH: pathlib.Path = (
-    REPO_ROOT / "data" / "bi_ep" / "extracted_syllabi.sqlite"
-)
+SQLITE_PATH: pathlib.Path = REPO_ROOT / "data" / "bi_ep" / "extracted_syllabi.sqlite"
 
 #: The 6 BIEP priority subjects (the canonical 6 Dagster overlay assets).
 SUBJECTS: tuple[str, ...] = (
@@ -94,17 +93,14 @@ DEMO_PRINCIPLE_IDS: tuple[str, ...] = (
 def _load_principles_from_cache() -> list[dict[str, Any]]:
     """Load the 12 cached principles from the disk cache JSON."""
     cache_path = (
-        REPO_ROOT / "data" / "bi_ep" / "syllabi_md" / "uk_ncce"
-        / "pedagogy_principles.json"
+        REPO_ROOT / "data" / "bi_ep" / "syllabi_md" / "uk_ncce" / "pedagogy_principles.json"
     )
     if not cache_path.exists():
         return []
     try:
         payload = json.loads(cache_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        logger.warning(
-            "pedagogy_tab: cache parse failed path=%s: %s", cache_path, exc
-        )
+        logger.warning("pedagogy_tab: cache parse failed path=%s: %s", cache_path, exc)
         return []
     return [
         {
@@ -212,9 +208,7 @@ def _render_pedagogy_overlay(
     rows = graph.get("rows", [])
     columns = graph.get("columns", [])
     cells = graph.get("cells", [])
-    cell_annotations: dict[str, list[str]] = annotated_graph.get(
-        "cell_annotations", {}
-    )
+    cell_annotations: dict[str, list[str]] = annotated_graph.get("cell_annotations", {})
 
     palette = _principle_palette(principles)
     row_labels = [r.get("label", r.get("id", "")) for r in rows]
@@ -245,14 +239,9 @@ def _render_pedagogy_overlay(
             cell_id = cell.get("id", "")
             annotation_ids = cell_annotations.get(cell_id, [])
             total_cells += 1
-            primary_principle_id = (
-                annotation_ids[0] if annotation_ids else "lead_with_concepts"
-            )
+            primary_principle_id = annotation_ids[0] if annotation_ids else "lead_with_concepts"
             color = palette.get(primary_principle_id, "#bcb8b0")
-            if (
-                filter_principle != "ALL"
-                and primary_principle_id != filter_principle
-            ):
+            if filter_principle not in ("ALL", primary_principle_id):
                 # Grey out cells that don't match the filter.
                 color = "#e6e6e6"
             else:
@@ -296,12 +285,15 @@ def _render_pedagogy_overlay(
         for ci in range(len(col_labels)):
             fig.add_shape(
                 type="rect",
-                x0=ci - 0.5, x1=ci + 0.5,
-                y0=ri - 0.5, y1=ri + 0.5,
-                line=dict(color="#ffffff", width=2),
+                x0=ci - 0.5,
+                x1=ci + 0.5,
+                y0=ri - 0.5,
+                y1=ri + 0.5,
+                line={"color": "#ffffff", "width": 2},
                 fillcolor=cell_color[ri][ci],
                 layer="below",
-                xref="x", yref="y",
+                xref="x",
+                yref="y",
             )
     fig.update_layout(
         title=(
@@ -337,9 +329,7 @@ def _render_pedagogy_overlay(
         cards: list[str] = []
         for ri in range(min(3, len(row_labels))):
             for ci in range(min(3, len(col_labels))):
-                cell = cell_lookup.get(
-                    (rows[ri].get("id", ""), columns[ci].get("id", ""))
-                )
+                cell = cell_lookup.get((rows[ri].get("id", ""), columns[ci].get("id", "")))
                 if cell is None:
                     continue
                 cell_id = cell.get("id", "")
@@ -354,8 +344,7 @@ def _render_pedagogy_overlay(
                 if principle is None:
                     continue
                 cards.append(
-                    f"**{cell.get('skill_description', '—')[:80]}…** "
-                    f"\n  _{principle['name']}_"
+                    f"**{cell.get('skill_description', '—')[:80]}…** \n  _{principle['name']}_"
                 )
         hover_md = "### Sample of visible cells\n\n" + "\n\n".join(cards)
 
@@ -378,9 +367,7 @@ def _on_overlay(
 ) -> tuple[Any, str, str]:
     """Gradio handler — render the coloured overlay, return (Plotly, hover_md, counts_md)."""
     principles = _load_principles_from_cache()
-    annotated_graph = _load_annotated_graph(
-        subject=subject, year_level=year_level
-    )
+    annotated_graph = _load_annotated_graph(subject=subject, year_level=year_level)
     return _render_pedagogy_overlay(
         annotated_graph,
         filter_principle=filter_principle,
@@ -454,14 +441,10 @@ def build_pedagogy_tab() -> None:
     hover_md = gr.Markdown()
     counts_md = gr.Markdown()
 
-    def _handler(
-        subject: str, year_level: int, filter_display: str
-    ) -> tuple[Any, str, str]:
+    def _handler(subject: str, year_level: int, filter_display: str) -> tuple[Any, str, str]:
         principles2 = _load_principles_from_cache()
         filter_id = _lookup_principle_id(filter_display, principles2)
-        annotated_graph = _load_annotated_graph(
-            subject=subject, year_level=int(year_level)
-        )
+        annotated_graph = _load_annotated_graph(subject=subject, year_level=int(year_level))
         return _render_pedagogy_overlay(
             annotated_graph,
             filter_principle=filter_id,

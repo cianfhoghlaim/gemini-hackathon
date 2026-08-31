@@ -41,6 +41,7 @@ try:
         sha256_file,
         with_retry,
     )
+
     _DLT_SHARED_AVAILABLE = True
 except ImportError:
     # dlt_pipelines._shared uses Python 3.11+ syntax (e.g. ``from
@@ -66,7 +67,7 @@ except ImportError:
 def _has_dlt() -> bool:
     """Return whether ``dlt`` is importable (it's an optional dependency in CI)."""
     try:
-        import dlt  # noqa: F401
+        import dlt
     except ImportError:
         return False
     return True
@@ -330,6 +331,7 @@ def test_shared_helpers_with_retry_succeeds_after_retries() -> None:
 )
 def test_shared_helpers_with_retry_propagates_after_budget() -> None:
     """``with_retry`` raises the last exception when the budget is exhausted."""
+
     @with_retry(attempts=2, backoff_seconds=0.001)
     def always_fails() -> None:
         raise FileNotFoundError("permanent failure")

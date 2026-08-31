@@ -81,10 +81,13 @@ def test_gcs_helper_returns_gs_uri_when_bucket_set(
     fake_bucket.blob.return_value = fake_blob
 
     _invalidate_google_cloud_modules()
-    with patch.dict(sys.modules, {
-        "google.cloud.storage": fake_storage,
-        "google.cloud.exceptions": fake_exceptions,
-    }):
+    with patch.dict(
+        sys.modules,
+        {
+            "google.cloud.storage": fake_storage,
+            "google.cloud.exceptions": fake_exceptions,
+        },
+    ):
         result = mod.write_pdf_to_gcs_or_local(
             b"%PDF-1.4 fake bytes",
             source_key="aqa.org.uk",
@@ -152,10 +155,13 @@ def test_gcs_helper_layout_matches_spec(
     fake_bucket.blob.return_value = fake_blob
 
     _invalidate_google_cloud_modules()
-    with patch.dict(sys.modules, {
-        "google.cloud.storage": fake_storage,
-        "google.cloud.exceptions": fake_exceptions,
-    }):
+    with patch.dict(
+        sys.modules,
+        {
+            "google.cloud.storage": fake_storage,
+            "google.cloud.exceptions": fake_exceptions,
+        },
+    ):
         result = mod.write_pdf_to_gcs_or_local(
             b"x",
             source_key="wjec.co.uk",

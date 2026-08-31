@@ -34,7 +34,7 @@ import logging
 import pathlib
 import sqlite3
 import time
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -56,8 +56,8 @@ try:
     from .uk_ncce_learning_graph_equivalencies import (
         FIRESTORE_COLLECTION,
         PRIORITY_SUBJECTS,
-        SQLITE_PATH,
         SOURCE_JURISDICTION,
+        SQLITE_PATH,
         TARGET_JURISDICTIONS,
         iterate_assets,
     )
@@ -80,9 +80,7 @@ except ImportError:  # pragma: no cover — sibling module not yet importable
         "JERSEY",
         "GUERNSEY",
     )
-    SQLITE_PATH = pathlib.Path(
-        pathlib.Path.cwd() / "data" / "bi_ep" / "extracted_syllabi.sqlite"
-    )
+    SQLITE_PATH = pathlib.Path(pathlib.Path.cwd() / "data" / "bi_ep" / "extracted_syllabi.sqlite")
     SOURCE_JURISDICTION = "UNITED_KINGDOM_NCCE"
 
     def iterate_assets() -> Iterator[tuple[str, str]]:
@@ -218,10 +216,8 @@ def _write_to_falkordb(crossrefs: list[dict[str, Any]]) -> bool:
             _count_edges(crossrefs),
         )
         return True
-    except Exception as exc:  # noqa: BLE001
-        logger.warning(
-            "learning_graph_equivalency_graph.falkordb_failed reason=%s", exc
-        )
+    except Exception as exc:
+        logger.warning("learning_graph_equivalency_graph.falkordb_failed reason=%s", exc)
         return False
 
 
@@ -256,9 +252,7 @@ def _build_asset() -> Any:
         falkordb_ok = _write_to_falkordb(crossrefs)
 
         summary = {
-            "generated_at": _dt.datetime.now(_dt.timezone.utc).strftime(
-                "%Y-%m-%dT%H:%M:%SZ"
-            ),
+            "generated_at": _dt.datetime.now(_dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "total_crossrefs": len(crossrefs),
             "total_cell_equivalent_edges": total_edges,
             "per_jurisdiction_breakdown": breakdown,
@@ -297,9 +291,11 @@ def main() -> int:
     falkordb_ok = _write_to_falkordb(crossrefs)
     elapsed_ms = int((time.monotonic() - started) * 1000)
     logger.info(
-        "learning_graph_equivalency_graph.summary "
-        "crossrefs=%d edges=%d falkordb=%s elapsed_ms=%d",
-        len(crossrefs), total, falkordb_ok, elapsed_ms,
+        "learning_graph_equivalency_graph.summary crossrefs=%d edges=%d falkordb=%s elapsed_ms=%d",
+        len(crossrefs),
+        total,
+        falkordb_ok,
+        elapsed_ms,
     )
     for jurisdiction, edges in sorted(breakdown.items()):
         logger.info("  - %s : %d cell-equivalent edges", jurisdiction, edges)

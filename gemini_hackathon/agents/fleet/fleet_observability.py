@@ -35,7 +35,7 @@ import hashlib
 import os
 import time
 import uuid
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
@@ -55,6 +55,7 @@ logger = structlog.get_logger(__name__)
 _LANGFUSE_AVAILABLE: bool = False
 try:
     from langfuse import Langfuse  # type: ignore[import-not-found]
+
     _LANGFUSE_AVAILABLE = True
 except ImportError:  # pragma: no cover
     Langfuse = None  # type: ignore[assignment,misc]
@@ -62,6 +63,7 @@ except ImportError:  # pragma: no cover
 _MLFLOW_AVAILABLE: bool = False
 try:
     import mlflow  # type: ignore[import-not-found]
+
     _MLFLOW_AVAILABLE = True
 except ImportError:  # pragma: no cover
     mlflow = None  # type: ignore[assignment]
@@ -174,9 +176,7 @@ class Observability:
             langfuse_public_key, langfuse_secret_key, langfuse_host
         )
         self._mlflow_experiment = mlflow_experiment
-        self._mlflow_uri = mlflow_tracking_uri or os.getenv(
-            "MLFLOW_TRACKING_URI", "./mlruns"
-        )
+        self._mlflow_uri = mlflow_tracking_uri or os.getenv("MLFLOW_TRACKING_URI", "./mlruns")
         self._init_mlflow()
 
     # ------------------------------------------------------------------
@@ -199,9 +199,7 @@ class Observability:
 
         pk = public_key or os.getenv("LANGFUSE_PUBLIC_KEY", "")
         sk = secret_key or os.getenv("LANGFUSE_SECRET_KEY", "")
-        host = host or os.getenv(
-            "LANGFUSE_HOST", "https://cloud.langfuse.com"
-        )
+        host = host or os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
         if not pk or not sk:
             logger.warning(
                 "observability.langfuse_disabled",
@@ -216,7 +214,7 @@ class Observability:
                 langfuse_host=host,
             )
             return client
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.warning(
                 "observability.langfuse_init_failed",
                 error=f"{type(e).__name__}: {e}",
@@ -247,7 +245,7 @@ class Observability:
                 mlflow_tracking_uri=self._mlflow_uri,
                 mlflow_experiment=self._mlflow_experiment,
             )
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.warning(
                 "observability.mlflow_init_failed",
                 error=f"{type(e).__name__}: {e}",
@@ -348,11 +346,7 @@ class Observability:
                 tokens_in=response.tokens_in,
                 tokens_out=response.tokens_out,
                 cost_usd=response.cost_usd,
-                fallback_reason=(
-                    "primary_5xx_or_timeout"
-                    if response.tier > 1
-                    else ""
-                ),
+                fallback_reason=("primary_5xx_or_timeout" if response.tier > 1 else ""),
                 success=True,
             )
         else:
@@ -383,22 +377,20 @@ class Observability:
                 trace_id=ctx.trace_id,
                 metadata=ctx.metadata,
             )
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.debug(
                 "observability.langfuse_span_failed",
                 error=f"{type(e).__name__}: {e}",
             )
             return None
 
-    def _close_langfuse_span(
-        self, span: Any, ctx: TraceContext, total_ms: int
-    ) -> None:
+    def _close_langfuse_span(self, span: Any, ctx: TraceContext, total_ms: int) -> None:
         """End the Langfuse span (no-op if unavailable)."""
         if span is None:
             return
         try:
             span.end(metadata={"total_latency_ms": total_ms})
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.debug(
                 "observability.langfuse_span_close_failed",
                 error=f"{type(e).__name__}: {e}",
@@ -424,7 +416,7 @@ class Observability:
                     "llm.cost_usd": record.cost_usd,
                 },
             )
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.debug(
                 "observability.langfuse_generation_failed",
                 error=f"{type(e).__name__}: {e}",
@@ -452,7 +444,7 @@ class Observability:
                         "llm.cost_usd": float(record.cost_usd),
                     }
                 )
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.debug(
                 "observability.mlflow_record_failed",
                 error=f"{type(e).__name__}: {e}",
@@ -470,7 +462,7 @@ class Observability:
             return
         try:
             mlflow.log_metric(key, float(value), step=step)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.debug(
                 "observability.mlflow_metric_failed",
                 key=key,
@@ -483,7 +475,7 @@ class Observability:
             return
         try:
             mlflow.log_param(key, str(value))
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.debug(
                 "observability.mlflow_param_failed",
                 key=key,

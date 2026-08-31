@@ -22,7 +22,6 @@ quest_guide}` is NOT lifted — out of scope for the education system.
 
 from __future__ import annotations
 
-import datetime
 from typing import Any
 
 try:
@@ -43,12 +42,12 @@ NCCA_LC_SUBJECTS: tuple[str, ...] = (
     "english",
     "gaeilge",
     "computer_science",
-    "accounting",       # NCCA-adjacent
-    "biology",          # NCCA-adjacent
-    "business",         # NCCA-adjacent
-    "french",           # NCCA-adjacent
-    "irish_t2",         # NCCA-adjacent
-    "physics",          # NCCA-adjacent
+    "accounting",  # NCCA-adjacent
+    "biology",  # NCCA-adjacent
+    "business",  # NCCA-adjacent
+    "french",  # NCCA-adjacent
+    "irish_t2",  # NCCA-adjacent
+    "physics",  # NCCA-adjacent
 )
 
 
@@ -85,9 +84,7 @@ def build_specialist_agent(
         ValueError: If `subject` is not one of NCCA_LC_SUBJECTS.
     """
     if subject not in NCCA_LC_SUBJECTS:
-        raise ValueError(
-            f"Unknown subject {subject!r}; must be one of {NCCA_LC_SUBJECTS}"
-        )
+        raise ValueError(f"Unknown subject {subject!r}; must be one of {NCCA_LC_SUBJECTS}")
     if LlmAgent is None:
         return None
 

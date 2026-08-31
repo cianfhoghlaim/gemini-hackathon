@@ -80,6 +80,7 @@ def test_build_memory_service_returns_vertex_when_engine_id_set(
     # is missing, the function falls back to MarkdownMemoryService. Both
     # are valid; the test just guards against regression to ``None``.
     from gemini_hackathon.memory.markdown import MarkdownMemoryService
+
     try:
         from google.adk.memory import VertexAiMemoryBankService
     except ImportError:
@@ -98,9 +99,7 @@ def test_memory_root_returns_none_when_unset(monkeypatch: pytest.MonkeyPatch) ->
     assert memory_mod.memory_root() is None
 
 
-def test_memory_root_respects_gh_memory_dir(
-    monkeypatch: pytest.MonkeyPatch, tmp_path
-) -> None:
+def test_memory_root_respects_gh_memory_dir(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
     """memory_root() returns the GH_MEMORY_DIR value when set."""
     monkeypatch.setenv("GH_MEMORY_DIR", str(tmp_path / "custom_memory"))
 
@@ -120,9 +119,7 @@ def test_memory_user_id_default(monkeypatch: pytest.MonkeyPatch) -> None:
     assert memory_mod.memory_user_id() == "userx"
 
 
-def test_memory_user_id_empty_falls_back_to_default(
-    monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_memory_user_id_empty_falls_back_to_default(monkeypatch: pytest.MonkeyPatch) -> None:
     """An empty GH_MEMORY_USER falls back to 'userx'."""
     monkeypatch.setenv("GH_MEMORY_USER", "")
 

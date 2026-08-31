@@ -25,7 +25,7 @@ Phase 4.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -36,10 +36,21 @@ logger = logging.getLogger(__name__)
 SUBJECT_SPECIALITIES: dict[str, dict[str, Any]] = {
     "mathematics": {
         "visual_cue": "Mathematical typography (CMU Serif / Computer Modern), graph paper texture, blue ink, clean white background",
-        "color_palette": ["subject_mathematics_blue", "ncca_stone_grey", "scotland_sqa_blue", "england_aqa_purple"],
+        "color_palette": [
+            "subject_mathematics_blue",
+            "ncca_stone_grey",
+            "scotland_sqa_blue",
+            "england_aqa_purple",
+        ],
         "font_style": "CMU Serif",
         "background": "graph paper (light grey grid on white)",
-        "typical_diagrams": ["equation render", "function plot", "geometric shape", "statistical distribution", "matrix array"],
+        "typical_diagrams": [
+            "equation render",
+            "function plot",
+            "geometric shape",
+            "statistical distribution",
+            "matrix array",
+        ],
         "diagram_type_default": "function_plot",
         "complexity_default": "moderate",
     },
@@ -63,7 +74,12 @@ SUBJECT_SPECIALITIES: dict[str, dict[str, Any]] = {
     },
     "chemistry": {
         "visual_cue": "CPK-coloured atoms (C:black, O:red, H:white, N:blue, S:yellow), laboratory glassware, reaction arrows",
-        "color_palette": ["cpk_atoms", "subject_chemistry_orange", "england_aqa_purple", "meanscoil_green"],
+        "color_palette": [
+            "cpk_atoms",
+            "subject_chemistry_orange",
+            "england_aqa_purple",
+            "meanscoil_green",
+        ],
         "font_style": "CMU Serif",
         "background": "white with subtle molecular grid",
         "typical_diagrams": ["molecule_diagram", "reaction_equation", "apparatus", "phase_diagram"],
@@ -75,7 +91,12 @@ SUBJECT_SPECIALITIES: dict[str, dict[str, Any]] = {
         "color_palette": ["subject_geography_brown", "ncca_stone_grey", "wjec_wales_red"],
         "font_style": "Roboto",
         "background": "soft cream with subtle topography",
-        "typical_diagrams": ["topographical_map", "climate_diagram", "demographic_pyramid", "population_density_map"],
+        "typical_diagrams": [
+            "topographical_map",
+            "climate_diagram",
+            "demographic_pyramid",
+            "population_density_map",
+        ],
         "diagram_type_default": "topographical_map",
         "complexity_default": "moderate",
     },
@@ -102,7 +123,12 @@ SUBJECT_SPECIALITIES: dict[str, dict[str, Any]] = {
         "color_palette": ["subject_cs_blue", "ncca_stone_grey", "meanscoil_green"],
         "font_style": "JetBrains Mono",
         "background": "white with subtle code grid",
-        "typical_diagrams": ["flowchart", "complexity_curve", "network_topology", "algorithm_pseudocode"],
+        "typical_diagrams": [
+            "flowchart",
+            "complexity_curve",
+            "network_topology",
+            "algorithm_pseudocode",
+        ],
         "diagram_type_default": "flowchart",
         "complexity_default": "moderate",
     },
@@ -124,26 +150,28 @@ NCCA_KEY_COMPETENCIES: tuple[str, ...] = (
 class CurriculumConcept:
     """A single per-topic asset schema (one per NCCA LO)."""
 
-    subject: str # "mathematics"
-    topic: str                            # "Differentiation & Integration"
-    lo_code: str                          # "LC-MATH-LO-023"
-    lo_text: str # the canonical NCCA LO description
-    strand: str | None # "Calculus" (Maths only)
-    bloom_level: str # "apply"
-    skill_domains: list[str]              # ["Managing Information & Thinking", ...]
-    visual_cue: str                          # from SUBJECT_SPECIALITIES[subject]
-    diagram_type: str # from SUBJECT_SPECIALITIES[subject]
-    complexity: str # "moderate"
-    palette_primary: str # from themes/_official_guidelines
+    subject: str  # "mathematics"
+    topic: str  # "Differentiation & Integration"
+    lo_code: str  # "LC-MATH-LO-023"
+    lo_text: str  # the canonical NCCA LO description
+    strand: str | None  # "Calculus" (Maths only)
+    bloom_level: str  # "apply"
+    skill_domains: list[str]  # ["Managing Information & Thinking", ...]
+    visual_cue: str  # from SUBJECT_SPECIALITIES[subject]
+    diagram_type: str  # from SUBJECT_SPECIALITIES[subject]
+    complexity: str  # "moderate"
+    palette_primary: str  # from themes/_official_guidelines
     palette_accent: str
     typography_stack: list[str]
     descriptor_vocabulary: list[str]
-    ncca_citation: tuple[str, int] | None # (pdf_filename, page_number)
+    ncca_citation: tuple[str, int] | None  # (pdf_filename, page_number)
 
     def to_asset_request_payload(self) -> dict[str, Any]:
         """Return the dict payload for the existing AssetControlRecord format."""
         return {
-            "source_pdf_path": f"data/ireland/ncca_policy/{self.ncca_citation[0]}" if self.ncca_citation else "",
+            "source_pdf_path": f"data/ireland/ncca_policy/{self.ncca_citation[0]}"
+            if self.ncca_citation
+            else "",
             "source_page": self.ncca_citation[1] if self.ncca_citation else 0,
             "learning_outcome_id": self.lo_code,
             "subject": self.subject,
@@ -165,7 +193,7 @@ class CurriculumConcept:
 def build_curriculum_concepts(
     *,
     subject: str,
-    extracted_syllabus: Any, # ExtractedSyllabus
+    extracted_syllabus: Any,  # ExtractedSyllabus
     per_jurisdiction_palette: dict[str, str] | None = None,
 ) -> list[CurriculumConcept]:
     """Build the per-topic asset schema (one CurriculumConcept per LO).
@@ -224,7 +252,12 @@ def build_curriculum_concepts(
                 palette_primary=per_jurisdiction_palette.get("primary", "#1a1a1a"),
                 palette_accent=per_jurisdiction_palette.get("accent", "#CC4500"),
                 typography_stack=["Arial", "Helvetica", "sans-serif"],
-                descriptor_vocabulary=["Exceptional", "Above expectations", "In line with expectations", "Yet to meet expectations"],
+                descriptor_vocabulary=[
+                    "Exceptional",
+                    "Above expectations",
+                    "In line with expectations",
+                    "Yet to meet expectations",
+                ],
                 ncca_citation=ncca_citation,
             )
             concepts.append(concept)
@@ -246,8 +279,8 @@ ASSET_REQUEST_BY_SUBJECT: dict[str, int] = {
 
 __all__ = [
     "ASSET_REQUEST_BY_SUBJECT",
-    "CurriculumConcept",
     "NCCA_KEY_COMPETENCIES",
     "SUBJECT_SPECIALITIES",
+    "CurriculumConcept",
     "build_curriculum_concepts",
 ]

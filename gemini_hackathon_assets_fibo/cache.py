@@ -14,7 +14,6 @@ Used by:
 from __future__ import annotations
 
 import hashlib
-from typing import Optional
 
 from .models import AssetRequest, AssetResponse
 
@@ -32,7 +31,7 @@ class AssetCache:
         self.max_size = max_size
         self.access_order: list[str] = []
 
-    def get(self, key: str) -> Optional[AssetResponse]:
+    def get(self, key: str) -> AssetResponse | None:
         """Get cached asset. Touches the key (LRU)."""
         if key in self.cache:
             # Move to end of access order (LRU)

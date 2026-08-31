@@ -37,6 +37,7 @@ same `PathScore` shape when there's a labelled eval set to justify it
 
 Reference: cianfhoghlaim/meaisinfhoghlaim/ocr/ensemble/ensembled_extractor.py
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -119,11 +120,15 @@ def _run_one_path(path: PathName, image_path: str, timeout_seconds: float) -> En
     """Run one path synchronously (called inside a thread by `_run_all_paths_async`)."""
     backend = _PATH_BACKENDS[path]
     if not is_backend_available(backend):
-        return EnsemblePathOutput(path=path, raw_response="", error=f"{backend.value} not configured")
+        return EnsemblePathOutput(
+            path=path, raw_response="", error=f"{backend.value} not configured"
+        )
 
     start = time.monotonic()
     try:
-        text, _extras = run_backend(backend, image_path, prompt=DEFAULT_PROMPT, timeout_seconds=timeout_seconds)
+        text, _extras = run_backend(
+            backend, image_path, prompt=DEFAULT_PROMPT, timeout_seconds=timeout_seconds
+        )
         return EnsemblePathOutput(
             path=path, raw_response=text, duration_ms=int((time.monotonic() - start) * 1000)
         )

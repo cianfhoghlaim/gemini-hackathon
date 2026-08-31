@@ -34,6 +34,7 @@ app = marimo.App(width="medium")
 @app.cell
 def _intro() -> None:
     import marimo as mo
+
     mo.md(
         """
         # Phase 1 — DLT first-run + pruning
@@ -60,8 +61,8 @@ def _intro() -> None:
 def _imports() -> None:
     import duckdb
     import pandas as pd
-
     from dlt_pipelines._subject_base import _prune_rows
+
     return _prune_rows, duckdb, pd
 
 
@@ -69,11 +70,11 @@ def _imports() -> None:
 def _connect(mo) -> None:
     from pathlib import Path
 
+    import duckdb
+
     duckdb_path = Path("gemini_hackathon.duckdb").resolve()
     if not duckdb_path.is_file():
-        mo.md(
-            f"**DuckDB not found at `{duckdb_path}`** — run `make dlt-smoke-all` first."
-        )
+        mo.md(f"**DuckDB not found at `{duckdb_path}`** — run `make dlt-smoke-all` first.")
         con = None
     else:
         con = duckdb.connect(str(duckdb_path), read_only=True)
@@ -83,7 +84,7 @@ def _connect(mo) -> None:
 @app.cell
 def _summary(con, mo) -> None:
     if con is None:
-        return
+        return None
     summary_df = con.execute(
         """
         SELECT source_kind,
@@ -110,10 +111,14 @@ def _load(con) -> None:
         """
     ).fetchall()
     cols = [
-        "source_key", "subject", "language", "page_count",
-        "sha256_hash", "source_kind",
+        "source_key",
+        "subject",
+        "language",
+        "page_count",
+        "sha256_hash",
+        "source_kind",
     ]
-    row_dicts = [dict(zip(cols, r)) for r in rows]
+    row_dicts = [dict(zip(cols, r, strict=False)) for r in rows]
     return (row_dicts,)
 
 
@@ -130,7 +135,7 @@ def _prune(row_dicts, _prune_rows, pd) -> None:
 @app.cell
 def _tables(mo, kept, flagged) -> None:
     if kept is None:
-        return
+        return None
     kept_table = mo.ui.table(
         kept,
         label=f"In-scope rows (n={len(kept)})",

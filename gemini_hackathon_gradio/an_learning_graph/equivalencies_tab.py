@@ -41,15 +41,16 @@ import sqlite3
 from typing import Any
 
 try:
-    import gradio as gr
     import plotly.graph_objects as go
+
+    import gradio as gr
+
     PLOTLY_AVAILABLE = True
 except ImportError:
     gr = None  # type: ignore[assignment]
     go = None  # type: ignore[assignment]
     PLOTLY_AVAILABLE = False
 
-from .theme import STUDIO_THEME_CSS
 
 logger = logging.getLogger(__name__)
 
@@ -59,9 +60,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 REPO_ROOT: pathlib.Path = pathlib.Path(__file__).resolve().parent.parent.parent.parent
-SQLITE_PATH: pathlib.Path = (
-    REPO_ROOT / "data" / "bi_ep" / "extracted_syllabi.sqlite"
-)
+SQLITE_PATH: pathlib.Path = REPO_ROOT / "data" / "bi_ep" / "extracted_syllabi.sqlite"
 
 #: The 7 target jurisdictions for Change B (source is always UK_NCCE).
 TARGET_JURISDICTIONS: tuple[str, ...] = (
@@ -222,8 +221,7 @@ def _render_sankey(
         if eq is None:
             continue
         target_label = (
-            f"{JURISDICTION_DISPLAY.get(jurisdiction, jurisdiction)}\n"
-            f"({eq.get('cell_id', '?')})"
+            f"{JURISDICTION_DISPLAY.get(jurisdiction, jurisdiction)}\n({eq.get('cell_id', '?')})"
         )
         labels.append(target_label)
         sources.append(0)  # index of source_label in `labels`
@@ -234,22 +232,20 @@ def _render_sankey(
         values.append(max(conf, 0.05))
         link_labels.append(f"{conf:.2f}")
 
-    link = dict(
-        source=sources, target=targets, value=values, label=link_labels
-    )
-    node = dict(
-        label=labels,
-        pad=18,
-        thickness=18,
-        color="#28955e",  # MeanScoil meadow-green from theme.py
-    )
+    link = {"source": sources, "target": targets, "value": values, "label": link_labels}
+    node = {
+        "label": labels,
+        "pad": 18,
+        "thickness": 18,
+        "color": "#28955e",  # MeanScoil meadow-green from theme.py
+    }
     fig = go.Figure(data=[go.Sankey(link=link, node=node)])
     fig.update_layout(
         title=(
             f"Cross-walk from `<b>{source_label}</b>` to its equivalents in the "
             f"other 7 BI jurisdictions"
         ),
-        font=dict(size=11),
+        font={"size": 11},
         height=520,
         margin={"l": 30, "r": 30, "t": 60, "b": 30},
     )
@@ -290,11 +286,7 @@ def _build_synthesis_md(
     equivalents: dict[str, dict[str, Any]],
 ) -> str:
     """One-paragraph narrative summary of the cross-walk."""
-    n_found = sum(
-        1
-        for tgt in TARGET_JURISDICTIONS
-        if equivalents.get(tgt) is not None
-    )
+    n_found = sum(1 for tgt in TARGET_JURISDICTIONS if equivalents.get(tgt) is not None)
     if n_found == 0:
         return (
             f"**No cross-walk data** for "

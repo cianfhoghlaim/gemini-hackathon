@@ -55,11 +55,14 @@ Here's an example of a Blocks demo that creates two simple demos and uses tabs t
 import numpy as np
 import gradio as gr
 
+
 def flip_text(x):
     return x[::-1]
 
+
 def flip_image(x):
     return np.fliplr(x)
+
 
 with gr.Blocks() as demo:
     gr.Markdown("Flip text or image files using this demo.")
@@ -69,7 +72,7 @@ with gr.Blocks() as demo:
             text_output = gr.Textbox()
             # this demo runs whenever the input textbox changes
             text_input.change(flip_text, inputs=text_input, outputs=text_output)
-        
+
         with gr.TabItem("Flip Image"):
             with gr.Row():
                 image_input = gr.Image()
@@ -77,7 +80,7 @@ with gr.Blocks() as demo:
             button = gr.Button("Flip")
             # this demo runs whenever the button is clicked
             button.click(flip_image, inputs=image_input, outputs=image_output)
-    
+
 demo.launch()
 ```
 

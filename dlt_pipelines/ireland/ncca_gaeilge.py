@@ -31,9 +31,8 @@ Usage:
 
 Reference: openspec/changes/2026-07-16-biiep-v1-lc-per-subject-syllabus-ingestion-v1/
 """
-from __future__ import annotations
-import dlt
 
+from __future__ import annotations
 
 import json
 import os
@@ -42,8 +41,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from ._shared import named_destinations
+import dlt
 
+from ._shared import named_destinations
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
 INGEST_QUEUE = REPO_ROOT / "stedding" / "ingest_queue" / "ncca" / "gaeilge"
@@ -199,10 +199,12 @@ def ncca_gaeilge_partitions() -> Any:
     """
     from dagster import MultiPartitionsDefinition, StaticPartitionsDefinition
 
-    return MultiPartitionsDefinition({
-        "subject": StaticPartitionsDefinition(["gaeilge"]),
-        "language": StaticPartitionsDefinition(LC_LANGUAGES),
-    })
+    return MultiPartitionsDefinition(
+        {
+            "subject": StaticPartitionsDefinition(["gaeilge"]),
+            "language": StaticPartitionsDefinition(LC_LANGUAGES),
+        }
+    )
 
 
 __all__ = [
@@ -223,7 +225,6 @@ def create_ncca_gaeilge_pipeline(
     Honours `USE_LOCAL_SCRAPES=true` and the canonical
     `ducklake_cianfhoghlaim` named destination via the named_destinations factory.
     """
-    import dlt_sources as _dlt
 
     return dlt.pipeline(
         pipeline_name=pipeline_name,

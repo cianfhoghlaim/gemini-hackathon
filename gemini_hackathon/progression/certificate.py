@@ -14,10 +14,8 @@ badges, ribbons, and progress bars.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Literal, Optional
-
+from datetime import UTC, datetime
+from typing import Literal
 
 AwardType = Literal[
     "junior_cycle",
@@ -44,7 +42,7 @@ class CertificateRecord:
     award_type: AwardType
     award_title: str
     jurisdiction: str
-    subject_slug: Optional[str] = None
+    subject_slug: str | None = None
     outcomes_covered: tuple[str, ...] = field(default_factory=tuple)
     descriptor: Literal[
         "Exceptional",
@@ -52,7 +50,7 @@ class CertificateRecord:
         "In line with expectations",
         "Yet to meet expectations",
     ] = "In line with expectations"
-    issued_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    issued_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 def render_certificate_markdown(cert: CertificateRecord) -> tuple[str, dict[str, str]]:

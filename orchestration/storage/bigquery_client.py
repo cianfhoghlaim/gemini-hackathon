@@ -21,6 +21,7 @@ Falls back gracefully (returns `None` / `-1` / `[]`) when
 matching the existing `ducklake_client.py` degrade pattern so the offline
 smoke tests never import-fail on this module.
 """
+
 from __future__ import annotations
 
 import logging

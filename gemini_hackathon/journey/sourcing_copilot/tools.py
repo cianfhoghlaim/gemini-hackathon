@@ -6,6 +6,7 @@ that the sourcing pipeline writes (so the copilot sees exactly what the
 workshop host sees). All tools are best-effort and return None / empty
 list on failure so the offline in-memory fallback path works end-to-end.
 """
+
 from __future__ import annotations
 
 import logging
@@ -33,6 +34,7 @@ def get_status() -> dict[str, Any]:
     The copilot's `StatusAgent` calls this on every conversation turn.
     """
     from gemini_hackathon.journey.sourcing.pipeline import step_status
+
     return step_status(project_id=os.environ.get("GOOGLE_CLOUD_PROJECT", "") or None)
 
 
@@ -81,8 +83,8 @@ def mark_excluded(sha256: str, reason: str = "out_of_scope") -> dict[str, Any]:
     Always shows the next 10 candidates after a successful exclusion (the
     copilot's REPL is the workshop host's exclusion tool).
     """
-    from gemini_hackathon.journey.sourcing.pipeline import step_filtered
     from gemini_hackathon.journey.sourcing.fs import get_firestore
+    from gemini_hackathon.journey.sourcing.pipeline import step_filtered
 
     if reason not in _LEGAL_REASONS:
         return {
@@ -96,18 +98,19 @@ def mark_excluded(sha256: str, reason: str = "out_of_scope") -> dict[str, Any]:
         project_id=os.environ.get("GOOGLE_CLOUD_PROJECT", "") or None,
     )
 
-    fs = get_firestore()
-    candidates = [
-        a for a in list_artefacts(excluded=False, limit=10)
-        if a.get("sha256") != sha256
-    ]
+    get_firestore()
+    candidates = [a for a in list_artefacts(excluded=False, limit=10) if a.get("sha256") != sha256]
     return {
         "ok": True,
         "excluded": sha256,
         "reason": reason,
         "next_candidates": [
-            {"sha256": c.get("sha256"), "subject_slug": c.get("subject_slug"),
-             "jurisdiction": c.get("jurisdiction"), "document_type": c.get("document_type")}
+            {
+                "sha256": c.get("sha256"),
+                "subject_slug": c.get("subject_slug"),
+                "jurisdiction": c.get("jurisdiction"),
+                "document_type": c.get("document_type"),
+            }
             for c in candidates
         ],
     }
@@ -125,16 +128,31 @@ def list_cloud_run_services() -> list[dict[str, Any]]:
     """
     if not os.environ.get("GOOGLE_CLOUD_PROJECT"):
         return [
-            {"name": "gemini-hackathon-journey", "region": "europe-west1",
-             "last_deployed": "<offline stub>"},
-            {"name": "gemini-hackathon-editorial-studio", "region": "europe-west1",
-             "last_deployed": "<offline stub>"},
-            {"name": "gemini-hackathon-an-scrudu", "region": "europe-west1",
-             "last_deployed": "<offline stub>"},
-            {"name": "gemini-hackathon-anam-education", "region": "europe-west1",
-             "last_deployed": "<offline stub>"},
-            {"name": "gemini-hackathon-mission-control", "region": "europe-west1",
-             "last_deployed": "<offline stub>"},
+            {
+                "name": "gemini-hackathon-journey",
+                "region": "europe-west1",
+                "last_deployed": "<offline stub>",
+            },
+            {
+                "name": "gemini-hackathon-editorial-studio",
+                "region": "europe-west1",
+                "last_deployed": "<offline stub>",
+            },
+            {
+                "name": "gemini-hackathon-an-scrudu",
+                "region": "europe-west1",
+                "last_deployed": "<offline stub>",
+            },
+            {
+                "name": "gemini-hackathon-anam-education",
+                "region": "europe-west1",
+                "last_deployed": "<offline stub>",
+            },
+            {
+                "name": "gemini-hackathon-mission-control",
+                "region": "europe-west1",
+                "last_deployed": "<offline stub>",
+            },
         ]
     try:
         import json
@@ -159,8 +177,7 @@ def list_scheduled_jobs() -> list[dict[str, Any]]:
     """
     if not os.environ.get("GOOGLE_CLOUD_PROJECT"):
         return [
-            {"name": "biep-nightly-ingest", "schedule": "0 2 * * *",
-             "last_run": "<offline stub>"},
+            {"name": "biep-nightly-ingest", "schedule": "0 2 * * *", "last_run": "<offline stub>"},
         ]
     try:
         import json
@@ -185,7 +202,9 @@ def trigger_step(step: str) -> dict[str, Any]:
     """
     from gemini_hackathon.journey.sourcing.pipeline import main as pipeline_main
 
-    rc = pipeline_main(["--step", step, "--project-id", os.environ.get("GOOGLE_CLOUD_PROJECT", "") or ""])
+    rc = pipeline_main(
+        ["--step", step, "--project-id", os.environ.get("GOOGLE_CLOUD_PROJECT", "") or ""]
+    )
     return {
         "ok": rc == 0,
         "returncode": rc,
@@ -204,16 +223,22 @@ def recommend_next_steps() -> dict[str, Any]:
     rec: dict[str, Any] = {"recommendation": None, "reasons": []}
     if status.get("sourced_ok", 0) == 0:
         rec["recommendation"] = "sourced"
-        rec["reasons"].append("No docs sourced yet — run `python -m gemini_hackathon.journey.sourcing.pipeline --step=sourced`")
+        rec["reasons"].append(
+            "No docs sourced yet — run `python -m gemini_hackathon.journey.sourcing.pipeline --step=sourced`"
+        )
     elif (status.get("normalised") or 0) < (status.get("sourced_ok") or 0):
         rec["recommendation"] = "normalised"
         rec["reasons"].append(f"{status['normalised']}/{status['sourced_ok']} docs normalised")
     elif (status.get("baml_extracted") or 0) < (status.get("normalised") or 0):
         rec["recommendation"] = "extract-baml"
-        rec["reasons"].append(f"{status['baml_extracted']}/{status['normalised']} docs BAML-extracted")
+        rec["reasons"].append(
+            f"{status['baml_extracted']}/{status['normalised']} docs BAML-extracted"
+        )
     else:
         rec["recommendation"] = "journey:level_1"
-        rec["reasons"].append("All docs sourced + normalised + BAML-extracted — ready for the Journey orchestrator")
+        rec["reasons"].append(
+            "All docs sourced + normalised + BAML-extracted — ready for the Journey orchestrator"
+        )
     rec["status"] = status
     return rec
 
@@ -221,9 +246,9 @@ def recommend_next_steps() -> dict[str, Any]:
 __all__ = [
     "get_status",
     "list_artefacts",
-    "mark_excluded",
     "list_cloud_run_services",
     "list_scheduled_jobs",
-    "trigger_step",
+    "mark_excluded",
     "recommend_next_steps",
+    "trigger_step",
 ]

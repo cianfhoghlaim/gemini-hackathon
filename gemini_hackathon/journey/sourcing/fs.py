@@ -17,6 +17,7 @@ All collection paths + the `firestore()` client factory live here so the
 rest of the sourcing pipeline (pipeline.py, sourcing_copilot/agent.py)
 never has to think about paths or emulator wiring.
 """
+
 from __future__ import annotations
 
 import logging
@@ -63,7 +64,9 @@ def firestore_client():
     """
     project_id = os.environ.get("GCP_PROJECT_ID", "")
     if not project_id and not os.environ.get("FIRESTORE_EMULATOR_HOST"):
-        logger.debug("fs.firestore_client: no GCP_PROJECT_ID + no emulator — using in-memory fallback")
+        logger.debug(
+            "fs.firestore_client: no GCP_PROJECT_ID + no emulator — using in-memory fallback"
+        )
         return None
 
     emulator = os.environ.get("FIRESTORE_EMULATOR_HOST", "")
@@ -71,9 +74,12 @@ def firestore_client():
         logger.info("fs.firestore_client: using Firestore emulator at %s", emulator)
     try:
         from google.cloud import firestore
+
         return firestore.Client(project=project_id or "demo-emulator")
     except ImportError:
-        logger.warning("fs.firestore_client: google-cloud-firestore not installed — using in-memory fallback")
+        logger.warning(
+            "fs.firestore_client: google-cloud-firestore not installed — using in-memory fallback"
+        )
         return None
 
 
@@ -99,7 +105,7 @@ class InMemoryFirestore:
         # {collection_path: {doc_id: data}}
         self._store: dict[str, dict[str, dict[str, Any]]] = {}
 
-    def collection(self, name: str) -> "_InMemoryCollection":
+    def collection(self, name: str) -> _InMemoryCollection:
         # Accept both "catalog" and "journeys/{event_code}/catalog" — auto-prefix
         # the latter so the rest of the code can use bare names.
         path = name if name.startswith("journeys/") else f"{_root_collection()}/{name}"
@@ -124,19 +130,21 @@ class _InMemoryCollection:
         self._store = store
         self._path = path
 
-    def document(self, doc_id: str) -> "_InMemoryDocument":
+    def document(self, doc_id: str) -> _InMemoryDocument:
         return _InMemoryDocument(self._store, self._path, doc_id)
 
     def stream(self):
-        for doc_id, data in self._store._list(self._path):
+        for doc_id, _data in self._store._list(self._path):
             yield _InMemoryDocument(self._store, self._path, doc_id).get()
 
-    def where(self, field: str, op: str, value: Any) -> "_InMemoryQuery":
+    def where(self, field: str, op: str, value: Any) -> _InMemoryQuery:
         return _InMemoryQuery(self._store, self._path, field, op, value)
 
 
 class _InMemoryQuery:
-    def __init__(self, store: InMemoryFirestore, path: str, field: str, op: str, value: Any) -> None:
+    def __init__(
+        self, store: InMemoryFirestore, path: str, field: str, op: str, value: Any
+    ) -> None:
         self._store = store
         self._path = path
         self._field = field

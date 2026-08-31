@@ -22,9 +22,8 @@ This source respects USE_LOCAL_SCRAPES=true (the default in compose.yaml).
 When the env var is "false", it would fall back to Firecrawl — but the
 local cache is the canonical source for the 7 priority subjects.
 """
-from __future__ import annotations
-import dlt
 
+from __future__ import annotations
 
 import hashlib
 import json
@@ -36,6 +35,8 @@ from pathlib import Path
 from typing import Any
 
 import structlog
+
+import dlt
 
 logger = structlog.get_logger(__name__)
 
@@ -103,6 +104,7 @@ CACHE_SUFFIX_TO_CONTENT_TYPE: dict[str, str] = {
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────
+
 
 def _cache_root() -> Path:
     """Local scrape cache root. Override with STEDDING_INGEST_QUEUE."""
@@ -239,6 +241,7 @@ def _iter_cached_files(content_type: str) -> Iterator[Path]:
 
 # ── Cached-PDF readers ─────────────────────────────────────────────────────
 
+
 def _read_cached_pdf_json(path: Path) -> dict[str, Any] | None:
     try:
         with path.open(encoding="utf-8") as fh:
@@ -319,6 +322,7 @@ def _yield_exam_materials_records() -> Iterator[dict[str, Any]]:
 
 
 # ── DLT source ──────────────────────────────────────────────────────────────
+
 
 @dlt.source(name="leaving_cert")
 def leaving_cert_source(
@@ -448,6 +452,7 @@ def leaving_cert_source(
 
 # ── Convenience for tests / single-subject runs ───────────────────────────
 
+
 def iter_subject_records(subject: str) -> Iterator[dict[str, Any]]:
     """Yield all records for one subject across all 4 resources."""
     for path in _iter_cached_files("syllabus"):
@@ -470,8 +475,10 @@ def iter_subject_records(subject: str) -> Iterator[dict[str, Any]]:
             continue
         fn = path.name.lower()
         kind = (
-            "marking_schemes" if "mark" in fn and "scheme" in fn
-            else "examiner_reports" if "examiner" in fn or "chief" in fn
+            "marking_schemes"
+            if "mark" in fn and "scheme" in fn
+            else "examiner_reports"
+            if "examiner" in fn or "chief" in fn
             else "past_papers"
         )
         yield {

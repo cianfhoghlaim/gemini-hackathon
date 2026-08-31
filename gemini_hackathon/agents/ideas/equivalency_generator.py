@@ -33,7 +33,7 @@ Wholesale port of the Cianfhoghlaim
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import structlog
@@ -241,9 +241,7 @@ class EquivalencyGenerator:
                         "user_id": identity.user_id,
                     },
                 )
-                raw_equivalents, confidence, notes_map = _parse_llm_response(
-                    llm_response.content
-                )
+                raw_equivalents, confidence, notes_map = _parse_llm_response(llm_response.content)
 
             self.observability.record_invocation(trace, llm_response)
 
@@ -330,7 +328,7 @@ class EquivalencyGenerator:
                 else {}
             )
             return equivalents, confidence, notes_map
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.warning(
                 "equivalency.baml_call_failed",
                 error=f"{type(e).__name__}: {e}",
@@ -354,12 +352,12 @@ class EquivalencyGenerator:
             "string. Order the equivalents by alphabetical "
             "jurisdiction name. Score your confidence in [0.0, "
             "1.0]. Use these awarding-body mappings:\n\n"
-            f"- Ireland           (NCCA)\n"
-            f"- England           (AQA / OCR / Pearson)\n"
-            f"- Scotland          (SQA)\n"
-            f"- Wales             (WJEC / CBAC)\n"
-            f"- Northern Ireland  (CCEA)\n"
-            f"- Isle of Man       (IoM Government)\n\n"
+            "- Ireland           (NCCA)\n"
+            "- England           (AQA / OCR / Pearson)\n"
+            "- Scotland          (SQA)\n"
+            "- Wales             (WJEC / CBAC)\n"
+            "- Northern Ireland  (CCEA)\n"
+            "- Isle of Man       (IoM Government)\n\n"
             "Return ONLY valid JSON of the shape:\n"
             "{\n"
             '  "source_topic": "<source topic name>",\n'
@@ -413,7 +411,7 @@ def _extract_topic(text: str, identity: IdentityContext) -> str:
         "equivalent topic of ",
     ):
         if text.lower().startswith(prefix):
-            return text[len(prefix):].strip().rstrip("?.!").strip()
+            return text[len(prefix) :].strip().rstrip("?.!").strip()
     return text.strip().rstrip("?.!").strip() or identity.jurisdiction
 
 
@@ -454,7 +452,7 @@ def _parse_llm_response(
             cleaned = cleaned.strip("`")
             cleaned = cleaned.split("\n", 1)[-1].rsplit("```", 1)[0]
         payload = _json.loads(cleaned)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         logger.warning(
             "equivalency.llm_json_parse_failed",
             error=f"{type(e).__name__}: {e}",
@@ -465,7 +463,7 @@ def _parse_llm_response(
     if not isinstance(equivalents, dict):
         return {}, {}, {}
     confidence_val = float(payload.get("confidence", 0.85) or 0.85)
-    confidence = {jur: confidence_val for jur in equivalents}
+    confidence = dict.fromkeys(equivalents, confidence_val)
     notes_map: dict[str, str] = {}
     if isinstance(payload.get("notes"), str) and payload["notes"]:
         notes_map["__global__"] = payload["notes"]
@@ -503,11 +501,11 @@ def _make_fake_response(trace_id: str) -> LLMResponse:
 
 __all__ = [
     "ALL_TARGET_JURISDICTIONS",
+    "JURISDICTION_AWARDING_BODY",
     "EquivalencyGenerator",
     "EquivalencyRequest",
     "EquivalencyResult",
     "EquivalencyRow",
-    "JURISDICTION_AWARDING_BODY",
     "build_default_generator",
     "generator_invoker",
 ]

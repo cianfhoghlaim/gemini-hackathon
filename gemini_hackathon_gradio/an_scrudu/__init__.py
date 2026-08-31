@@ -27,16 +27,17 @@ def __getattr__(name: str):
     """Lazily import the studio app (requires Gradio)."""
     if name == "build_app":
         from gemini_hackathon_gradio.an_scrudu.app import build_app as _b
+
         return _b
     raise AttributeError(f"module 'gemini_hackathon_gradio.an_scrudu' has no attribute {name!r}")
 
 
 __all__ = [
-    "build_app",
-    "TopicDistribution",
     "CircularReference",
-    "MarkingSchemeSummary",
     "MarkingSchemeExtraction",
+    "MarkingSchemeSummary",
+    "TopicDistribution",
+    "build_app",
     "extract_circular",
     "render_heatmap",
     "render_pclm_html",

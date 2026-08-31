@@ -56,16 +56,24 @@ EMBED_BACKEND = os.getenv("EMBED_BACKEND", "vertex").lower()
 # EMBED_BACKEND=sentence_transformers AND VECTOR_BACKEND is unset (the
 # fully-offline dev path). The deployed path uses `_vector_target.py`
 # (Firestore / Vertex AI Vector Search) instead, selected by VECTOR_BACKEND.
-LANCEDB_URI = os.getenv("LANCEDB_URI") or os.getenv("GEMINI_HACKATHON_LANCEDB_URL") or "./data/lancedb/gemini_hackathon.lance"
+LANCEDB_URI = (
+    os.getenv("LANCEDB_URI")
+    or os.getenv("GEMINI_HACKATHON_LANCEDB_URL")
+    or "./data/lancedb/gemini_hackathon.lance"
+)
 
 if EMBED_BACKEND == "vertex":
     from ._vertex_embedder import VERTEX_EMBED_DIM, VERTEX_EMBED_MODEL, VertexEmbedder
 
-    EMBED_MODEL = os.getenv("GEMINI_HACKATHON_EMBED_MODEL") or os.getenv("EMBED_MODEL") or VERTEX_EMBED_MODEL
+    EMBED_MODEL = (
+        os.getenv("GEMINI_HACKATHON_EMBED_MODEL") or os.getenv("EMBED_MODEL") or VERTEX_EMBED_MODEL
+    )
     EMBED_DIM = VERTEX_EMBED_DIM
 else:
     VertexEmbedder = None  # type: ignore[assignment]
-    EMBED_MODEL = os.getenv("GEMINI_HACKATHON_EMBED_MODEL") or os.getenv("EMBED_MODEL") or "BAAI/bge-m3"
+    EMBED_MODEL = (
+        os.getenv("GEMINI_HACKATHON_EMBED_MODEL") or os.getenv("EMBED_MODEL") or "BAAI/bge-m3"
+    )
     EMBED_DIM = 1024
 
 # VECTOR_BACKEND selects the vector store (Phase 2). See
@@ -73,7 +81,7 @@ else:
 # comparison. Firestore is the default (zero standing infra).
 VECTOR_BACKEND = os.getenv("VECTOR_BACKEND", "firestore").lower()
 
-from ._vector_target import VectorTarget, get_vector_target  # noqa: E402
+from ._vector_target import VectorTarget, get_vector_target
 
 # CocoIndex is optional — degrade gracefully if not installed.
 try:
@@ -155,7 +163,11 @@ if COCOINDEX_AVAILABLE:
             4. Resolved file registry (in-memory cache)
         """
         # 1. Embedder (re-used; detect_change=True so a model swap auto-re-embeds).
-        embedder = VertexEmbedder(EMBED_MODEL) if EMBED_BACKEND == "vertex" else SentenceTransformerEmbedder(EMBED_MODEL)
+        embedder = (
+            VertexEmbedder(EMBED_MODEL)
+            if EMBED_BACKEND == "vertex"
+            else SentenceTransformerEmbedder(EMBED_MODEL)
+        )
         builder.provide(EMBEDDER, embedder)  # type: ignore[arg-type]
 
         # 2. Vector target (the canonical destination — see _vector_target.py).
@@ -167,7 +179,9 @@ if COCOINDEX_AVAILABLE:
                 conn = await coco_lancedb.connect_async(LANCEDB_URI)  # type: ignore[arg-type]
                 builder.provide(LANCE_DB, conn)  # type: ignore[arg-type]
             except Exception:
-                logger.exception("shared_lifespan: LanceDB connect failed (non-fatal, offline-dev only)")
+                logger.exception(
+                    "shared_lifespan: LanceDB connect failed (non-fatal, offline-dev only)"
+                )
 
         # 4. Resolved file registry (the in-memory cache used by `localfs.walk_dir`).
         builder.provide(RESOLVED_FILE_REGISTRY, {})  # type: ignore[arg-type]

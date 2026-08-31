@@ -9,8 +9,6 @@ from __future__ import annotations
 
 import base64
 
-import pytest
-
 from gemini_hackathon.certificate.rubric import (
     decode_b64_image,
 )

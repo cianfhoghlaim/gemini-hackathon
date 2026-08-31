@@ -19,6 +19,7 @@ def __getattr__(name: str):
     """Lazily import the studio app (requires Gradio)."""
     if name in ("build_app", "build_workflow_canvas"):
         from gemini_hackathon_gradio.editorial_studio import app as _a
+
         return getattr(_a, name)
     raise AttributeError(
         f"module 'gemini_hackathon_gradio.editorial_studio' has no attribute {name!r}"

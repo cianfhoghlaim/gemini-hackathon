@@ -32,8 +32,9 @@ logger = logging.getLogger(__name__)
 
 # Try to import cocoindex; gracefully degrade when missing.
 try:
-    import cocoindex as coco  # type: ignore[import-not-found]
     from cocoindex.connectors import localfs  # type: ignore[import-not-found]
+
+    import cocoindex as coco  # type: ignore[import-not-found]
 
     COCOINDEX_AVAILABLE = True
 except ImportError:
@@ -41,8 +42,7 @@ except ImportError:
     localfs = None  # type: ignore[assignment]
     COCOINDEX_AVAILABLE = False
     logger.warning(
-        "uk_ncce.learning_graphs_app: cocoindex not installed; "
-        "falling back to plain run()"
+        "uk_ncce.learning_graphs_app: cocoindex not installed; falling back to plain run()"
     )
 
 
@@ -109,6 +109,7 @@ def _process_one_artefact(
         # Placeholder JSON — lift the relevant fields verbatim.
         try:
             import json
+
             payload = json.loads(artefact_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
             logger.warning(
@@ -153,13 +154,12 @@ def _process_one_artefact(
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(md, encoding="utf-8")
     except OSError as exc:  # pragma: no cover
-        logger.warning(
-            "uk_ncce.learning_graphs_app: write failed out=%s reason=%s", out, exc
-        )
+        logger.warning("uk_ncce.learning_graphs_app: write failed out=%s reason=%s", out, exc)
         return None
     logger.info(
         "uk_ncce.learning_graphs_app: wrote path=%s bytes=%d",
-        out, len(md),
+        out,
+        len(md),
     )
     return out
 
@@ -195,10 +195,11 @@ def run(
     for artefact_path in artefacts:
         try:
             result = _process_one_artefact(artefact_path, raw_root=raw, md_root=md)
-        except Exception as exc:  # noqa: BLE001 — keep going on failure
+        except Exception as exc:
             logger.warning(
                 "uk_ncce.learning_graphs_app: unhandled_failure path=%s reason=%s",
-                artefact_path, exc,
+                artefact_path,
+                exc,
             )
             stats["failed"] += 1
             continue
@@ -219,7 +220,7 @@ def run(
 
 if COCOINDEX_AVAILABLE:
     if TYPE_CHECKING:
-        from cocoindex import coco as coco_types  # noqa: F401
+        from cocoindex import coco as coco_types
 
     @coco.fn(memo=True)
     def _process_one_artefact_memo(
@@ -230,6 +231,7 @@ if COCOINDEX_AVAILABLE:
         try:
             if artefact_path.suffix == ".json":
                 import json
+
                 payload = json.loads(artefact_path.read_text(encoding="utf-8"))
                 md = (
                     f"# {artefact_path.stem}\n\n"
@@ -252,7 +254,8 @@ if COCOINDEX_AVAILABLE:
         except OSError as exc:  # pragma: no cover
             logger.warning(
                 "uk_ncce.learning_graphs_app: os_error path=%s reason=%s",
-                artefact_path, exc,
+                artefact_path,
+                exc,
             )
 
     @coco.fn
@@ -264,15 +267,11 @@ if COCOINDEX_AVAILABLE:
         raw_root = pathlib.Path(raw_root_str)
         md_root = pathlib.Path(md_root_str)
         if not raw_root.exists():
-            logger.warning(
-                "uk_ncce.learning_graphs_app: raw_root_missing path=%s", raw_root
-            )
+            logger.warning("uk_ncce.learning_graphs_app: raw_root_missing path=%s", raw_root)
             return
         for suffix in _TARGET_SUFFIXES:
             for artefact_path in sorted(raw_root.glob(f"*{suffix}")):
-                out_path = _output_path_for(
-                    artefact_path, raw_root=raw_root, md_root=md_root
-                )
+                out_path = _output_path_for(artefact_path, raw_root=raw_root, md_root=md_root)
                 _process_one_artefact_memo(artefact_path, out_path)
 
     app = coco.App(

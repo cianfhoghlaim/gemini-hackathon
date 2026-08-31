@@ -27,9 +27,6 @@ changes (recorded in `openspec/changes/2026-08-27-defer-ni-wales-scotland-iom-v1
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-
-
 # The 6 active subnations (in shipping order)
 SUBNATIONS: tuple[dict, ...] = (
     {
@@ -180,12 +177,12 @@ def get_subnation_theme_key(name: str) -> str | None:
 
 
 __all__ = [
-    "SUBNATIONS",
     "DEFERRED_SUBNATIONS",
+    "SUBNATIONS",
     "get_active_subnations",
     "get_hackathon_subnations",
     "get_phase_2_subnations",
-    "get_subnation_by_name",
     "get_subnation_by_iso",
+    "get_subnation_by_name",
     "get_subnation_theme_key",
 ]

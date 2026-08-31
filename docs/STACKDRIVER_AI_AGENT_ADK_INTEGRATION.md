@@ -67,12 +67,14 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 provider = TracerProvider(
-    resource=Resource.create({
-        "service.name": os.environ["OTEL_SERVICE_NAME"],
-        "service.namespace": "gemini-hackathon",
-        "service.version": os.environ.get("COMMIT_SHA", "dev"),
-        "deployment.environment": os.environ.get("DEPLOYMENT_ENV", "hackathon"),
-    }),
+    resource=Resource.create(
+        {
+            "service.name": os.environ["OTEL_SERVICE_NAME"],
+            "service.namespace": "gemini-hackathon",
+            "service.version": os.environ.get("COMMIT_SHA", "dev"),
+            "deployment.environment": os.environ.get("DEPLOYMENT_ENV", "hackathon"),
+        }
+    ),
 )
 exporter = OTLPSpanExporter(
     endpoint="https://telemetry.googleapis.com/v1/traces",

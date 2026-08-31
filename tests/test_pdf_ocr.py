@@ -40,6 +40,7 @@ def tmp_pdf(tmp_path: Path) -> Path:
 def test_render_pdf_pages_to_pngs_produces_one_png_per_page(tmp_pdf: Path):
     """The page renderer emits one PNG per page in the PDF."""
     from gemini_hackathon.ocr import _render_pdf_pages_to_pngs
+
     pngs = _render_pdf_pages_to_pngs(str(tmp_pdf))
     assert len(pngs) >= 1
     for p in pngs:
@@ -50,6 +51,7 @@ def test_render_pdf_pages_to_pngs_produces_one_png_per_page(tmp_pdf: Path):
 def test_render_pdf_pages_respects_max_pages(tmp_pdf: Path):
     """max_pages caps the output count."""
     from gemini_hackathon.ocr import _render_pdf_pages_to_pngs
+
     pngs = _render_pdf_pages_to_pngs(str(tmp_pdf), max_pages=1)
     assert len(pngs) == 1
 
@@ -61,6 +63,7 @@ def test_render_pdf_pages_respects_max_pages(tmp_pdf: Path):
 
 def test_auto_capability_returns_gaelic_for_irish_path():
     from gemini_hackathon.ocr import Capability, auto_capability
+
     assert auto_capability("/tmp/lc_maths_gaeilge_2024.pdf") == Capability.GAELIC
     assert auto_capability("/tmp/cymraeg_syllabus.pdf") == Capability.GAELIC
     assert auto_capability("/tmp/lc_maths_2024.pdf") == Capability.ENGLISH
@@ -75,6 +78,7 @@ def test_extract_pdf_text_raises_when_gcp_project_unset(tmp_pdf: Path, monkeypat
         CapabilityUnavailableError,
         extract_pdf_text,
     )
+
     with pytest.raises(CapabilityUnavailableError):
         extract_pdf_text(
             str(tmp_pdf),

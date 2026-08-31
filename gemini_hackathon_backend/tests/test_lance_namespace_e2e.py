@@ -29,7 +29,8 @@ import pytest
 
 def _load_lakehouse_module(name: str, path: pathlib.Path):
     spec = importlib.util.spec_from_file_location(name, str(path))
-    assert spec is not None and spec.loader is not None
+    assert spec is not None
+    assert spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)
@@ -37,12 +38,8 @@ def _load_lakehouse_module(name: str, path: pathlib.Path):
 
 
 _BASE = pathlib.Path(__file__).resolve().parent.parent / "lakehouse"
-namespace_mod = _load_lakehouse_module(
-    "_test_lakehouse_namespace", _BASE / "namespace.py"
-)
-lance_vt_mod = _load_lakehouse_module(
-    "_test_lakehouse_lance_vt", _BASE / "lance_vector_target.py"
-)
+namespace_mod = _load_lakehouse_module("_test_lakehouse_namespace", _BASE / "namespace.py")
+lance_vt_mod = _load_lakehouse_module("_test_lakehouse_lance_vt", _BASE / "lance_vector_target.py")
 
 
 # --- build_lance_properties ----------------------------------------------------
@@ -117,8 +114,7 @@ def test_connect_lance_namespace_rest_biglake_url_construction() -> None:
         "rest", project="my-proj", region="europe-west1", catalog_id="my-cat"
     )
     assert props["uri"] == (
-        "https://biglake.googleapis.com/v1"
-        "/projects/my-proj/locations/europe-west1/catalogs/my-cat"
+        "https://biglake.googleapis.com/v1/projects/my-proj/locations/europe-west1/catalogs/my-cat"
     )
 
 
@@ -133,9 +129,7 @@ def test_namespace_from_env_unset_returns_none(
     assert namespace_mod.namespace_from_env() is None
 
 
-def test_namespace_from_env_dir(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
-) -> None:
+def test_namespace_from_env_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path) -> None:
     """LANCE_NAMESPACE_BACKEND=dir -> DirectoryNamespace."""
     monkeypatch.setenv("LANCE_NAMESPACE_BACKEND", "dir")
     monkeypatch.setenv("LANCE_NAMESPACE_DIR_ROOT", str(tmp_path / "lance"))
@@ -151,7 +145,7 @@ def test_namespace_from_env_rest_no_gcp(
     monkeypatch.setenv("LANCE_NAMESPACE_BACKEND", "rest")
     monkeypatch.delenv("GCP_PROJECT_ID", raising=False)
     monkeypatch.delenv("LANCE_ICEBERG_HOST", raising=False)
-    ns = namespace_mod.namespace_from_env()
+    namespace_mod.namespace_from_env()
     # We can't actually connect to a non-existent REST endpoint in the
     # test env, but we can verify the URL it tries to use.
     # (the function attempts the call; on failure it raises)
@@ -179,6 +173,7 @@ def test_namespace_from_env_rest_with_gcp_project(
     # ImportError is raised before the URL is built. Verify the URL
     # format by exercising build_lance_properties directly.
     from gemini_hackathon_backend.lakehouse.namespace import build_lance_properties
+
     props = build_lance_properties(
         "rest", project="some-project", region="europe-west1", catalog_id="my-catalog"
     )
@@ -203,6 +198,7 @@ def test_lance_vector_target_implements_protocol(tmp_path: pathlib.Path) -> None
     vt = lance_vt_mod.LanceVectorTarget(namespace=ns)
     # Async methods exist
     import inspect
+
     assert inspect.iscoroutinefunction(vt.upsert_batch)
     assert inspect.iscoroutinefunction(vt.find_nearest)
     assert inspect.iscoroutinefunction(vt.close)

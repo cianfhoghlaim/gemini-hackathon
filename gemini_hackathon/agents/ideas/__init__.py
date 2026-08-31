@@ -33,11 +33,11 @@ from .curriculum_change_sensor import (
 )
 from .equivalency_generator import (
     ALL_TARGET_JURISDICTIONS,
+    JURISDICTION_AWARDING_BODY,
     EquivalencyGenerator,
     EquivalencyRequest,
     EquivalencyResult,
     EquivalencyRow,
-    JURISDICTION_AWARDING_BODY,
     build_default_generator,
     generator_invoker,
 )
@@ -54,37 +54,37 @@ from .marking_grader_workflow import (
 )
 
 __all__ = [
-    # Adaptive Tutor
-    "AdaptiveTutor",
-    "TutorRequest",
-    "TutorResponse",
-    "build_default_tutor",
-    "tutor_invoker",
     # Equivalency Generator
     "ALL_TARGET_JURISDICTIONS",
-    "EquivalencyGenerator",
-    "EquivalencyRequest",
-    "EquivalencyResult",
-    "EquivalencyRow",
-    "JURISDICTION_AWARDING_BODY",
-    "build_default_generator",
-    "generator_invoker",
     # Marking Grader Workflow
     "DEFAULT_LC_GRADING_SCALE",
-    "MarkingBreakdown",
-    "MarkingGraderWorkflow",
-    "MarkingRequest",
-    "MarkingResult",
-    "MarkingSchemeQuestion",
-    "StudentAnswer",
-    "build_default_workflow",
-    "workflow_invoker",
+    "JURISDICTION_AWARDING_BODY",
+    # Adaptive Tutor
+    "AdaptiveTutor",
     # Curriculum Change Sensor
     "ChangeEvent",
     "ChangeType",
     "CurriculumChangeRequest",
     "CurriculumChangeResult",
     "CurriculumChangeSensor",
+    "EquivalencyGenerator",
+    "EquivalencyRequest",
+    "EquivalencyResult",
+    "EquivalencyRow",
+    "MarkingBreakdown",
+    "MarkingGraderWorkflow",
+    "MarkingRequest",
+    "MarkingResult",
+    "MarkingSchemeQuestion",
+    "StudentAnswer",
+    "TutorRequest",
+    "TutorResponse",
+    "build_default_generator",
     "build_default_sensor",
+    "build_default_tutor",
+    "build_default_workflow",
+    "generator_invoker",
     "sensor_invoker",
+    "tutor_invoker",
+    "workflow_invoker",
 ]

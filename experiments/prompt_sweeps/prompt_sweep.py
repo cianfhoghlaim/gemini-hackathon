@@ -16,22 +16,28 @@ Public API:
 
 from __future__ import annotations
 
-import hashlib
 import logging
 import statistics
-from dataclasses import asdict, dataclass, field
-from typing import Any, Callable, Iterable
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass, field
+from typing import Any
 
-from experiments.model_comparison.runner import EvalResult, EvalSample
 from experiments.model_comparison.metrics import field_level_f1
+from experiments.model_comparison.runner import EvalSample
 
 logger = logging.getLogger(__name__)
 
 
 #: The 8 LC subjects per the project's spec.
 ALL_8: tuple[str, ...] = (
-    "mathematics", "english", "gaeilge", "chemistry",
-    "biology", "physics", "geography", "computer_science",
+    "mathematics",
+    "english",
+    "gaeilge",
+    "chemistry",
+    "biology",
+    "physics",
+    "geography",
+    "computer_science",
 )
 
 #: Canonical subject → BAML client routing table (the Phase 6 deliverable).
@@ -56,6 +62,7 @@ def client_for(subject_slug: str) -> str:
 # Sweep data classes
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class SweepResult:
     """Result of sweeping one subject with + without the prompt overlay."""
@@ -64,7 +71,7 @@ class SweepResult:
     client: str
     behavior_version: int
     baseline_f1: float  # F1 without overlay (prompt_overlay=None)
-    overlay_f1: float   # F1 with overlay
+    overlay_f1: float  # F1 with overlay
     lift: float  # overlay_f1 - baseline_f1 (negative when overlay hurts)
     n_samples: int
     baseline_per_sample: list[float] = field(default_factory=list)
@@ -76,6 +83,7 @@ class SweepResult:
 # The real data-informed overlay lands in the Phase 6 follow-up commit
 # once the PDF pipeline output is rich enough to drive it.
 # ---------------------------------------------------------------------------
+
 
 def build_prompt_overlay(
     subject_slug: str,
@@ -131,14 +139,10 @@ def sweep_one_subject(
     for sample in samples:
         baseline = inv(client, sample.md_text, None, behavior_version)
         baseline_parsed = _try_parse(baseline[0])
-        baseline_f1s.append(
-            field_level_f1(baseline_parsed or {}, sample.ground_truth)
-        )
+        baseline_f1s.append(field_level_f1(baseline_parsed or {}, sample.ground_truth))
         overlay_out = inv(client, sample.md_text, overlay, behavior_version)
         overlay_parsed = _try_parse(overlay_out[0])
-        overlay_f1s.append(
-            field_level_f1(overlay_parsed or {}, sample.ground_truth)
-        )
+        overlay_f1s.append(field_level_f1(overlay_parsed or {}, sample.ground_truth))
 
     base_avg = statistics.mean(baseline_f1s) if baseline_f1s else 0.0
     over_avg = statistics.mean(overlay_f1s) if overlay_f1s else 0.0
@@ -189,6 +193,7 @@ def sweep_all_subjects(
 # Default sweep invoker — delegates to the Phase 3 lc6_extraction_app path
 # ---------------------------------------------------------------------------
 
+
 def _default_sweep_invoker(
     client: str,
     prompt: str,
@@ -203,6 +208,7 @@ def _default_sweep_invoker(
     language, prompt_overlay, prompt_behavior_version)``.
     """
     import json
+
     payload = {
         "stub": True,
         "client": client,

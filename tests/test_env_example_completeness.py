@@ -33,9 +33,14 @@ _ENV_NAMES_FROM_CALLS = re.compile(
     """
 )
 
-_TEST_FILES = frozenset({
-    "tests", "test_call_llm.py.test_call_llm", ".venv", "__pycache__",
-})
+_TEST_FILES = frozenset(
+    {
+        "tests",
+        "test_call_llm.py.test_call_llm",
+        ".venv",
+        "__pycache__",
+    }
+)
 
 
 def _parse_env_example_keys() -> set[str]:
@@ -143,7 +148,8 @@ def test_every_env_var_in_gemini_hackathon_is_documented():
     # (`GOOGLE_CLOUD_PROJECT` is a real key in `.env.example`).
     assert not missing, (
         f"Found {len(missing)} env-var names used by `gemini_hackathon/` but "
-        f"not declared in `.env.example`:\n  " + "\n  ".join(missing[:30])
+        f"not declared in `.env.example`:\n  "
+        + "\n  ".join(missing[:30])
         + ("\n  ..." if len(missing) > 30 else "")
     )
 

@@ -115,7 +115,7 @@ def _baml_extract_or_stub(pdf_text: str, subject: str = "") -> dict:
         return b.ExtractCurriculumSyllabus(
             pdf_text=pdf_text, subject=subject, language="en"
         ).model_dump()
-    except Exception as exc:  # noqa: BLE001 — offline-path fallback
+    except Exception as exc:
         return {
             "_stub": True,
             "_stub_reason": str(exc)[:200],
@@ -148,7 +148,9 @@ def _baml_syllabus_extract(subject: str, language: str = "EN") -> dict:
         }
     try:
         result = BAMLSyllabusExtractor().extract(
-            subject=subject, level="scoil_sinsearach", language=language,
+            subject=subject,
+            level="scoil_sinsearach",
+            language=language,
         )
     except Exception as exc:
         return {
@@ -250,7 +252,7 @@ def _on_generate_suggestion(pdf_path: str | None, subject: str) -> str:
 
         reader = PdfReader(pdf_path)
         text = "\n".join((page.extract_text() or "") for page in reader.pages[:5])
-    except Exception as exc:  # noqa: BLE001 — surfaces in UI
+    except Exception as exc:
         text = f"(pypdf not available: {exc})"
     extraction = _baml_extract_or_stub(pdf_text=text[:4000], subject=subject)
     return json.dumps(extraction, indent=2, ensure_ascii=False)
@@ -317,7 +319,7 @@ The 2 in-app LLM features run on the ZeroGPU backing card via the
                     "via `pypdf` (when installed) and the first 4000 chars "
                     "are passed to the BAML extractor."
                 )
-                pdf_upload = gr.File(
+                gr.File(
                     label="Upload PDF",
                     file_types=[".pdf"],
                     type="filepath",
@@ -376,7 +378,9 @@ The 2 in-app LLM features run on the ZeroGPU backing card via the
                 def _on_save_to_firestore(subject: str, notes: str) -> str:
                     extraction = _baml_syllabus_extract(subject=subject)
                     return _save_to_firestore_stub(
-                        pdf_name=subject, extraction=extraction, notes=notes,
+                        pdf_name=subject,
+                        extraction=extraction,
+                        notes=notes,
                     )
 
                 approve_btn.click(

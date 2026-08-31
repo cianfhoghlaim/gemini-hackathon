@@ -22,7 +22,9 @@ import pytest
 
 # Make the orchestration module importable without the rest of the
 # Dagster defs tree (which expects `dagster`, `cocoindex_flows.*`, etc.).
-ORCHESTRATION_DIR = Path(__file__).resolve().parents[2] / "orchestration" / "defs" / "3_model_lifecycle"
+ORCHESTRATION_DIR = (
+    Path(__file__).resolve().parents[2] / "orchestration" / "defs" / "3_model_lifecycle"
+)
 ORCHESTRATION_FILE = ORCHESTRATION_DIR / "pedagogy_overlay.py"
 
 
@@ -46,7 +48,12 @@ def test_subjects_has_six_entries(overlay_module):
     """The canonical 6-subject set covers all BIEP priority subjects."""
     assert len(overlay_module.SUBJECTS) == 6
     expected = {
-        "computer_science", "mathematics", "english", "gaeilge", "chemistry", "geography",
+        "computer_science",
+        "mathematics",
+        "english",
+        "gaeilge",
+        "chemistry",
+        "geography",
     }
     assert set(overlay_module.SUBJECTS) == expected
 
@@ -101,7 +108,11 @@ def test_upsert_annotation_inserts_then_updates(overlay_module, tmp_path):
     overlay_module._upsert_annotation(db_path, **base)
     overlay_module._upsert_annotation(
         db_path,
-        **{**base, "pedagogy_source": "fresh_baml", "payload": {"graph": {"id": "uk_ncce_cs_y8"}, "fresh": True}},
+        **{
+            **base,
+            "pedagogy_source": "fresh_baml",
+            "payload": {"graph": {"id": "uk_ncce_cs_y8"}, "fresh": True},
+        },
     )
     with sqlite3.connect(str(db_path)) as conn:
         rows = conn.execute(

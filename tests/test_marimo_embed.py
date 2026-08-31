@@ -10,11 +10,7 @@ We can't render the actual iframe in tests (browser-only), so we test:
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
-
-import pytest
-
 
 REPO = Path(__file__).resolve().parent.parent
 
@@ -33,8 +29,8 @@ def test_marimo_embed_component_defined():
 def test_marimo_embed_uses_iframe_sandbox_attrs():
     text = (REPO / "web/src/components/marimo/MarimoEmbed.tsx").read_text()
     # Marimo WASM needs the right sandbox to work in the browser.
-    assert "sandbox=\"allow-scripts allow-same-origin" in text
-    assert "allow=\"microphone\"" in text
+    assert 'sandbox="allow-scripts allow-same-origin' in text
+    assert 'allow="microphone"' in text
     assert "allowFullScreen" in text
 
 
@@ -61,11 +57,11 @@ def test_per_subject_notebook_uses_session_identity():
     not hard-code them, so the web app can pass them in."""
     text = (REPO / "notebooks" / "per_subject.py").read_text()
     # Must use dropdowns / text inputs — NOT hard-code Ireland / LC.
-    assert 'mo.ui.dropdown' in text
+    assert "mo.ui.dropdown" in text
     assert 'value="ireland"' in text
     assert 'value="leaving_cycle"' in text
     # Subject is a text input, not a dropdown, so any subject works.
-    assert 'mo.ui.text_input' in text
+    assert "mo.ui.text_input" in text
 
 
 def test_per_subject_notebook_includes_8_subnations():

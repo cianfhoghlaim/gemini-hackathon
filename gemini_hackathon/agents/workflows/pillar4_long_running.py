@@ -60,8 +60,9 @@ class Pillar4LongRunningWorkflow:
 async def build_long_running_workflow(config: Pillar4LongRunningWorkflow) -> Any:
     """Build the ADK 2 workflow with LongRunningFunctionTool + ResumabilityConfig."""
     try:
+        from google.adk.apps.app import App
+        from google.adk.apps.app import ResumabilityConfig as _ResumabilityConfig
         from google.adk.tools import LongRunningFunctionTool
-        from google.adk.apps.app import App, ResumabilityConfig as _ResumabilityConfig
     except ImportError:
         _log.warning("google-adk not installed; pillar4 returns None")
         return None
@@ -88,8 +89,8 @@ async def build_long_running_workflow(config: Pillar4LongRunningWorkflow) -> Any
 
 
 __all__ = [
-    "ResumabilityConfig",
-    "RequestInputInterrupt",
     "Pillar4LongRunningWorkflow",
+    "RequestInputInterrupt",
+    "ResumabilityConfig",
     "build_long_running_workflow",
 ]

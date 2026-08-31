@@ -13,8 +13,6 @@ Settings) alongside the existing 5 stage tabs. This test verifies:
 
 from __future__ import annotations
 
-import pytest
-
 
 def test_build_app_returns_non_none_blocks() -> None:
     """`oideachais_mission_control.build_app()` returns a non-None `gr.Blocks`."""

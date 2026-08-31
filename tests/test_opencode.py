@@ -18,9 +18,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
-
 # ---------------------------------------------------------------------------
 # Project root existence
 # ---------------------------------------------------------------------------
@@ -65,12 +62,7 @@ def test_openspec_proposal_exists(project_root: Path) -> None:
     * The ``tasks.md`` file is present.
     * At least one ``spec.md`` is present (under ``specs/``).
     """
-    change_dir = (
-        project_root
-        / "openspec"
-        / "changes"
-        / "2026-08-24-gemini-hackathon-public-v1"
-    )
+    change_dir = project_root / "openspec" / "changes" / "2026-08-24-gemini-hackathon-public-v1"
     assert change_dir.is_dir(), f"openspec change dir not found: {change_dir}"
 
     proposal = change_dir / "proposal.md"
@@ -134,6 +126,7 @@ def test_themes_dir_has_at_least_one_palette(project_root: Path) -> None:
 
 def test_gemini_hackathon_package_importable(project_root: Path) -> None:
     """The :mod:`gemini_hackathon` package is importable."""
-    import gemini_hackathon  # noqa: F401
+    import gemini_hackathon
+
     assert gemini_hackathon.__file__ is not None
     assert Path(gemini_hackathon.__file__).is_relative_to(project_root)

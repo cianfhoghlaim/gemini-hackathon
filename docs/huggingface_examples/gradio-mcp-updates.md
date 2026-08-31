@@ -67,6 +67,7 @@ In the example below, the `X-API-Token` header is extracted from the incoming re
 ```python
 import gradio as gr
 
+
 def make_api_request_on_behalf_of_user(prompt: str, x_api_token: gr.Header):
     """Make a request to everyone's favorite API.
     Args:
@@ -102,6 +103,7 @@ Gradio automatically generates tool descriptions from your function names and do
 import gradio as gr
 import numpy as np
 
+
 def sepia(input_img):
     """
     Args:
@@ -110,18 +112,15 @@ def sepia(input_img):
     Returns:
         The sepia filtered image.
     """
-    sepia_filter = np.array([
-        [0.393, 0.769, 0.189],
-        [0.349, 0.686, 0.168],
-        [0.272, 0.534, 0.131]
-    ])
+    sepia_filter = np.array([[0.393, 0.769, 0.189], [0.349, 0.686, 0.168], [0.272, 0.534, 0.131]])
     sepia_img = input_img.dot(sepia_filter.T)
     sepia_img /= sepia_img.max()
     return sepia_img
 
-gr.Interface(sepia, "image", "image", 
-             api_description="Apply a sepia filter to any image.")\
-            .launch(mcp_server=True)
+
+gr.Interface(sepia, "image", "image", api_description="Apply a sepia filter to any image.").launch(
+    mcp_server=True
+)
 ```
 
 Read more in the [guide](https://www.gradio.app/guides/building-mcp-server-with-gradio#modifying-tool-descriptions).

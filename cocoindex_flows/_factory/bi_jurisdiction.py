@@ -22,6 +22,7 @@ same GCS layout.
 
 Reference: cianfhoghlaim/cocoindex_flows/biep_parity/bi_factory.py
 """
+
 from __future__ import annotations
 
 import hashlib

@@ -58,18 +58,18 @@ def load_guidelines(jurisdiction: str) -> dict[str, Any]:
         FileNotFoundError: when no JSON exists for the jurisdiction.
     """
     file_map: dict[str, str] = {
-        "ireland":            "ncca_ie.json",
-        "england":            "gov_uk_england.json",
-        "scotland":           "sqa_scotland.json",
-        "wales":              "wjec_wales.json",
-        "northern_ireland":   "ccea_ni.json",
-        "isle_of_man":        "iom_desc.json",
-        "jersey":             "gov_je_jersey.json",
-        "guernsey":           "gov_gg_guernsey.json",
+        "ireland": "ncca_ie.json",
+        "england": "gov_uk_england.json",
+        "scotland": "sqa_scotland.json",
+        "wales": "wjec_wales.json",
+        "northern_ireland": "ccea_ni.json",
+        "isle_of_man": "iom_desc.json",
+        "jersey": "gov_je_jersey.json",
+        "guernsey": "gov_gg_guernsey.json",
         # Alternates (multiple sources per jurisdiction)
-        "ireland_govie":      "gov_ie.json",
-        "scotland_sg":        "sg_scotland.json",
-        "wales_gov":          "gov_wales_wales.json",
+        "ireland_govie": "gov_ie.json",
+        "scotland_sg": "sg_scotland.json",
+        "wales_gov": "gov_wales_wales.json",
         "northern_ireland_nidirect": "nidirect_ni.json",
     }
     filename = file_map.get(jurisdiction)
@@ -87,12 +87,18 @@ def load_guidelines(jurisdiction: str) -> dict[str, Any]:
 def list_jurisdictions() -> list[str]:
     """List the 12 jurisdiction codes we ship."""
     return [
-        "ireland", "ireland_govie",
+        "ireland",
+        "ireland_govie",
         "england",
-        "scotland", "scotland_sg",
-        "wales", "wales_gov",
-        "northern_ireland", "northern_ireland_nidirect",
-        "isle_of_man", "jersey", "guernsey",
+        "scotland",
+        "scotland_sg",
+        "wales",
+        "wales_gov",
+        "northern_ireland",
+        "northern_ireland_nidirect",
+        "isle_of_man",
+        "jersey",
+        "guernsey",
     ]
 
 
@@ -101,8 +107,17 @@ def get_primary_color(jurisdiction: str) -> str:
     data = load_guidelines(jurisdiction)
     palette = data.get("palette", {})
     # Try common keys
-    for key in ("primary", "wjec_red", "iom_red", "jersey_red",
-                "navy", "wg_red", "coral_red", "brand", "emerald_500"):
+    for key in (
+        "primary",
+        "wjec_red",
+        "iom_red",
+        "jersey_red",
+        "navy",
+        "wg_red",
+        "coral_red",
+        "brand",
+        "emerald_500",
+    ):
         if key in palette:
             return palette[key]
     # Fallback to the first colour value

@@ -21,7 +21,8 @@ import pytest
 
 def _load(name: str, path: pathlib.Path):
     spec = importlib.util.spec_from_file_location(name, str(path))
-    assert spec is not None and spec.loader is not None
+    assert spec is not None
+    assert spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)
@@ -63,8 +64,14 @@ def test_build_prompt_overlay_returns_none_in_baseline() -> None:
 def test_all_8_subjects_list_is_canonical() -> None:
     """``ALL_8`` is the project's canonical 8 LC subjects."""
     assert sweep.ALL_8 == (
-        "mathematics", "english", "gaeilge", "chemistry",
-        "biology", "physics", "geography", "computer_science",
+        "mathematics",
+        "english",
+        "gaeilge",
+        "chemistry",
+        "biology",
+        "physics",
+        "geography",
+        "computer_science",
     )
 
 
@@ -108,7 +115,9 @@ def test_sweep_one_subject_measures_positive_lift_with_stub(
     """
     from experiments.model_comparison.runner import EvalSample
 
-    monkeypatch.setattr(sweep, "build_prompt_overlay", lambda subject, behavior_version=1: "OVERLAY")
+    monkeypatch.setattr(
+        sweep, "build_prompt_overlay", lambda subject, behavior_version=1: "OVERLAY"
+    )
 
     samples = [
         EvalSample(
@@ -124,6 +133,7 @@ def test_sweep_one_subject_measures_positive_lift_with_stub(
 
     def stub_invoker(client, prompt, overlay, behavior_version):
         import json
+
         # Baseline: only subject_slug matches (1 of 2 truth fields -> F1=0)
         # Overlay: matches both subject_slug AND language (2 of 2 = F1=1.0)
         if overlay is not None:
@@ -192,7 +202,8 @@ def test_sweep_result_dataclass_serializes() -> None:
 def test_default_sweep_invoker_applies_overlay() -> None:
     """The default invoker echoes whether the overlay was applied."""
     import json
-    content, tin, tout = sweep._default_sweep_invoker(
+
+    content, _tin, _tout = sweep._default_sweep_invoker(
         "BIEPV3ExtractMathematics", "long prompt " * 10, None, 1
     )
     parsed = json.loads(content)

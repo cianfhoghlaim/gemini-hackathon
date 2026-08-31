@@ -27,10 +27,7 @@ Available fixtures:
 
 from __future__ import annotations
 
-import importlib
 import json
-import os
-import sys
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
@@ -38,7 +35,6 @@ from typing import Any
 import pytest
 
 from gemini_hackathon.call_llm import LLMResponse, TierAttempt
-
 
 # ---------------------------------------------------------------------------
 # Markers — registered in pyproject.toml [tool.pytest.ini_options]
@@ -140,7 +136,7 @@ def clean_env(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
 
     call_llm.reset_router()
 
-    yield
+    return
 
 
 # ---------------------------------------------------------------------------
@@ -263,12 +259,12 @@ def tmp_themes_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     # Jurisdiction + England-board palettes (each at its canonical path).
     # 7 jurisdictions + 3 England boards = 10 top-level jurisdiction files.
     jurisdiction_canonical = {
-        "ncca.ie":     "ncca_palette.json",
-        "aqa.org.uk":  "aqa_palette.json",
-        "ocr.org.uk":  "ocr_palette.json",
+        "ncca.ie": "ncca_palette.json",
+        "aqa.org.uk": "aqa_palette.json",
+        "ocr.org.uk": "ocr_palette.json",
         "qualifications.pearson.com": "pearson_palette.json",
-        "sqa.org.uk":  "sqa_palette.json",
-        "wjec.co.uk":  "wjec_palette.json",
+        "sqa.org.uk": "sqa_palette.json",
+        "wjec.co.uk": "wjec_palette.json",
         "ccea.org.uk": "ccea_palette.json",
         "gov.im/education": "iom_palette.json",
     }
@@ -460,15 +456,17 @@ class _FakeCallLLM:
             tokens_in=128,
             tokens_out=64,
             cost_usd=0.0001,
-            attempts=[TierAttempt(
-                tier=1,
-                family="text_llm",
-                role="default",
-                model="minimax-m3",
-                backend="minimax",
-                latency_ms=42,
-                succeeded=True,
-            )],
+            attempts=[
+                TierAttempt(
+                    tier=1,
+                    family="text_llm",
+                    role="default",
+                    model="minimax-m3",
+                    backend="minimax",
+                    latency_ms=42,
+                    succeeded=True,
+                )
+            ],
         )
 
 
@@ -478,7 +476,7 @@ class _FakeCallLLM:
 
 
 @pytest.fixture
-def fake_llm_router(monkeypatch: pytest.MonkeyPatch) -> "_FakeRouter":
+def fake_llm_router(monkeypatch: pytest.MonkeyPatch) -> _FakeRouter:
     """Replace the LiteLLM router with a fully-deterministic fake.
 
     The fake lets individual tests decide which tier succeeds / fails
@@ -617,5 +615,5 @@ __all__ = [
 
 
 # Re-export the helpers so tests can do:
-#   from tests.conftest import ALL_SOURCE_KEYS, _FakeRouter  # noqa: F401
+#   from tests.conftest import ALL_SOURCE_KEYS, _FakeRouter
 # The `_` prefix on _FakeRouter is intentional (test-only API).

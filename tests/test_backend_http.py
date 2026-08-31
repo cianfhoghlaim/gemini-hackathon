@@ -9,14 +9,7 @@ are exercised indirectly via the ADK agent tests in `tests/test_adk_agent.py`.
 
 from __future__ import annotations
 
-import json
-import socketserver
-import threading
 import time
-import urllib.request
-from http.server import BaseHTTPRequestHandler
-
-import pytest
 
 from gemini_hackathon import backend as be
 from gemini_hackathon.backend import (
@@ -80,14 +73,14 @@ class _HandlerProbe(be._BackendHandler):
     handler programmatically.
     """
 
-    def __init__(self) -> None:  # noqa: D401 — trivial
+    def __init__(self) -> None:
         # Skip the BaseHTTPRequestHandler.__init__ (no socket setup).
         pass
 
-    def setup(self) -> None:  # noqa: D401 — no socket
+    def setup(self) -> None:
         pass
 
-    def finish(self) -> None:  # noqa: D401 — no socket
+    def finish(self) -> None:
         pass
 
 
@@ -163,27 +156,6 @@ def test_handler_get_unknown_path_returns_404():
     assert captured["status"] == 404
     assert captured["payload"]["error"] == "not_found"
     assert captured["payload"]["path"] == "/api/nope-not-here"
-
-
-def test_handler_options_sends_cors_headers():
-    """`do_OPTIONS` responds 204 with the canonical CORS headers."""
-    handler = _HandlerProbe()
-    captured = {}
-
-    handler.wfile = b""
-    handler.command = "OPTIONS"
-    handler.path = "/api/chat/completions"
-    handler.headers = {}
-    handler.rfile = b""
-    handler.send_response = lambda code: captured.update(code=code)  # type: ignore[assignment]
-    handler.send_header = lambda k, v: captured.setdefault("headers", []).append((k, v))  # type: ignore[assignment]
-    handler.end_headers = lambda: None  # type: ignore[assignment]
-    handler.do_OPTIONS()
-    # CORS headers are present.
-    headers = dict(captured.get("headers", []))
-    assert "Access-Control-Allow-Origin" in headers
-    assert "Access-Control-Allow-Methods" in headers
-    assert "Access-Control-Allow-Headers" in headers
 
 
 def test_handler_options_sends_cors_headers():

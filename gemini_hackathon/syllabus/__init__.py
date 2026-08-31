@@ -24,8 +24,8 @@ from .comparison import SyllabusComparison, run_extraction_comparison
 from .extractor import (
     ExtractedSyllabus,
     ExtractionMethod,
-    SyllabusExtractor,
     SyllabusExtractionError,
+    SyllabusExtractor,
 )
 from .per_topic_schema import (
     ASSET_REQUEST_BY_SUBJECT,
@@ -51,9 +51,9 @@ from .vlm_extractor import (
     PaliGemma2VLMSyllabusExtractor,
 )
 
-
 __all__ = [
     "ASSET_REQUEST_BY_SUBJECT",
+    "SYLLABUS_RESULTS_PATH",
     "BAMLSyllabusExtractor",
     "CurriculumConcept",
     "ExtractedSyllabus",
@@ -62,7 +62,6 @@ __all__ = [
     "GeminiFlashVLMSyllabusExtractor",
     "Gemma4E4BVLMSyllabusExtractor",
     "PaliGemma2VLMSyllabusExtractor",
-    "SYLLABUS_RESULTS_PATH",
     "SyllabusExtractionError",
     "SyllabusExtractor",
     "build_curriculum_concepts",

@@ -61,15 +61,36 @@ def _fail(label: str, err: Exception) -> None:
 def step_theming(verbose: bool) -> None:
     _section("1. Theming layer")
     try:
-        from gemini_hackathon import list_all_palettes, load_palette, JURISDICTIONS, BOARDS
+        from gemini_hackathon import BOARDS, JURISDICTIONS, list_all_palettes, load_palette
+
         palettes = list_all_palettes()
         assert len(palettes) == 15, f"expected 15, got {len(palettes)}"
         _ok("list_all_palettes() returns 15", verbose, f"j={len(JURISDICTIONS)} b={len(BOARDS)}")
-        for k in ["ncca", "aqa", "ocr", "pearson", "sqa", "wjec", "ccea", "iom", "jersey", "guernsey",
-                  "ncca.ie", "aqa.org.uk", "ocr.org.uk", "qualifications.pearson.com",
-                  "sqa.org.uk", "wjec.co.uk", "ccea.org.uk", "gov.im/education",
-                  "gov.ie/education", "gov.uk/dfe", "education.gov.scot",
-                  "gov.wales/education", "ccea.org.uk/safeguarding"]:
+        for k in [
+            "ncca",
+            "aqa",
+            "ocr",
+            "pearson",
+            "sqa",
+            "wjec",
+            "ccea",
+            "iom",
+            "jersey",
+            "guernsey",
+            "ncca.ie",
+            "aqa.org.uk",
+            "ocr.org.uk",
+            "qualifications.pearson.com",
+            "sqa.org.uk",
+            "wjec.co.uk",
+            "ccea.org.uk",
+            "gov.im/education",
+            "gov.ie/education",
+            "gov.uk/dfe",
+            "education.gov.scot",
+            "gov.wales/education",
+            "ccea.org.uk/safeguarding",
+        ]:
             p = load_palette(k)
             assert p is not None, f"{k} not found"
         _ok("all 23 key forms resolve", verbose)
@@ -82,6 +103,7 @@ def step_models(verbose: bool) -> None:
     _section("2. Model registry")
     try:
         from gemini_hackathon import MODEL_REGISTRY, model_for
+
         assert len(MODEL_REGISTRY) == 24, f"expected 24 entries, got {len(MODEL_REGISTRY)}"
         _ok("MODEL_REGISTRY has 24 entries", verbose)
 
@@ -104,10 +126,13 @@ def step_models(verbose: bool) -> None:
 def step_exclusion(verbose: bool) -> None:
     _section("3. Model exclusion guard")
     try:
-        from gemini_hackathon.call_llm import _assert_model_allowed, ModelExcludedError
-        for bad in ["@cf/meta/llama-3.1-8b-instruct",
-                    "qwen3-coder-32b-instruct",
-                    "openrouter/qwen3-coder-anything"]:
+        from gemini_hackathon.call_llm import ModelExcludedError, _assert_model_allowed
+
+        for bad in [
+            "@cf/meta/llama-3.1-8b-instruct",
+            "qwen3-coder-32b-instruct",
+            "openrouter/qwen3-coder-anything",
+        ]:
             try:
                 _assert_model_allowed(bad)
                 raise AssertionError(f"{bad} should have been rejected")
@@ -115,8 +140,13 @@ def step_exclusion(verbose: bool) -> None:
                 pass
         _ok("@cf/* and qwen3-coder-* are rejected", verbose)
 
-        for good in ["gemini-3.5-flash", "gemma-4-26b-a4b", "minimax-m3",
-                     "openai/gemma-4-26b-a4b", "vertex_ai/gemini-3.5-flash"]:
+        for good in [
+            "gemini-3.5-flash",
+            "gemma-4-26b-a4b",
+            "minimax-m3",
+            "openai/gemma-4-26b-a4b",
+            "vertex_ai/gemini-3.5-flash",
+        ]:
             _assert_model_allowed(good)
         _ok("allowed models pass through", verbose)
     except Exception as e:
@@ -127,7 +157,8 @@ def step_exclusion(verbose: bool) -> None:
 def step_ocr(verbose: bool) -> None:
     _section("4. OCR capability router")
     try:
-        from gemini_hackathon.ocr import _DISPATCH_TABLE, Capability, auto_capability, _prompt_for
+        from gemini_hackathon.ocr import _DISPATCH_TABLE, Capability, _prompt_for, auto_capability
+
         assert len(_DISPATCH_TABLE) == 7
         _ok("dispatch table has 7 capabilities", verbose)
 
@@ -150,8 +181,11 @@ def step_assets(verbose: bool) -> None:
     try:
         from gemini_hackathon.assets.control_record import AssetControlRecord
         from gemini_hackathon.assets.image_gen import (
-            ImageGenBackend, ImageGenRouter, _control_to_prompt,
+            ImageGenBackend,
+            ImageGenRouter,
+            _control_to_prompt,
         )
+
         rec = AssetControlRecord.from_syllabus_and_palette(
             source_pdf_path="/tmp/lc_chem_2024.pdf",
             source_page=12,
@@ -183,13 +217,19 @@ def step_cli(verbose: bool) -> None:
     _section("6. CLI")
     try:
         from gemini_hackathon import cli
+
         parser = cli._build_parser()
         for action in parser._actions:
             if hasattr(action, "choices") and isinstance(action.choices, dict):
                 subcommands = set(action.choices.keys())
-                assert subcommands == {"theme", "extract", "pipeline", "baml", "compare", "serve"}, (
-                    f"got {subcommands}"
-                )
+                assert subcommands == {
+                    "theme",
+                    "extract",
+                    "pipeline",
+                    "baml",
+                    "compare",
+                    "serve",
+                }, f"got {subcommands}"
                 break
         _ok("CLI has 6 subcommands", verbose)
     except Exception as e:
@@ -201,10 +241,11 @@ def step_observability(verbose: bool) -> None:
     _section("7. Observability")
     try:
         import structlog
+
         from gemini_hackathon.observability import trace_agent
-        with structlog.testing.capture_logs() as logs:
-            with trace_agent(agent="smoke_test"):
-                pass
+
+        with structlog.testing.capture_logs() as logs, trace_agent(agent="smoke_test"):
+            pass
         events = {e["event"] for e in logs}
         assert "agent.trace_opened" in events
         assert "agent.trace_closed" in events
@@ -217,10 +258,10 @@ def step_observability(verbose: bool) -> None:
 def step_compare(verbose: bool, quick: bool) -> None:
     _section("9. Comparison harness → DuckDB")
     try:
-        from gemini_hackathon import compare as compare_mod
-        from gemini_hackathon.compare import run_comparison
         from gemini_hackathon import call_llm as call_llm_mod
+        from gemini_hackathon import compare as compare_mod
         from gemini_hackathon.call_llm import LLMResponse, TierAttempt
+        from gemini_hackathon.compare import run_comparison
     except ImportError as e:
         print(f"  [SKIP] missing imports: {e}")
         return
@@ -234,20 +275,37 @@ def step_compare(verbose: bool, quick: bool) -> None:
             family="text_llm",
             role="default",
             latency_ms=10,
-            tokens_in=10, tokens_out=20, cost_usd=0.0,
-            attempts=[TierAttempt(
-                tier=1, family="text_llm", role="default",
-                model="gemini-3.5-flash", backend="vertex",
-                latency_ms=10, succeeded=True,
-            )],
+            tokens_in=10,
+            tokens_out=20,
+            cost_usd=0.0,
+            attempts=[
+                TierAttempt(
+                    tier=1,
+                    family="text_llm",
+                    role="default",
+                    model="gemini-3.5-flash",
+                    backend="vertex",
+                    latency_ms=10,
+                    succeeded=True,
+                )
+            ],
         )
 
-    good_response = json.dumps({
-        "source_key": "x", "source_name": "y", "jurisdiction": "z",
-        "level": "LC", "primary": "#000000", "secondary": "#000000",
-        "accent": "#000000", "background": "#FFFFFF", "text": "#1A1A1A",
-        "heading_font": "Helvetica", "body_font": "Helvetica",
-    })
+    good_response = json.dumps(
+        {
+            "source_key": "x",
+            "source_name": "y",
+            "jurisdiction": "z",
+            "level": "LC",
+            "primary": "#000000",
+            "secondary": "#000000",
+            "accent": "#000000",
+            "background": "#FFFFFF",
+            "text": "#1A1A1A",
+            "heading_font": "Helvetica",
+            "body_font": "Helvetica",
+        }
+    )
 
     if quick:
         print("  [SKIP] quick mode")
@@ -266,9 +324,14 @@ def step_compare(verbose: bool, quick: bool) -> None:
             result = run_comparison(pdf_path=pdf, duckdb_path=duckdb_path, profile="hackathon")
             assert result["profile"] == "hackathon"
             assert result["summary"]["models_compared"] >= 1
-            _ok(f"compare wrote {result['summary']['models_compared']} rows", verbose, f"best={result['summary']['best_score']:.2f}")
+            _ok(
+                f"compare wrote {result['summary']['models_compared']} rows",
+                verbose,
+                f"best={result['summary']['best_score']:.2f}",
+            )
 
             import duckdb
+
             con = duckdb.connect(duckdb_path, read_only=True)
             n = con.execute("SELECT COUNT(*) FROM model_comparisons").fetchone()[0]
             assert n == result["summary"]["models_compared"]
@@ -328,7 +391,9 @@ def step_pyproject_sanity(verbose: bool) -> None:
         with open(REPO_ROOT / "pyproject.toml", "rb") as f:
             data = tomllib.load(f)
         assert data["project"]["name"] == "gemini-hackathon"
-        print(f"  [OK]   pyproject.toml is well-formed (deps={len(data['project'].get('dependencies', []))})")
+        print(
+            f"  [OK]   pyproject.toml is well-formed (deps={len(data['project'].get('dependencies', []))})"
+        )
     except Exception as e:
         _fail("pyproject", e)
         raise
@@ -338,21 +403,23 @@ def main() -> int:
     verbose = "--verbose" in sys.argv
     quick = "--quick" in sys.argv
 
-    print(f"gemini_hackathon smoke test ({'verbose' if verbose else 'normal'}, {'quick' if quick else 'full'})")
+    print(
+        f"gemini_hackathon smoke test ({'verbose' if verbose else 'normal'}, {'quick' if quick else 'full'})"
+    )
     print(f"Repo: {REPO_ROOT}")
 
     steps = [
-        ("theming",       lambda: step_theming(verbose)),
-        ("models",        lambda: step_models(verbose)),
-        ("exclusion",     lambda: step_exclusion(verbose)),
-        ("ocr",           lambda: step_ocr(verbose)),
-        ("assets",        lambda: step_assets(verbose)),
-        ("cli",           lambda: step_cli(verbose)),
+        ("theming", lambda: step_theming(verbose)),
+        ("models", lambda: step_models(verbose)),
+        ("exclusion", lambda: step_exclusion(verbose)),
+        ("ocr", lambda: step_ocr(verbose)),
+        ("assets", lambda: step_assets(verbose)),
+        ("cli", lambda: step_cli(verbose)),
         ("observability", lambda: step_observability(verbose)),
-        ("compare",       lambda: step_compare(verbose, quick)),
-        ("palette_json",  step_palette_json_sanity),
-        ("baml_client",   step_baml_client_generated),
-        ("pyproject",     lambda: step_pyproject_sanity(verbose)),
+        ("compare", lambda: step_compare(verbose, quick)),
+        ("palette_json", step_palette_json_sanity),
+        ("baml_client", step_baml_client_generated),
+        ("pyproject", lambda: step_pyproject_sanity(verbose)),
     ]
 
     passed, failed = 0, []
@@ -365,7 +432,7 @@ def main() -> int:
             if verbose:
                 traceback.print_exc()
 
-    print(f"\n=== Result ===")
+    print("\n=== Result ===")
     print(f"{passed}/{len(steps)} steps green")
     if failed:
         print("FAILED:")

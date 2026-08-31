@@ -152,12 +152,9 @@ def test_genai_capture_message_content_is_event_only(
 
 def test_iam_roles_set_in_terraform_module() -> None:
     """The iam_gcp_ai_agent_adk module binds the 4 canonical roles."""
-    import re
     import pathlib
 
-    main_tf = (
-        pathlib.Path("cloud/terraform/modules/iam_gcp_ai_agent_adk/main.tf").read_text()
-    )
+    main_tf = pathlib.Path("cloud/terraform/modules/iam_gcp_ai_agent_adk/main.tf").read_text()
 
     # All 4 roles must be in the locals.adk_iam_roles toset
     assert "roles/telemetry.tracesWriter" in main_tf
@@ -170,9 +167,7 @@ def test_observability_apis_module_includes_telemetry_googleapis() -> None:
     """The observability_apis module includes telemetry.googleapis.com."""
     import pathlib
 
-    main_tf = (
-        pathlib.Path("cloud/terraform/modules/observability_apis/main.tf").read_text()
-    )
+    main_tf = pathlib.Path("cloud/terraform/modules/observability_apis/main.tf").read_text()
 
     assert "telemetry.googleapis.com" in main_tf
     assert "aiplatform.googleapis.com" in main_tf

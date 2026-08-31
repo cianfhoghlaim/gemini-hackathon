@@ -9,9 +9,10 @@ works for the workshop host.
 This file exists only to expose the modules to both `import journey.scripts.*`
 and `import gemini_hackathon.journey.scripts.*`.
 """
+
 from __future__ import annotations
 
-from . import admin_create_event, progress  # noqa: F401  (re-export)
+from . import admin_create_event, progress
 
 __all__ = [
     "admin_create_event",

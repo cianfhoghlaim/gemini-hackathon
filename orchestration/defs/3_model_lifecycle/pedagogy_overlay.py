@@ -103,8 +103,23 @@ def _asset_key(subject: str) -> str:
     return f"pedagogy_overlay_{short}"
 
 
+# Canonical (subject -> Change A asset slug) map. Hoisted to module scope so
+# both `_load_source_graph` and `_build_assets` can reference it without
+# duplicating the literal. Phase 7 (finish-development) — was previously a
+# local in `_load_source_graph`; the asset deps list in `_build_assets`
+# referenced the unbound name which ruff flagged as F821.
+_SUBJECT_TO_SLUG: Final[Mapping[str, str]] = {
+    "computer_science": "uk_ncce_cs_extracted_graph",
+    "mathematics": "uk_ncce_maths_extracted_graph",
+    "english": "uk_ncce_english_extracted_graph",
+    "gaeilge": "uk_ncce_gaeilge_extracted_graph",
+    "chemistry": "uk_ncce_chemistry_extracted_graph",
+    "geography": "uk_ncce_geography_extracted_graph",
+}
+
+
 def _now_iso() -> str:
-    return _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return _dt.datetime.now(_dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _ensure_overlay_table(path: pathlib.Path) -> None:
@@ -242,7 +257,7 @@ def _load_principles_from_cache() -> list[dict[str, Any]]:
             "importable — using empty principles list (dev fixture)."
         )
         return []
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning("pedagogy_overlay._load_principles_from_cache: %s", exc)
         return []
 
@@ -258,15 +273,7 @@ def _load_source_graph(subject: str) -> dict[str, Any] | None:
     Returns ``None`` when no Change A asset has run yet.
     """
     try:
-        subject_to_slug: dict[str, str] = {
-            "computer_science": "uk_ncce_cs_extracted_graph",
-            "mathematics": "uk_ncce_maths_extracted_graph",
-            "english": "uk_ncce_english_extracted_graph",
-            "gaeilge": "uk_ncce_gaeilge_extracted_graph",
-            "chemistry": "uk_ncce_chemistry_extracted_graph",
-            "geography": "uk_ncce_geography_extracted_graph",
-        }
-        slug = subject_to_slug.get(subject, f"uk_ncce_{subject}_extracted_graph")
+        slug = _SUBJECT_TO_SLUG.get(subject, f"uk_ncce_{subject}_extracted_graph")
 
         if not SQLITE_PATH.exists():
             logger.warning(
@@ -284,17 +291,16 @@ def _load_source_graph(subject: str) -> dict[str, Any] | None:
             logger.warning(
                 "pedagogy_overlay: no row for slug=%s — using empty graph "
                 "(Change A's per-subject asset for %s hasn't materialised)",
-                slug, subject,
+                slug,
+                subject,
             )
             return None
         return json.loads(row[0])
     except (OSError, sqlite3.OperationalError, json.JSONDecodeError) as exc:
         logger.warning("pedagogy_overlay._load_source_graph: %s", exc)
         return None
-    except Exception as exc:  # noqa: BLE001
-        logger.warning(
-            "pedagogy_overlay._load_source_graph: unhandled error: %s", exc
-        )
+    except Exception as exc:
+        logger.warning("pedagogy_overlay._load_source_graph: unhandled error: %s", exc)
         return None
 
 
@@ -337,14 +343,14 @@ def _call_apply_pedagogy_principles(
         typed_principles = [PedagogyPrinciple(**p) for p in principles]
 
         async def _run() -> Any:
-            return await b.ApplyPedagogyPrinciples(
-                graph=typed_graph, principles=typed_principles
-            )
+            return await b.ApplyPedagogyPrinciples(graph=typed_graph, principles=typed_principles)
 
         result = asyncio.run(_run())
         if hasattr(result, "model_dump"):
             return result.model_dump()
-        return dict(result) if isinstance(result, dict) else {"graph": graph, "cell_annotations": {}}
+        return (
+            dict(result) if isinstance(result, dict) else {"graph": graph, "cell_annotations": {}}
+        )
     except ImportError:
         # Stub: every cell maps to the first principle (dev only).
         cells = graph.get("cells", []) or []
@@ -361,10 +367,8 @@ def _call_apply_pedagogy_principles(
             "pedagogy_source": "cache",
             "generated_at": _now_iso(),
         }
-    except Exception as exc:  # noqa: BLE001
-        logger.warning(
-            "_call_apply_pedagogy_principles: BAML call failed: %s", exc
-        )
+    except Exception as exc:
+        logger.warning("_call_apply_pedagogy_principles: BAML call failed: %s", exc)
         return {
             "graph": graph,
             "cell_annotations": {},
@@ -383,9 +387,7 @@ def _build_assets() -> Mapping[str, Any]:
     if asset is None:
         return {}
 
-    pairs = {
-        subject: _asset_key(subject) for subject in SUBJECTS
-    }
+    pairs = {subject: _asset_key(subject) for subject in SUBJECTS}
     if len(pairs) != 6:
         logger.warning(
             "pedagogy_overlay: expected 6 priority subjects, got %d",
@@ -394,9 +396,7 @@ def _build_assets() -> Mapping[str, Any]:
 
     assets: dict[str, Any] = {}
     for subject, key in pairs.items():
-        subject_slug = subject_to_slug.get(
-            subject, f"uk_ncce_{subject}_extracted_graph"
-        )
+        subject_slug = _SUBJECT_TO_SLUG.get(subject, f"uk_ncce_{subject}_extracted_graph")
 
         @asset(
             name=key,
@@ -412,14 +412,14 @@ def _build_assets() -> Mapping[str, Any]:
                 "uk_ncce_pedagogy_cache",  # from the cocoindex_flows module
             },
         )
-        def _subject_overlay(subject: str = subject, key: str = key, context: Any = None) -> dict[str, Any]:
+        def _subject_overlay(
+            subject: str = subject, key: str = key, context: Any = None
+        ) -> dict[str, Any]:
             started = time.monotonic()
             _ensure_overlay_table(SQLITE_PATH)
             principles = _load_principles_from_cache()
             source_graph = _load_source_graph(subject=subject)
-            annotated = _call_apply_pedagogy_principles(
-                graph=source_graph, principles=principles
-            )
+            annotated = _call_apply_pedagogy_principles(graph=source_graph, principles=principles)
             source_jurisdiction = (
                 source_graph.get("jurisdiction", "United Kingdom (NCCE)")
                 if source_graph

@@ -68,7 +68,9 @@ def _list_gsm_secrets(project: str) -> dict[str, dict]:
         # secret.name = projects/.../secrets/<id>
         secret_id = secret.name.rsplit("/", 1)[-1]
         # Get the latest version metadata (do NOT access payload value)
-        versions = list(client.list_secret_versions(request={"parent": secret.name, "filter": "state:ENABLED"}))
+        versions = list(
+            client.list_secret_versions(request={"parent": secret.name, "filter": "state:ENABLED"})
+        )
         latest = versions[0].name if versions else None
         out[secret_id] = {"resource": secret.name, "latest_version": latest}
     return out
@@ -107,7 +109,11 @@ def main() -> int:
     args = parser.parse_args()
 
     config = _load_yaml()
-    project = args.project or os.environ.get("GCP_PROJECT") or config.get("project", "agentic-hackathon-august-26")
+    project = (
+        args.project
+        or os.environ.get("GCP_PROJECT")
+        or config.get("project", "agentic-hackathon-august-26")
+    )
 
     try:
         result = audit(project)
@@ -129,10 +135,16 @@ def main() -> int:
     else:
         print("  ✓ all catalogue secrets present in GSM")
     if result["orphan_in_gsm"]:
-        print(f"  ORPHAN in GSM (not in catalogue, candidate for cleanup): {result['orphan_in_gsm']}")
+        print(
+            f"  ORPHAN in GSM (not in catalogue, candidate for cleanup): {result['orphan_in_gsm']}"
+        )
     if result["dead_in_dotenv"]:
         print(f"  DEAD in .env (not referenced in catalogue): {result['dead_in_dotenv']}")
-    if not result["missing_in_gsm"] and not result["orphan_in_gsm"] and not result["dead_in_dotenv"]:
+    if (
+        not result["missing_in_gsm"]
+        and not result["orphan_in_gsm"]
+        and not result["dead_in_dotenv"]
+    ):
         print("  ✓ fully consistent")
     return 0
 

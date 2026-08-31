@@ -36,9 +36,7 @@ except ImportError:
     RunRequest = None  # type: ignore[assignment]
     SensorEvaluationContext = None  # type: ignore[assignment]
     sensor = None  # type: ignore[assignment]
-    logger.warning(
-        "uk_ncce_pdf_sensor: dagster not installed; sensor is a no-op."
-    )
+    logger.warning("uk_ncce_pdf_sensor: dagster not installed; sensor is a no-op.")
 
 
 # The polling interval (every 5 minutes per the spec).
@@ -47,21 +45,21 @@ DEFAULT_POLL_INTERVAL_SECONDS: int = 300
 # The directory the sensor polls.
 SYLLABI_RAW_ROOT: pathlib.Path = (
     pathlib.Path(__file__).resolve().parent.parent.parent.parent.parent
-    / "data" / "bi_ep" / "syllabi_raw" / "uk_ncce" / "curriculum"
+    / "data"
+    / "bi_ep"
+    / "syllabi_raw"
+    / "uk_ncce"
+    / "curriculum"
 )
 
 # The mapping from PDF basename to asset slug (mirrors
 # uk_ncce_learning_graphs.py:PDF_ARTEFACTS).
 PDF_TO_ASSET: dict[str, str] = {
-    "learning_graph_intro_to_python_programming_y8.pdf":
-        "uk_ncce_learning_graph_y8_python",
-    "learning_graph_programming_essentials_in_scratch_parts_i_ii_y7.pdf":
-        "uk_ncce_learning_graph_y7_scratch",
-    "learning_graph_variables_in_games_y6.pdf":
-        "uk_ncce_learning_graph_y6_variables",
+    "learning_graph_intro_to_python_programming_y8.pdf": "uk_ncce_learning_graph_y8_python",
+    "learning_graph_programming_essentials_in_scratch_parts_i_ii_y7.pdf": "uk_ncce_learning_graph_y7_scratch",
+    "learning_graph_variables_in_games_y6.pdf": "uk_ncce_learning_graph_y6_variables",
     "pedagogy_principles.pdf": "uk_ncce_pedagogy_principles",
-    "curriculum_journey_full_2024_2025.pdf":
-        "uk_ncce_curriculum_journey",
+    "curriculum_journey_full_2024_2025.pdf": "uk_ncce_curriculum_journey",
 }
 
 
@@ -103,7 +101,7 @@ def _build_sensor() -> Any:
         return run_requests
 
     _uk_ncce_pdf_sensor.__name__ = "uk_ncce_pdf_sensor"
-    return _uk_nce_pdf_sensor
+    return _uk_ncce_pdf_sensor
 
 
 _built_sensor = _build_sensor()

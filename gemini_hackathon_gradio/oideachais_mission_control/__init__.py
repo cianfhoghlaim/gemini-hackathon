@@ -14,6 +14,7 @@ def __getattr__(name: str):
         from gemini_hackathon_gradio.oideachais_mission_control.app import (
             build_app as _b,
         )
+
         return _b
     raise AttributeError(
         f"module 'gemini_hackathon_gradio.oideachais_mission_control' has no attribute {name!r}"

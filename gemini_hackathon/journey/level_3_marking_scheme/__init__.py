@@ -21,6 +21,7 @@ the per-criterion metadata (criterion_id, max_marks, student_answer).
 The strategy agent then writes a paragraph explaining the grade + cites
 NCCA policy PDFs.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -46,8 +47,16 @@ class Level3Result:
 # (mirrors `gemini_hackathon/agents/workflows/pillar1_grading.py`'s shape,
 # narrowed to a single question so the workshop demos in ~30 seconds).
 DEFAULT_CRITERIA: tuple[dict[str, Any], ...] = (
-    {"criterion_id": "AO1", "max_marks": 30, "description": "Mathematical reasoning + correct method"},
-    {"criterion_id": "AO2", "max_marks": 30, "description": "Algebraic manipulation + simplification"},
+    {
+        "criterion_id": "AO1",
+        "max_marks": 30,
+        "description": "Mathematical reasoning + correct method",
+    },
+    {
+        "criterion_id": "AO2",
+        "max_marks": 30,
+        "description": "Algebraic manipulation + simplification",
+    },
     {"criterion_id": "AO3", "max_marks": 40, "description": "Final answer accuracy + units"},
 )
 

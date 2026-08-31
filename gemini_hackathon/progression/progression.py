@@ -19,12 +19,12 @@ audit-trail without storing the whole ledger twice.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Literal, Optional
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import Literal
 
 
-class AssessmentType(str, Enum):
+class AssessmentType(StrEnum):
     DIAGNOSTIC = "diagnostic"
     FORMATIVE = "formative"
     SUMMATIVE = "summative"
@@ -45,12 +45,12 @@ class AssessmentEvent:
     learner_id: str
     outcome_id: str
     subject_slug: str
-    score: float                                  # 0.0 - 1.0
+    score: float  # 0.0 - 1.0
     descriptor: MasteryDescriptor
     assessment_type: AssessmentType
     evidence: tuple[str, ...] = field(default_factory=tuple)
-    captured_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    session_id: Optional[str] = None
+    captured_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    session_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -60,7 +60,7 @@ class OutcomeMastery:
     learner_id: str
     outcome_id: str
     subject_slug: str
-    mastery_level: float                          # 0.0 - 1.0
+    mastery_level: float  # 0.0 - 1.0
     descriptor: MasteryDescriptor
     event_count: int
     last_event_at: datetime

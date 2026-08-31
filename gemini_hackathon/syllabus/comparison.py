@@ -17,8 +17,7 @@ from __future__ import annotations
 
 import logging
 import time
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
 
 from .baml_extractor import BAMLSyllabusExtractor
 from .extractor import ExtractedSyllabus, ExtractionMethod
@@ -48,8 +47,14 @@ ALL_EXTRACTORS: list = [
 
 # The 8 NCCA LC subjects (per Phase 4 + the gemini-hackathon manifest)
 ALL_SUBJECTS: tuple[str, ...] = (
-    "mathematics", "english", "gaeilge", "chemistry",
-    "geography", "physics", "biology", "computer_science",
+    "mathematics",
+    "english",
+    "gaeilge",
+    "chemistry",
+    "geography",
+    "physics",
+    "biology",
+    "computer_science",
 )
 
 
@@ -78,6 +83,7 @@ def run_extraction_comparison(
     """
     if golden_topics_per_subject is None:
         from .per_topic_schema import ASSET_REQUEST_BY_SUBJECT
+
         golden_topics_per_subject = ASSET_REQUEST_BY_SUBJECT
 
     started = time.monotonic()
@@ -109,7 +115,9 @@ def run_extraction_comparison(
                 try:
                     extracted = extractor.extract(subject=subject)
                 except Exception as exc:
-                    logger.warning("comparison: %s failed for %s: %s", extractor.method, subject, exc)
+                    logger.warning(
+                        "comparison: %s failed for %s: %s", extractor.method, subject, exc
+                    )
                     continue
                 topics = {_normalise_topic(t.get("name", "")) for t in extracted.module_topics}
                 topics.discard("")
@@ -133,10 +141,15 @@ def run_extraction_comparison(
                     golden_topics=golden,
                 )
                 cell_duration = int((time.monotonic() - cell_started) * 1000)
-                results.append(SyllabusComparison(
-                    subject=subject, extraction_method=extractor.method.value,
-                    extracted=extracted, rubric=rubric, duration_ms=cell_duration,
-                ))
+                results.append(
+                    SyllabusComparison(
+                        subject=subject,
+                        extraction_method=extractor.method.value,
+                        extracted=extracted,
+                        rubric=rubric,
+                        duration_ms=cell_duration,
+                    )
+                )
 
     # Persist to DuckDB + JSONL
     dicts = []
@@ -151,7 +164,10 @@ def run_extraction_comparison(
     total_ms = int((time.monotonic() - started) * 1000)
     logger.info(
         "run_extraction_comparison: %d cells in %d ms (%d subjects × %d methods)",
-        len(results), total_ms, len(subjects), len(extractors),
+        len(results),
+        total_ms,
+        len(subjects),
+        len(extractors),
     )
     return results
 
@@ -184,6 +200,7 @@ def _score_against_self(
 def _normalise_topic(name: str) -> str:
     """Lowercase + collapse whitespace for fuzzy topic comparison."""
     import re
+
     return re.sub(r"\s+", " ", name.strip().lower())
 
 

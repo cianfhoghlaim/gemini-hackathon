@@ -18,8 +18,8 @@ import logging
 from typing import Any
 
 try:
-    from google.adk import Workflow, Event
-    from google.adk.workflow import JoinNode, START
+    from google.adk import Event, Workflow
+    from google.adk.workflow import START, JoinNode
 except ImportError:
     Workflow = None  # type: ignore[assignment,misc]
     Event = None  # type: ignore[assignment,misc]
@@ -47,12 +47,12 @@ PRIMARY_AREAS: tuple[str, ...] = (
 )
 
 
-async def fetch_primary_area_spec(node_input: Any) -> "Event":
+async def fetch_primary_area_spec(node_input: Any) -> Event:
     """Fetch the primary curriculum spec for one of the 12 areas."""
     return Event(output={"area_spec_id": "primary-area-stub"})
 
 
-async def fetch_primary_outcomes(node_input: Any) -> "Event":
+async def fetch_primary_outcomes(node_input: Any) -> Event:
     """Fetch the primary learning outcomes for one of the 12 areas."""
     return Event(output={"outcomes_id": "primary-outcomes-stub"})
 
@@ -60,12 +60,12 @@ async def fetch_primary_outcomes(node_input: Any) -> "Event":
 primary_join = JoinNode(name="primary_join")
 
 
-async def synthesize_primary_lesson(node_input: Any) -> "Event":
+async def synthesize_primary_lesson(node_input: Any) -> Event:
     """Combine area spec + outcomes into a primary-level lesson."""
     return Event(output={"lesson_id": "primary-lesson-stub"})
 
 
-async def route_primary_area(node_input: Any) -> "Event":
+async def route_primary_area(node_input: Any) -> Event:
     """Pillar-1 router: pick the primary area specialist."""
     area = node_input.get("area", "english")
     return Event(output={"area": area}, route=area)
@@ -94,8 +94,8 @@ def build_primary_workflow() -> Any:
 
 
 __all__ = [
-    "build_primary_workflow",
     "PRIMARY_AREAS",
+    "build_primary_workflow",
     "fetch_primary_area_spec",
     "fetch_primary_outcomes",
     "synthesize_primary_lesson",

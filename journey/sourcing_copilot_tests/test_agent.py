@@ -66,9 +66,7 @@ def test_default_model_respects_env_override() -> None:
     monkeypatch_env.setenv("JOURNEY_COPILOT_MODEL", "custom-model-xyz")
     try:
         module = importlib.reload(
-            importlib.import_module(
-                "gemini_hackathon.journey.sourcing_copilot.agent"
-            )
+            importlib.import_module("gemini_hackathon.journey.sourcing_copilot.agent")
         )
         assert module.DEFAULT_MODEL == "custom-model-xyz"
     finally:
@@ -76,11 +74,7 @@ def test_default_model_respects_env_override() -> None:
         # Reload the module one more time so the env var reset
         # propagates to DEFAULT_MODEL — otherwise subsequent tests
         # inherit the overridden value.
-        importlib.reload(
-            importlib.import_module(
-                "gemini_hackathon.journey.sourcing_copilot.agent"
-            )
-        )
+        importlib.reload(importlib.import_module("gemini_hackathon.journey.sourcing_copilot.agent"))
 
 
 def test_build_copilot_agent_returns_agent_or_none() -> None:
@@ -120,7 +114,13 @@ def test_agent_instruction_mentions_workshop_host() -> None:
         instruction = agent.instruction
         assert "workshop host" in instruction
         # The 5 closed-vocabulary reasons for exclusion are listed.
-        for reason in ("out_of_scope", "corrupted", "duplicate", "superseded", "language_unsupported"):
+        for reason in (
+            "out_of_scope",
+            "corrupted",
+            "duplicate",
+            "superseded",
+            "language_unsupported",
+        ):
             assert reason in instruction
 
 

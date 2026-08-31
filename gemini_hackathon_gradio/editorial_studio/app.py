@@ -251,9 +251,7 @@ def _baml_extract_curriculum(pdf_text: str, subject: str) -> dict:
     try:
         from baml_client.sync_client import b  # type: ignore
 
-        result = b.ExtractCurriculumSyllabus(
-            pdf_text=pdf_text, subject=subject, language="en"
-        )
+        result = b.ExtractCurriculumSyllabus(pdf_text=pdf_text, subject=subject, language="en")
         if hasattr(result, "model_dump"):
             return result.model_dump()
         return dict(result)
@@ -268,15 +266,27 @@ def _baml_extract_curriculum(pdf_text: str, subject: str) -> dict:
                 {
                     "title": f"Module 1 — Foundations of {subject}",
                     "learning_outcomes": [
-                        {"lo_id": f"{subject.upper()}-1.1", "title": f"Define key terms in {subject}"},
-                        {"lo_id": f"{subject.upper()}-1.2", "title": f"Describe the core methods of {subject}"},
+                        {
+                            "lo_id": f"{subject.upper()}-1.1",
+                            "title": f"Define key terms in {subject}",
+                        },
+                        {
+                            "lo_id": f"{subject.upper()}-1.2",
+                            "title": f"Describe the core methods of {subject}",
+                        },
                     ],
                 },
                 {
                     "title": f"Module 2 — Applied {subject}",
                     "learning_outcomes": [
-                        {"lo_id": f"{subject.upper()}-2.1", "title": f"Apply {subject} techniques to novel problems"},
-                        {"lo_id": f"{subject.upper()}-2.2", "title": f"Analyse case studies using {subject}"},
+                        {
+                            "lo_id": f"{subject.upper()}-2.1",
+                            "title": f"Apply {subject} techniques to novel problems",
+                        },
+                        {
+                            "lo_id": f"{subject.upper()}-2.2",
+                            "title": f"Analyse case studies using {subject}",
+                        },
                     ],
                 },
             ],
@@ -419,8 +429,7 @@ def build_app():
     """
     if gr is None:
         raise ImportError(
-            "Gradio is required for build_app(); install with "
-            "`pip install gradio>=6.0,<7.0`"
+            "Gradio is required for build_app(); install with `pip install gradio>=6.0,<7.0`"
         )
     with gr.Blocks(
         theme=apply_education_theme(),
@@ -451,7 +460,14 @@ compose the certificate end-to-end.""",
                 label="Stage",
             )
             subject_picker = gr.Radio(
-                choices=["mathematics", "gaeilge", "chemistry", "geography", "english", "computer_science"],
+                choices=[
+                    "mathematics",
+                    "gaeilge",
+                    "chemistry",
+                    "geography",
+                    "english",
+                    "computer_science",
+                ],
                 value="mathematics",
                 label="LC subject",
             )
@@ -528,7 +544,9 @@ compose the certificate end-to-end.""",
                         f"_Stage picker:_ **{stage_picker.value}** · "
                         f"_Subject picker:_ **{subject_picker.value}**_"
                     )
-                _build_certificate_operator(stage="scoil_sinsearach", accent_class="stage-scoil-sinsearach")
+                _build_certificate_operator(
+                    stage="scoil_sinsearach", accent_class="stage-scoil-sinsearach"
+                )
 
             with gr.Tab("Ollscoil (Tertiary)", elem_classes="stage-ollscoil"):
                 gr.Markdown(

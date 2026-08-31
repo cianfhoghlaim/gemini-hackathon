@@ -36,14 +36,13 @@ tutor to the BIEP jurisdiction + level tutor:
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import structlog
 
 from gemini_hackathon.call_llm import LLMResponse, Message, call_llm
-from gemini_hackathon.theming import JURISDICTION_SOURCES, Palette, load_palette
+from gemini_hackathon.theming import Palette, load_palette
 
 from ..fleet.fleet_identity import IdentityContext
 from ..fleet.fleet_mcp_curriculum import (
@@ -265,9 +264,7 @@ class AdaptiveTutor:
     # Internals
     # ------------------------------------------------------------------
 
-    def _classify_topic(
-        self, question: str, identity: IdentityContext
-    ) -> str:
+    def _classify_topic(self, question: str, identity: IdentityContext) -> str:
         """Cheap topic classifier (keyword + jurisdiction-aware).
 
         In production this would delegate to the BAML
@@ -284,11 +281,37 @@ class AdaptiveTutor:
             The candidate topic name.
         """
         stop = {
-            "what", "how", "why", "when", "where", "is", "are",
-            "the", "a", "an", "of", "to", "in", "for", "do",
-            "does", "can", "could", "should", "would", "tell",
-            "me", "about", "explain", "please", "help", "i",
-            "with", "this", "that", "it",
+            "what",
+            "how",
+            "why",
+            "when",
+            "where",
+            "is",
+            "are",
+            "the",
+            "a",
+            "an",
+            "of",
+            "to",
+            "in",
+            "for",
+            "do",
+            "does",
+            "can",
+            "could",
+            "should",
+            "would",
+            "tell",
+            "me",
+            "about",
+            "explain",
+            "please",
+            "help",
+            "i",
+            "with",
+            "this",
+            "that",
+            "it",
         }
         words = [
             w.strip("?,.")

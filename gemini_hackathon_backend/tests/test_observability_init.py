@@ -40,8 +40,10 @@ def test_init_backend_observability_returns_5_keys() -> None:
 def test_init_no_env_returns_all_false(monkeypatch: pytest.MonkeyPatch) -> None:
     """No env vars set -> all 5 init paths return False."""
     for var in (
-        "GCP_PROJECT_ID", "GOOGLE_CLOUD_PROJECT",
-        "LANGFUSE_PUBLIC_KEY", "MLFLOW_TRACKING_URI",
+        "GCP_PROJECT_ID",
+        "GOOGLE_CLOUD_PROJECT",
+        "LANGFUSE_PUBLIC_KEY",
+        "MLFLOW_TRACKING_URI",
     ):
         monkeypatch.delenv(var, raising=False)
 
@@ -106,6 +108,7 @@ def test_adk_otel_active_or_graceful_when_gcp_project_set(
     monkeypatch.setenv("GOOGLE_CLOUD_LOCATION", "europe-west1")
 
     import os
+
     # The setsetdefault is part of the init flow — assert it ran regardless.
     os.environ.pop("OTEL_SERVICE_NAME", None)
 
@@ -133,22 +136,16 @@ def test_otlp_env_vars_set_when_adk_otel_active(
     monkeypatch.delenv("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", raising=False)
 
     import os
+
     from gemini_hackathon_backend import observability
 
     importlib.reload(observability)
     observability.init_backend_observability()
 
     assert os.environ.get("OTEL_SERVICE_NAME") == "gemini-hackathon-adk"
-    assert "service.namespace=gemini-hackathon" in os.environ.get(
-        "OTEL_RESOURCE_ATTRIBUTES", ""
-    )
-    assert "deployment.environment=hackathon" in os.environ.get(
-        "OTEL_RESOURCE_ATTRIBUTES", ""
-    )
-    assert (
-        os.environ.get("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT")
-        == "EVENT_ONLY"
-    )
+    assert "service.namespace=gemini-hackathon" in os.environ.get("OTEL_RESOURCE_ATTRIBUTES", "")
+    assert "deployment.environment=hackathon" in os.environ.get("OTEL_RESOURCE_ATTRIBUTES", "")
+    assert os.environ.get("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT") == "EVENT_ONLY"
 
 
 def test_openinference_active_when_langfuse_set(
@@ -180,8 +177,10 @@ def test_openinference_active_when_langfuse_set(
 def test_idempotent_init(monkeypatch: pytest.MonkeyPatch) -> None:
     """Calling init_backend_observability() twice returns equivalent dicts."""
     for var in (
-        "GCP_PROJECT_ID", "GOOGLE_CLOUD_PROJECT",
-        "LANGFUSE_PUBLIC_KEY", "MLFLOW_TRACKING_URI",
+        "GCP_PROJECT_ID",
+        "GOOGLE_CLOUD_PROJECT",
+        "LANGFUSE_PUBLIC_KEY",
+        "MLFLOW_TRACKING_URI",
     ):
         monkeypatch.delenv(var, raising=False)
 

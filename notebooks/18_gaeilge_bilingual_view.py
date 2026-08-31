@@ -28,6 +28,7 @@ app = marimo.App(width="medium")
 @app.cell
 def _intro() -> None:
     import marimo as mo
+
     mo.md(
         """
         # Notebook 18 — Gaeilge / English Bilingual View
@@ -48,8 +49,9 @@ def _intro() -> None:
 
 @app.cell
 def _connect(mo) -> None:
-    import sqlite3
     import pathlib
+    import sqlite3
+
     db_path = pathlib.Path("data/bi_ep/extracted_syllabi.sqlite")
     if not db_path.exists():
         mo.md(f"**No SQLite DB at `{db_path}`.** Run the W5 pipeline first.")
@@ -75,7 +77,7 @@ def _split(rows) -> None:
         path_lower = (r[1] or "").lower()
         # Heuristic — the 2 Irish-language artefacts are `key-competencies-in-senior-cycle_en`
         # + the SC-L1/L2 PDFs (which are bilingual). We bucket by pdf_path.
-        is_gaeilge = ("gaeilge" in path_lower or "irish" in path_lower)
+        is_gaeilge = "gaeilge" in path_lower or "irish" in path_lower
         if is_gaeilge:
             gaeilge_rows.append(r)
         else:

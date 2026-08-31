@@ -12,6 +12,7 @@ def __getattr__(name: str):
     """Lazily import the studio app (requires Gradio)."""
     if name in ("build_app", "SUGGESTION_MODEL", "EXPLANATION_MODEL"):
         from gemini_hackathon_gradio.oideachais_pdf_review import app as _a
+
         if name == "build_app":
             return _a.build_app
         return getattr(_a, name)
@@ -20,4 +21,4 @@ def __getattr__(name: str):
     )
 
 
-__all__ = ["build_app", "SUGGESTION_MODEL", "EXPLANATION_MODEL"]
+__all__ = ["EXPLANATION_MODEL", "SUGGESTION_MODEL", "build_app"]

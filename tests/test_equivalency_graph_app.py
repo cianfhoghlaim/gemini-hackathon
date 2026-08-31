@@ -14,21 +14,21 @@ Tests:
 from __future__ import annotations
 
 import importlib.util
-import json
 import pathlib
 import sqlite3
 import sys
-
-import pytest
 
 
 def _load_module():
     spec = importlib.util.spec_from_file_location(
         "_test_equiv_mod",
         pathlib.Path(__file__).resolve().parent.parent
-        / "cocoindex_flows" / "equivalency" / "equivalency_graph_app.py",
+        / "cocoindex_flows"
+        / "equivalency"
+        / "equivalency_graph_app.py",
     )
-    assert spec is not None and spec.loader is not None
+    assert spec is not None
+    assert spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)
@@ -190,7 +190,7 @@ def test_iter_source_topics_reads_from_phase_3_db(tmp_path: pathlib.Path) -> Non
     db = _setup_source_db(tmp_path)
     sources = mod._iter_source_topics(db)
     assert len(sources) == 1
-    subnation, stage, subject_slug, language, syllabus = sources[0]
+    subnation, _stage, subject_slug, language, syllabus = sources[0]
     assert subnation == "ncca.ie"
     assert subject_slug == "mathematics"
     assert language == "en"

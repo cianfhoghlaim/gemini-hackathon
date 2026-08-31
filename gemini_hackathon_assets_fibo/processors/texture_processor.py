@@ -18,13 +18,12 @@ certificate compositing needs (W14).
 from __future__ import annotations
 
 import io
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
-from typing import Any, Optional
-
+from typing import Any
 
 try:
-    from PIL import Image, ImageFilter, ImageOps, ImageDraw, ImageFont
+    from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 
     PIL_AVAILABLE = True
 except ImportError:
@@ -36,16 +35,16 @@ except ImportError:
     ImageFont = None  # type: ignore[assignment,misc]
 
 
-class ResizeMode(str, Enum):
+class ResizeMode(StrEnum):
     """Texture / image resize modes."""
 
-    LANCZOS = "lanczos"   # Best quality, slower
+    LANCZOS = "lanczos"  # Best quality, slower
     BILINEAR = "bilinear"  # Good balance
-    NEAREST = "nearest"   # Pixel art, fastest
-    BICUBIC = "bicubic"   # Smooth gradients
+    NEAREST = "nearest"  # Pixel art, fastest
+    BICUBIC = "bicubic"  # Smooth gradients
 
 
-class TextureFormat(str, Enum):
+class TextureFormat(StrEnum):
     """Output image formats."""
 
     PNG = "png"
@@ -79,7 +78,9 @@ def _get_resample_filter(mode: ResizeMode) -> int:
     return _PIL_RESAMPLE_MAP[mode]
 
 
-def resize_image(image: Any, width: int, height: int, *, mode: ResizeMode = ResizeMode.LANCZOS) -> Any:
+def resize_image(
+    image: Any, width: int, height: int, *, mode: ResizeMode = ResizeMode.LANCZOS
+) -> Any:
     """Resize an image to the given dimensions.
 
     Args:
@@ -95,7 +96,7 @@ def resize_image(image: Any, width: int, height: int, *, mode: ResizeMode = Resi
     return image.resize((width, height), resample=_get_resample_filter(mode))
 
 
-def convert_format(image: Any, format: TextureFormat, *, quality: int = 95) -> bytes:
+def convert_format(image: Any, format: TextureFormat, *, quality: int = 95) -> bytes:  # noqa: A002
     """Convert an image to the given format and return the bytes.
 
     Args:
@@ -175,7 +176,7 @@ def apply_subject_watermark(
     return Image.alpha_composite(image.convert("RGBA"), overlay.convert("RGBA"))
 
 
-def save_image(image: Any, path: str | Path, format: Optional[TextureFormat] = None) -> Path:
+def save_image(image: Any, path: str | Path, format: TextureFormat | None = None) -> Path:  # noqa: A002
     """Save a PIL.Image to disk. The format is inferred from the path suffix
     unless explicitly provided.
 
@@ -188,7 +189,11 @@ def save_image(image: Any, path: str | Path, format: Optional[TextureFormat] = N
     path = Path(path)
     if format is None:
         suffix = path.suffix.lower().lstrip(".")
-        format = TextureFormat(suffix) if suffix in {f.value for f in TextureFormat} else TextureFormat.PNG
+        format = (  # noqa: A001
+            TextureFormat(suffix)
+            if suffix in {f.value for f in TextureFormat}
+            else TextureFormat.PNG
+        )
     # JPEG / WEBP don't support RGBA — flatten on a parchment background.
     if format in (TextureFormat.JPEG, TextureFormat.WEBP) and image.mode in ("RGBA", "LA", "P"):
         background = Image.new(image.mode[:-1] + "A", image.size, (255, 255, 255, 255))
@@ -203,8 +208,8 @@ __all__ = [
     "PIL_AVAILABLE",
     "ResizeMode",
     "TextureFormat",
-    "resize_image",
-    "convert_format",
     "apply_subject_watermark",
+    "convert_format",
+    "resize_image",
     "save_image",
 ]

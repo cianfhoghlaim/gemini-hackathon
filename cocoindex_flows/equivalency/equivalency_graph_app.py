@@ -32,7 +32,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import importlib.util as _iu
 import json
 import logging
 import pathlib
@@ -40,7 +39,7 @@ import sqlite3
 import sys
 import time
 import uuid
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -55,14 +54,19 @@ SQLITE_PATH: pathlib.Path = pathlib.Path(
 
 #: The 6 canonical jurisdictions for the equivalency graph (matches BAML).
 CANONICAL_JURISDICTIONS: tuple[str, ...] = (
-    "Ireland", "England", "Scotland", "Wales",
-    "Northern Ireland", "Isle of Man",
+    "Ireland",
+    "England",
+    "Scotland",
+    "Wales",
+    "Northern Ireland",
+    "Isle of Man",
 )
 
 
 # ---------------------------------------------------------------------------
 # Data classes
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class TopicNode:
@@ -95,6 +99,7 @@ class TopicEquivalentEdge:
 # ---------------------------------------------------------------------------
 # Schema setup (dev SQLite)
 # ---------------------------------------------------------------------------
+
 
 def _ensure_graph_tables(path: pathlib.Path) -> None:
     """Create the topic_nodes + topic_equivalent_edges tables if missing."""
@@ -148,8 +153,14 @@ def _upsert_topic_node(path: pathlib.Path, node: TopicNode) -> None:
                 fetched_at = excluded.fetched_at
             """,
             (
-                node.subnation, node.stage, node.subject_slug, node.language,
-                node.topic_key, node.topic_name, node.confidence, node.fetched_at,
+                node.subnation,
+                node.stage,
+                node.subject_slug,
+                node.language,
+                node.topic_key,
+                node.topic_name,
+                node.confidence,
+                node.fetched_at,
             ),
         )
         conn.commit()
@@ -172,10 +183,14 @@ def _upsert_edge(path: pathlib.Path, edge: TopicEquivalentEdge) -> None:
                 notes = excluded.notes
             """,
             (
-                edge.source_topic_key, edge.source_topic_name,
-                edge.source_subnation, edge.target_topic_key,
-                edge.target_topic_name, edge.target_subnation,
-                edge.confidence, edge.notes,
+                edge.source_topic_key,
+                edge.source_topic_name,
+                edge.source_subnation,
+                edge.target_topic_key,
+                edge.target_topic_name,
+                edge.target_subnation,
+                edge.confidence,
+                edge.notes,
             ),
         )
         conn.commit()
@@ -185,9 +200,10 @@ def _upsert_edge(path: pathlib.Path, edge: TopicEquivalentEdge) -> None:
 # BAML wrapper (graceful fallback to a deterministic stub)
 # ---------------------------------------------------------------------------
 
+
 def _topic_key(subnation: str, topic_name: str) -> str:
     """Stable hash-based topic key."""
-    raw = f"{subnation}::{topic_name}".encode("utf-8")
+    raw = f"{subnation}::{topic_name}".encode()
     return uuid.uuid5(uuid.NAMESPACE_DNS, raw.decode("utf-8")).hex[:16]
 
 
@@ -221,7 +237,7 @@ def _call_baml_extract_equivalencies(
         return {
             "source_topic": topic,
             "source_jurisdiction": source_jurisdiction,
-            "equivalents": {j: topic for j in target_jurisdictions},
+            "equivalents": dict.fromkeys(target_jurisdictions, topic),
             "confidence": 0.7,
             "notes": "stub: identity equivalence; replace with real BAML call",
         }
@@ -230,6 +246,7 @@ def _call_baml_extract_equivalencies(
 # ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
+
 
 def _iter_source_topics(
     sqlite_path: pathlib.Path,
@@ -333,9 +350,7 @@ def build_equivalency_graph(
                 _upsert_edge(db, edge)
                 stats["edges_created"] += 1
     elapsed_ms = int((time.monotonic() - started) * 1000)
-    logger.info(
-        "equivalency_graph.summary stats=%s elapsed_ms=%d", stats, elapsed_ms
-    )
+    logger.info("equivalency_graph.summary stats=%s elapsed_ms=%d", stats, elapsed_ms)
     return stats
 
 
@@ -359,9 +374,7 @@ def _subnation_to_jurisdiction(subnation: str) -> str:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Build the cross-jurisdiction equivalency graph."
-    )
+    parser = argparse.ArgumentParser(description="Build the cross-jurisdiction equivalency graph.")
     parser.add_argument("--sqlite", type=pathlib.Path, default=None)
     args = parser.parse_args()
 

@@ -60,7 +60,7 @@ def test_pedagogy_overlay_registers_6_assets() -> None:
     assert len(assets) == 6, (
         f"Expected 6 overlay assets, got {len(assets)}: {[a[0] for a in assets]}"
     )
-    asset_names = [a[0] for a in assets]
+    [a[0] for a in assets]
     subjects = [a[1] for a in assets]
     for subject in EXPECTED_SUBJECTS:
         assert subject in subjects, f"Subject {subject} missing from overlay assets: {subjects}"

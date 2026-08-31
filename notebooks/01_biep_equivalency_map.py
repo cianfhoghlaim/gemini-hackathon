@@ -78,6 +78,7 @@ def _stub_data():
 @app.cell
 def _render_table(rows, mo):
     import pandas as pd
+
     df = pd.DataFrame(rows)
     mo.ui.table(df)
 

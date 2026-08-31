@@ -26,24 +26,18 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import datetime
-from pathlib import Path
 
+from .models import (
+    AssetRequest,
+    AssetResponse,
+    EducationAssetType,
+    GenerationModel,
+    SubjectStyle,
+)
 from .schemas import (
     CurriculumConcept,
     FiboConfig,
     GeneratedAsset,
-    SyllabusPage,
-    VisualRequirement,
-)
-from .models import (
-    AssetRequest,
-    AssetResponse,
-    BatchAssetRequest,
-    BatchAssetResponse,
-    EducationAssetType,
-    GenerationModel,
-    SubjectStyle,
 )
 
 
@@ -70,10 +64,7 @@ def generate_fibo_config_for_concept(
         subtitle += f" - {concept.strand}"
 
     # Build the full descriptive prompt
-    full_prompt = (
-        f"{concept.title}. "
-        f"{concept.description} "
-    )
+    full_prompt = f"{concept.title}. {concept.description} "
     if concept.keywords:
         full_prompt += f"Key concepts: {', '.join(concept.keywords[:5])}. "
     if concept.learning_outcomes:
@@ -154,7 +145,7 @@ def record_generated_asset(
 
 
 __all__ = [
-    "generate_fibo_config_for_concept",
     "build_asset_request_for_fibo_config",
+    "generate_fibo_config_for_concept",
     "record_generated_asset",
 ]

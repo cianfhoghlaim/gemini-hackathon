@@ -71,23 +71,25 @@ from huggingface_hub import InferenceClient
 
 client = InferenceClient()
 
+
 def chat_fn(multimodal_message):
     question = multimodal_message["text"]
     image = multimodal_message["files"][0]
-    
-    answer = client.document_question_answering(image=image, question=question, model="impira/layoutlm-document-qa")
-    
+
+    answer = client.document_question_answering(
+        image=image, question=question, model="impira/layoutlm-document-qa"
+    )
+
     answer = [{"answer": a.answer, "confidence": a.score} for a in answer]
-   
+
     user_message = {"role": "user", "content": f"Question: {question}, answer: {answer}"}
-   
+
     message = ""
-    for token in client.chat_completion(messages=[user_message],
-                           max_tokens=200, 
-                           stream=True,
-                           model="HuggingFaceH4/zephyr-7b-beta"):
+    for token in client.chat_completion(
+        messages=[user_message], max_tokens=200, stream=True, model="HuggingFaceH4/zephyr-7b-beta"
+    ):
         if token.choices[0].finish_reason is not None:
-           continue
+            continue
         message += token.choices[0].delta.content
         yield message
 ```
@@ -121,7 +123,8 @@ Question: "What is the invoice total?", answer: [{"answer": "154.08", "confidenc
 
 You should respond with something like:
 I believe the invoice total is $154.08 but it can also be $155.
-"""}
+""",
+}
 ```
 
 Here is our demo in action now! The system message really helped keep the bot's answers short and free of long decimals.

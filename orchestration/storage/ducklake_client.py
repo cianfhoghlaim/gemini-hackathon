@@ -77,17 +77,21 @@ def write_to_named_destination(name: str, table_name: str, dataframe: Any) -> in
         if conn is None:
             return -1
         conn.register("df_temp", dataframe)
-        n = conn.execute(f"CREATE OR REPLACE TABLE {table_name} AS SELECT * FROM df_temp").fetchone()
+        n = conn.execute(
+            f"CREATE OR REPLACE TABLE {table_name} AS SELECT * FROM df_temp"
+        ).fetchone()
         return int(n[0]) if n else 0
     if name == "motherduck_gemini_hackathon":
         conn = get_motherduck_client()
         if conn is None:
             return -1
         conn.register("df_temp", dataframe)
-        n = conn.execute(f"CREATE OR REPLACE TABLE {table_name} AS SELECT * FROM df_temp").fetchone()
+        n = conn.execute(
+            f"CREATE OR REPLACE TABLE {table_name} AS SELECT * FROM df_temp"
+        ).fetchone()
         return int(n[0]) if n else 0
     if name == "bigquery_biep":
-        from orchestration.storage.bigquery_client import write_to_bigquery  # noqa: PLC0415
+        from orchestration.storage.bigquery_client import write_to_bigquery
 
         return write_to_bigquery(table_name, dataframe)
     raise ValueError(f"write_to_named_destination: unknown destination {name!r}")

@@ -44,7 +44,7 @@ import uuid
 from collections import defaultdict, deque
 from collections.abc import Iterable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -65,11 +65,11 @@ logger = structlog.get_logger(__name__)
 # ---------------------------------------------------------------------------
 
 
-class MemoryError(RuntimeError):
+class FleetMemoryError(RuntimeError):
     """Base class for fleet-memory failures."""
 
 
-class MemoryNotFoundError(MemoryError):
+class MemoryNotFoundError(FleetMemoryError):
     """Raised when a recall/forget operation cannot find the entry."""
 
 
@@ -98,9 +98,7 @@ class MemoryEntry:
     namespace: str
     content: str
     tags: tuple[str, ...] = ()
-    created_at: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     confidence: float = 1.0
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -180,7 +178,7 @@ class _InMemoryBackend:
     def search(self, query: MemoryQuery) -> list[MemoryHit]:
         """Keyword substring search across the matching namespace."""
         q_lower = query.query.lower()
-        user_keys = [k for k in self._store.keys() if k[0] == query.user_id]
+        user_keys = [k for k in self._store if k[0] == query.user_id]
         if query.namespace:
             user_keys = [k for k in user_keys if k[1] == query.namespace]
         if not user_keys:
@@ -255,20 +253,14 @@ class FleetMemory:
                 on whether ``GH_MEMORY_DIR`` is set.
             max_entries_per_namespace: Cap for the in-memory backend.
         """
-        self._memory_namespace = memory_namespace or os.getenv(
-            "MEMORY_NAMESPACE", "default"
-        )
-        self._in_memory = _InMemoryBackend(
-            max_entries_per_namespace=max_entries_per_namespace
-        )
+        self._memory_namespace = memory_namespace or os.getenv("MEMORY_NAMESPACE", "default")
+        self._in_memory = _InMemoryBackend(max_entries_per_namespace=max_entries_per_namespace)
         self._markdown: Any = None
         self._backend_name = self._resolve_backend(backend, memory_namespace)
         if self._backend_name == "markdown":
             self._init_markdown(memory_namespace)
 
-    def _resolve_backend(
-        self, backend: str | None, memory_namespace: str | None
-    ) -> str:
+    def _resolve_backend(self, backend: str | None, memory_namespace: str | None) -> str:
         """Pick the backend ("memory" vs "markdown") based on config."""
         if backend == "memory":
             return "memory"
@@ -280,7 +272,10 @@ class FleetMemory:
     def _init_markdown(self, memory_namespace: str | None) -> None:
         """Initialise the MarkdownMemoryService backend (or fall back to in-memory)."""
         try:
-            from gemini_hackathon.memory.markdown import MarkdownMemoryService  # type: ignore[import-not-found]
+            from gemini_hackathon.memory.markdown import (
+                MarkdownMemoryService,  # type: ignore[import-not-found]
+            )
+
             root = os.getenv("GH_MEMORY_DIR", "").strip() or None
             if not root:
                 logger.warning(
@@ -301,7 +296,6 @@ class FleetMemory:
                 reason=f"{type(exc).__name__}: {exc}",
             )
             self._backend_name = "memory"
-
 
     # ------------------------------------------------------------------
     # Public API
@@ -433,11 +427,14 @@ class FleetMemory:
 
     def _remember_markdown(self, entry: MemoryEntry) -> None:
         """Persist ``entry`` to the MarkdownMemoryService backend."""
-        from gemini_hackathon.memory.markdown import _memory_path as _md_path  # type: ignore[import-not-found]
+        from gemini_hackathon.memory.markdown import (
+            _memory_path as _md_path,  # type: ignore[import-not-found]
+        )
+
         if self._markdown is None:  # pragma: no cover
             return
         path = _md_path(self._markdown.root, entry.user_id, for_writing=True)
-        ts = datetime.now(tz=timezone.utc).isoformat(timespec="seconds")
+        ts = datetime.now(tz=UTC).isoformat(timespec="seconds")
         bullet = (
             f"- [{ts}] (ns={entry.namespace}, conf={entry.confidence:.2f}"
             f"{', tags=' + ','.join(entry.tags) if entry.tags else ''}) "
@@ -456,7 +453,10 @@ class FleetMemory:
 
     def _recall_markdown(self, query: MemoryQuery) -> list[MemoryHit]:
         """Search the MarkdownMemoryService backend for ``query``."""
-        from gemini_hackathon.memory.markdown import _memory_path as _md_path  # type: ignore[import-not-found]
+        from gemini_hackathon.memory.markdown import (
+            _memory_path as _md_path,  # type: ignore[import-not-found]
+        )
+
         if self._markdown is None:  # pragma: no cover
             return []
         path = _md_path(self._markdown.root, query.user_id)

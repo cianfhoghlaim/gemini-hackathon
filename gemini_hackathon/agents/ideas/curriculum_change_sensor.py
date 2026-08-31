@@ -32,9 +32,8 @@ this agent. The :class:`FleetGateway` enforces this gate via
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from dataclasses import dataclass, field
-from enum import Enum
+from dataclasses import dataclass
+from enum import StrEnum
 from typing import Any
 
 import structlog
@@ -53,7 +52,7 @@ logger = structlog.get_logger(__name__)
 # ---------------------------------------------------------------------------
 
 
-class ChangeType(str, Enum):
+class ChangeType(StrEnum):
     """The canonical 3 change types detected by the sensor."""
 
     NEW_SYLLABUS = "NEW_SYLLABUS"
@@ -230,12 +229,8 @@ class CurriculumChangeSensor:
                 events.append(
                     ChangeEvent(
                         source_url=request.source_url,
-                        change_type=ChangeType(
-                            str(raw.get("change_type", "UPDATED_SYLLABUS"))
-                        ),
-                        affected_topics=tuple(
-                            str(t) for t in raw.get("affected_topics", []) or []
-                        ),
+                        change_type=ChangeType(str(raw.get("change_type", "UPDATED_SYLLABUS"))),
+                        affected_topics=tuple(str(t) for t in raw.get("affected_topics", []) or []),
                         summary=str(raw.get("summary", "")),
                         effective_date=str(raw.get("effective_date", "") or ""),
                         confidence=float(raw.get("confidence", 0.0) or 0.0),
@@ -245,9 +240,7 @@ class CurriculumChangeSensor:
                     )
                 )
 
-            themes_re_extracted = any(
-                e.change_type == ChangeType.NEW_SYLLABUS for e in events
-            )
+            themes_re_extracted = any(e.change_type == ChangeType.NEW_SYLLABUS for e in events)
 
             if themes_re_extracted:
                 logger.info(
@@ -289,10 +282,8 @@ class CurriculumChangeSensor:
         # to building a minimal request from the sanitised text.
         metadata = trace.metadata.get("change_payload") or {}
         try:
-            request = _request_from_metadata(
-                sanitised_input.text, metadata, identity
-            )
-        except Exception as e:  # noqa: BLE001
+            request = _request_from_metadata(sanitised_input.text, metadata, identity)
+        except Exception as e:
             logger.warning(
                 "curriculum_change.payload_parse_failed",
                 error=f"{type(e).__name__}: {e}",
@@ -310,9 +301,7 @@ class CurriculumChangeSensor:
     # Internals
     # ------------------------------------------------------------------
 
-    def _call_baml(
-        self, request: CurriculumChangeRequest
-    ) -> list[dict[str, Any]]:
+    def _call_baml(self, request: CurriculumChangeRequest) -> list[dict[str, Any]]:
         """Delegate to the BAML client (when available)."""
         try:
             result = self.baml_client.DetectCurriculumChanges(  # type: ignore[attr-defined]
@@ -321,16 +310,14 @@ class CurriculumChangeSensor:
                 source_url=request.source_url,
             )
             return [dict(e) for e in (result or [])]
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.warning(
                 "curriculum_change.baml_call_failed",
                 error=f"{type(e).__name__}: {e}",
             )
             return []
 
-    def _build_messages(
-        self, request: CurriculumChangeRequest
-    ) -> list[Message]:
+    def _build_messages(self, request: CurriculumChangeRequest) -> list[Message]:
         """Compose the message list for :func:`call_llm`."""
         system = (
             "You are the BIEP Curriculum Change Sensor. You "
@@ -354,7 +341,7 @@ class CurriculumChangeSensor:
             "    }\n"
             "  ]\n"
             "}\n\n"
-            "If there are no meaningful changes, return {\"events\": []}. "
+            'If there are no meaningful changes, return {"events": []}. '
             "Do not wrap the JSON in markdown fences."
         )
         user = (
@@ -407,7 +394,7 @@ def _parse_llm_response(content: str) -> list[dict[str, Any]]:
         if cleaned.startswith("```"):
             cleaned = cleaned.strip("`").split("\n", 1)[-1].rsplit("```", 1)[0]
         payload = _json.loads(cleaned)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         logger.warning(
             "curriculum_change.llm_json_parse_failed",
             error=f"{type(e).__name__}: {e}",

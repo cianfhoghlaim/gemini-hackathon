@@ -13,9 +13,6 @@ from __future__ import annotations
 
 import importlib.util
 import pathlib
-import sys
-
-import pytest
 
 
 def _load_module():
@@ -23,9 +20,12 @@ def _load_module():
     spec = importlib.util.spec_from_file_location(
         "_test_pdf_to_markdown_app",
         pathlib.Path(__file__).resolve().parent.parent
-        / "cocoindex_flows" / "pdf" / "pdf_to_markdown_app.py",
+        / "cocoindex_flows"
+        / "pdf"
+        / "pdf_to_markdown_app.py",
     )
-    assert spec is not None and spec.loader is not None
+    assert spec is not None
+    assert spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -34,10 +34,10 @@ def _load_module():
 def _load_shared():
     spec = importlib.util.spec_from_file_location(
         "_test_pdf_to_markdown_shared",
-        pathlib.Path(__file__).resolve().parent.parent
-        / "cocoindex_flows" / "pdf" / "_shared.py",
+        pathlib.Path(__file__).resolve().parent.parent / "cocoindex_flows" / "pdf" / "_shared.py",
     )
-    assert spec is not None and spec.loader is not None
+    assert spec is not None
+    assert spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -53,23 +53,21 @@ def _minimal_pdf_bytes(page_count: int = 1) -> bytes:
     objects: list[str] = []
     objects.append("<< /Type /Catalog /Pages 2 0 R >>")
     objects.append(
-        f"<< /Type /Pages /Kids [{ ' '.join(f'{3+i} 0 R' for i in range(page_count))} ] /Count {page_count} >>"
+        f"<< /Type /Pages /Kids [{' '.join(f'{3 + i} 0 R' for i in range(page_count))} ] /Count {page_count} >>"
     )
     for i in range(page_count):
-        objects.append(
-            f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>"
-        )
+        objects.append("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>")
     body_parts = ["%PDF-1.4\n"]
     offsets: list[int] = []
     for i, obj in enumerate(objects):
         offsets.append(sum(len(p.encode("latin-1")) for p in body_parts))
-        body_parts.append(f"{i+1} 0 obj\n{obj}\nendobj\n")
+        body_parts.append(f"{i + 1} 0 obj\n{obj}\nendobj\n")
     xref_offset = sum(len(p.encode("latin-1")) for p in body_parts)
     body_parts.append(
-        f"xref\n0 {len(objects)+1}\n0000000000 65535 f \n"
+        f"xref\n0 {len(objects) + 1}\n0000000000 65535 f \n"
         + "".join(f"{o:010d} 00000 n \n" for o in offsets)
         + "trailer\n<< /Size "
-        + str(len(objects)+1)
+        + str(len(objects) + 1)
         + " /Root 1 0 R >>\nstartxref\n"
         + str(xref_offset)
         + "\n%%EOF\n"
@@ -149,9 +147,7 @@ def test_run_writes_md_per_pdf(tmp_path: pathlib.Path) -> None:
         assert "## Page 2" in text
 
 
-def test_run_increments_failed_for_corrupt_pdf(
-    tmp_path: pathlib.Path
-) -> None:
+def test_run_increments_failed_for_corrupt_pdf(tmp_path: pathlib.Path) -> None:
     """One valid PDF + one corrupt PDF -> 1 converted, 1 failed."""
     raw = tmp_path / "raw"
     md = tmp_path / "md"

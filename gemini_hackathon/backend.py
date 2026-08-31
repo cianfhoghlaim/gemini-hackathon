@@ -40,11 +40,7 @@ import argparse
 import json
 import logging
 import os
-import sys
-import threading
-from collections.abc import Iterable
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -83,49 +79,58 @@ class _BackendHandler(BaseHTTPRequestHandler):
             return None
 
     # -- HTTP methods -----------------------------------------------------
-    def do_GET(self) -> None:  # noqa: N802
+    def do_GET(self) -> None:
         if self.path == "/api/health":
             from . import MODEL_REGISTRY
+
             profile = _active_profile()
             entries = MODEL_REGISTRY.for_profile(profile)
-            self._write_json(200, {
-                "status": "ok",
-                "profile": profile,
-                "models": [e.key for e in entries],
-                "model_count": len(entries),
-            })
+            self._write_json(
+                200,
+                {
+                    "status": "ok",
+                    "profile": profile,
+                    "models": [e.key for e in entries],
+                    "model_count": len(entries),
+                },
+            )
         elif self.path == "/api/models":
             from . import MODEL_REGISTRY
+
             profile = _active_profile()
             entries = MODEL_REGISTRY.for_profile(profile)
-            self._write_json(200, {
-                "object": "list",
-                "data": [
-                    {
-                        "id": e.key,
-                        "litellm_alias": e.litellm_alias,
-                        "backend": e.backend,
-                        "display_name": e.display_name,
-                        "family": e.family,
-                        "role": e.role,
-                    }
-                    for e in entries
-                ],
-                "federated_backends": [
-                    "gemini-3.5-flash (Vertex AI / AI Studio)",
-                    "gemma-4-26b-a4b (Unsloth Studio)",
-                    "llama-3.1-8b-instruct (local)",
-                ],
-                "federation_note": (
-                    "All model responses are routed through litellm with a "
-                    "3-tier fallback chain (Vertex Gemini → Unsloth Gemma → "
-                    "local Llama). All calls emit OpenTelemetry spans via the "
-                    "gemini_hackathon.agents.app_utils.setup_telemetry() "
-                    "pipeline to Google Cloud Trace + Cloud Logging."
-                ),
-            })
+            self._write_json(
+                200,
+                {
+                    "object": "list",
+                    "data": [
+                        {
+                            "id": e.key,
+                            "litellm_alias": e.litellm_alias,
+                            "backend": e.backend,
+                            "display_name": e.display_name,
+                            "family": e.family,
+                            "role": e.role,
+                        }
+                        for e in entries
+                    ],
+                    "federated_backends": [
+                        "gemini-3.5-flash (Vertex AI / AI Studio)",
+                        "gemma-4-26b-a4b (Unsloth Studio)",
+                        "llama-3.1-8b-instruct (local)",
+                    ],
+                    "federation_note": (
+                        "All model responses are routed through litellm with a "
+                        "3-tier fallback chain (Vertex Gemini → Unsloth Gemma → "
+                        "local Llama). All calls emit OpenTelemetry spans via the "
+                        "gemini_hackathon.agents.app_utils.setup_telemetry() "
+                        "pipeline to Google Cloud Trace + Cloud Logging."
+                    ),
+                },
+            )
         elif self.path == "/api/themes":
             from . import list_all_palettes
+
             palettes = list_all_palettes()
             self._write_json(200, {"palettes": palettes, "count": len(palettes)})
         elif self.path == "/api/observability/health":
@@ -133,13 +138,13 @@ class _BackendHandler(BaseHTTPRequestHandler):
         else:
             self._write_json(404, {"error": "not_found", "path": self.path})
 
-    def do_POST(self) -> None:  # noqa: N802
+    def do_POST(self) -> None:
         if self.path == "/api/chat/completions":
             self._handle_chat_completions()
         else:
             self._write_json(404, {"error": "not_found", "path": self.path})
 
-    def do_OPTIONS(self) -> None:  # noqa: N802
+    def do_OPTIONS(self) -> None:
         # CORS preflight.
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -176,7 +181,7 @@ class _BackendHandler(BaseHTTPRequestHandler):
                 max_tokens=body.get("max_tokens", 1024),
                 metadata={"endpoint": "/api/chat/completions"},
             )
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             err_type = type(e).__name__
             # Pretty-print the failure mode so the UI can render a useful
             # error instead of "Internal Server Error".
@@ -210,32 +215,35 @@ class _BackendHandler(BaseHTTPRequestHandler):
             return
 
         # OpenAI-compatible response.
-        self._write_json(200, {
-            "id": f"chatcmpl-{_short_id()}",
-            "object": "chat.completion",
-            "created": _now_epoch(),
-            "model": response.model,
-            "choices": [
-                {
-                    "index": 0,
-                    "message": {"role": "assistant", "content": response.content},
-                    "finish_reason": "stop",
-                }
-            ],
-            "usage": {
-                "prompt_tokens": response.tokens_in,
-                "completion_tokens": response.tokens_out,
-                "total_tokens": response.tokens_in + response.tokens_out,
+        self._write_json(
+            200,
+            {
+                "id": f"chatcmpl-{_short_id()}",
+                "object": "chat.completion",
+                "created": _now_epoch(),
+                "model": response.model,
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {"role": "assistant", "content": response.content},
+                        "finish_reason": "stop",
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": response.tokens_in,
+                    "completion_tokens": response.tokens_out,
+                    "total_tokens": response.tokens_in + response.tokens_out,
+                },
+                "gemini_hackathon": {
+                    "tier": response.tier,
+                    "family": response.family,
+                    "role": response.role,
+                    "backend": response.backend,
+                    "latency_ms": response.latency_ms,
+                    "cost_usd": response.cost_usd,
+                },
             },
-            "gemini_hackathon": {
-                "tier": response.tier,
-                "family": response.family,
-                "role": response.role,
-                "backend": response.backend,
-                "latency_ms": response.latency_ms,
-                "cost_usd": response.cost_usd,
-            },
-        })
+        )
 
 
 def _active_profile() -> str:
@@ -265,18 +273,20 @@ def _observability_health() -> dict[str, Any]:
         ),
     }
     try:
-        import google.adk.agents  # noqa: F401
-        import google.adk.runners  # noqa: F401
+        import google.adk.agents
+        import google.adk.runners
+
         health["google_adk"] = "installed"
     except ImportError:
         health["google_adk"] = "missing"
     try:
-        from google.adk.telemetry.google_cloud import (  # noqa: F401
+        from google.adk.telemetry.google_cloud import (
             get_gcp_exporters,
         )
-        from google.adk.telemetry.setup import (  # noqa: F401
+        from google.adk.telemetry.setup import (
             maybe_set_otel_providers,
         )
+
         health["otel_exporters"] = "available"
     except ImportError:
         health["otel_exporters"] = "missing"
@@ -286,6 +296,7 @@ def _observability_health() -> dict[str, Any]:
             ModelArmor,
             Observability,
         )
+
         health["fleet_primitives"] = [
             "FleetIdentity",
             "ModelArmor",
@@ -298,11 +309,13 @@ def _observability_health() -> dict[str, Any]:
 
 def _short_id() -> str:
     import uuid
+
     return uuid.uuid4().hex[:24]
 
 
 def _now_epoch() -> int:
     import time
+
     return int(time.time())
 
 
@@ -324,14 +337,16 @@ class _SessionToolHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):  # noqa: A002
         logger.info(format, *args)
 
-    def do_OPTIONS(self):  # noqa: N802
+    def do_OPTIONS(self):
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Session-Id")
+        self.send_header(
+            "Access-Control-Allow-Headers", "Content-Type, Authorization, X-Session-Id"
+        )
         self.end_headers()
 
-    def do_POST(self):  # noqa: N802
+    def do_POST(self):
         if self.path == "/api/agents/find-resources":
             self._handle_find_resources()
         elif self.path == "/api/agents/chat":
@@ -363,12 +378,15 @@ class _SessionToolHandler(BaseHTTPRequestHandler):
             topic=topic,
             k=k,
         )
-        self._write_json(200, {
-            "results": results,
-            "active_subnation": active_subnation,
-            "topic": topic,
-            "count": len(results),
-        })
+        self._write_json(
+            200,
+            {
+                "results": results,
+                "active_subnation": active_subnation,
+                "topic": topic,
+                "count": len(results),
+            },
+        )
 
     def _handle_agents_chat(self) -> None:
         """Run one ADK agent turn and return AG-UI events as JSON.
@@ -397,16 +415,22 @@ class _SessionToolHandler(BaseHTTPRequestHandler):
         )
 
         if not is_adk_available() or not message:
-            self._write_json(200, {
-                "status": "stub",
-                "reason": "google-adk missing or empty message",
-                "events": [
-                    {"type": "TEXT_MESSAGE_CONTENT", "data": {"text": "(stub) no google-adk or empty message"}},
-                    {"type": "RUN_FINISHED", "data": {"status": "stub"}},
-                ],
-                "protocol": "agui-1.0-subset",
-                "supported_event_types": list(AGUI_EVENT_TYPES),
-            })
+            self._write_json(
+                200,
+                {
+                    "status": "stub",
+                    "reason": "google-adk missing or empty message",
+                    "events": [
+                        {
+                            "type": "TEXT_MESSAGE_CONTENT",
+                            "data": {"text": "(stub) no google-adk or empty message"},
+                        },
+                        {"type": "RUN_FINISHED", "data": {"status": "stub"}},
+                    ],
+                    "protocol": "agui-1.0-subset",
+                    "supported_event_types": list(AGUI_EVENT_TYPES),
+                },
+            )
             return
 
         result = run_agent_turn(
@@ -478,15 +502,18 @@ class _SessionToolHandler(BaseHTTPRequestHandler):
             return
 
         result = ImageGenRouter().generate(record, role=body.get("role"))
-        self._write_json(200, {
-            "status": "ok",
-            "image_b64": result.image_b64,
-            "backend": result.backend.value,
-            "model_key": result.model_key,
-            "seed": result.seed,
-            "duration_ms": result.duration_ms,
-            "provenance": result.provenance,
-        })
+        self._write_json(
+            200,
+            {
+                "status": "ok",
+                "image_b64": result.image_b64,
+                "backend": result.backend.value,
+                "model_key": result.model_key,
+                "seed": result.seed,
+                "duration_ms": result.duration_ms,
+                "provenance": result.provenance,
+            },
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -506,32 +533,39 @@ def main(argv=None):
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
 
-    from . import list_all_palettes, MODEL_REGISTRY
+    from . import MODEL_REGISTRY, list_all_palettes
+
     profile = _active_profile()
     palettes = list_all_palettes()
     entries = MODEL_REGISTRY.for_profile(profile)
     logger.info(
         "backend.boot profile=%s themes=%d models=%d",
-        profile, len(palettes), len(entries),
+        profile,
+        len(palettes),
+        len(entries),
     )
 
     # Compose two handlers behind one ThreadingHTTPServer: the main
     # backend handler (for /api/themes, /api/chat/completions, ...) and
     # the session tool handler (for /api/agents/*).
     class _RoutingHandler(_BackendHandler, _SessionToolHandler):
-        def do_POST(self):  # noqa: N802
+        def do_POST(self):
             if self.path.startswith("/api/agents/") or self.path.startswith("/api/assets/"):
                 _SessionToolHandler.do_POST(self)
             else:
                 _BackendHandler.do_POST(self)
-        def do_GET(self):  # noqa: N802
+
+        def do_GET(self):
             _BackendHandler.do_GET(self)
-        def do_OPTIONS(self):  # noqa: N802
+
+        def do_OPTIONS(self):
             # CORS preflight — both handlers do the same thing.
             self.send_response(204)
             self.send_header("Access-Control-Allow-Origin", "*")
             self.send_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-            self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Session-Id")
+            self.send_header(
+                "Access-Control-Allow-Headers", "Content-Type, Authorization, X-Session-Id"
+            )
             self.end_headers()
 
     httpd = ThreadingHTTPServer((args.host, args.port), _RoutingHandler)

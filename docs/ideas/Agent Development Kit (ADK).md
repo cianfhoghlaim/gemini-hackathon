@@ -313,6 +313,6 @@ agent = LlmAgent(
         "You are a helpful database administrator. Use the SpannerAdminToolset "
         "to manage and query Spanner instances and databases in the project."
     ),
-    tools=[spanner_admin_tools]
+    tools=[spanner_admin_tools],
 )
 ```

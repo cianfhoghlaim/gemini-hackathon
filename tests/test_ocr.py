@@ -33,8 +33,13 @@ from gemini_hackathon.ocr import (
 def test_dispatch_table_has_seven_capabilities():
     assert len(_DISPATCH_TABLE) == 7
     assert {c.value for c in _DISPATCH_TABLE} == {
-        "forms", "layout", "tables+latex", "doctags",
-        "gaelic", "english", "tesseract-fallback",
+        "forms",
+        "layout",
+        "tables+latex",
+        "doctags",
+        "gaelic",
+        "english",
+        "tesseract-fallback",
     }
 
 
@@ -67,16 +72,19 @@ def test_dispatch_tesseract_fallback_uses_pypdfium2_textlayer():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("path,expected", [
-    ("/tmp/lc_maths_2024.pdf",       Capability.ENGLISH),
-    ("/tmp/aqa_gcse_chemistry.pdf",  Capability.ENGLISH),
-    ("/tmp/sqa_higher_maths.pdf",    Capability.ENGLISH),
-    ("/tmp/gaeilge_paper_1.pdf",     Capability.GAELIC),
-    ("/tmp/irish_history.pdf",       Capability.GAELIC),
-    ("/tmp/cymraeg_syllabus.pdf",    Capability.GAELIC),
-    ("/tmp/welsh-medium.pdf",        Capability.GAELIC),
-    ("/tmp/gaidhlig_national_5.pdf", Capability.GAELIC),
-])
+@pytest.mark.parametrize(
+    ("path", "expected"),
+    [
+        ("/tmp/lc_maths_2024.pdf", Capability.ENGLISH),
+        ("/tmp/aqa_gcse_chemistry.pdf", Capability.ENGLISH),
+        ("/tmp/sqa_higher_maths.pdf", Capability.ENGLISH),
+        ("/tmp/gaeilge_paper_1.pdf", Capability.GAELIC),
+        ("/tmp/irish_history.pdf", Capability.GAELIC),
+        ("/tmp/cymraeg_syllabus.pdf", Capability.GAELIC),
+        ("/tmp/welsh-medium.pdf", Capability.GAELIC),
+        ("/tmp/gaidhlig_national_5.pdf", Capability.GAELIC),
+    ],
+)
 def test_auto_capability_heuristic(path, expected):
     assert auto_capability(path) == expected
 
@@ -117,6 +125,7 @@ def test_is_backend_available_true_for_pypdfium2_textlayer():
 
 def test_gaelic_prompt_preserves_fada():
     from gemini_hackathon.ocr import _prompt_for
+
     prompt = _prompt_for(Capability.GAELIC, language_hint=None)
     assert "fada" in prompt
     assert "séimhiú" in prompt
@@ -124,6 +133,7 @@ def test_gaelic_prompt_preserves_fada():
 
 def test_english_prompt_is_plain():
     from gemini_hackathon.ocr import _prompt_for
+
     prompt = _prompt_for(Capability.ENGLISH, language_hint=None)
     assert "English" in prompt
     assert "plain text" in prompt
@@ -131,6 +141,7 @@ def test_english_prompt_is_plain():
 
 def test_prompt_includes_language_hint_when_provided():
     from gemini_hackathon.ocr import _prompt_for
+
     prompt = _prompt_for(Capability.GAELIC, language_hint="Munster")
     assert "Munster" in prompt
 
@@ -157,7 +168,7 @@ def test_ocr_returns_extracted_text_via_gemini_vision(tmp_path, monkeypatch):
     image.write_bytes(png_bytes)
 
     vertexai = pytest.importorskip("vertexai")
-    from vertexai.generative_models import GenerativeModel, Part
+    from vertexai.generative_models import Part
 
     class _FakeUsage:
         prompt_token_count = 128
@@ -191,10 +202,12 @@ def test_ocr_returns_extracted_text_via_gemini_vision(tmp_path, monkeypatch):
 
     from gemini_hackathon.ocr import ocr
 
-    result = ocr(OcrRequest(
-        capability=Capability.ENGLISH,
-        image_path=str(image),
-    ))
+    result = ocr(
+        OcrRequest(
+            capability=Capability.ENGLISH,
+            image_path=str(image),
+        )
+    )
     assert result.text == "Extracted: hello world"
     assert result.backend == Backend.GEMINI_VISION
     assert result.duration_ms >= 0

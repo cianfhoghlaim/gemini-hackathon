@@ -142,7 +142,11 @@ def extract_pdf_urls(links: list[Any], base_url: str) -> list[str]:
     """Extract PDF URLs from a list of links."""
     pdf_urls: list[str] = []
     for link in links:
-        url = link if isinstance(link, str) else (link.get("url") or link.get("href", "") if isinstance(link, dict) else "")
+        url = (
+            link
+            if isinstance(link, str)
+            else (link.get("url") or link.get("href", "") if isinstance(link, dict) else "")
+        )
         if not url:
             continue
         if not url.startswith("http"):
@@ -165,18 +169,29 @@ def crawl_with_firecrawl(
         from firecrawl import FirecrawlApp
     except ImportError:
         logger.warning("firecrawl_not_installed", source=source_name)
-        yield {"url": base_url, "status": "firecrawl_not_installed", "source": source_name, "crawled_at": datetime.now(UTC).isoformat()}
+        yield {
+            "url": base_url,
+            "status": "firecrawl_not_installed",
+            "source": source_name,
+            "crawled_at": datetime.now(UTC).isoformat(),
+        }
         return
 
     api_key = os.getenv("FIRECRAWL_API_KEY")
     if not api_key:
         logger.warning("firecrawl_api_key_missing", source=source_name)
-        yield {"url": base_url, "status": "no_api_key", "source": source_name, "crawled_at": datetime.now(UTC).isoformat()}
+        yield {
+            "url": base_url,
+            "status": "no_api_key",
+            "source": source_name,
+            "crawled_at": datetime.now(UTC).isoformat(),
+        }
         return
 
     app = FirecrawlApp(api_key=api_key)
     try:
         from firecrawl.v2.types import ScrapeOptions
+
         scrape_opts = ScrapeOptions(formats=["markdown", "links"])
         result = app.crawl(
             base_url,
@@ -197,7 +212,13 @@ def crawl_with_firecrawl(
                 yield page
     except Exception as e:
         logger.error("crawl_failed", source=source_name, error=str(e), error_type=type(e).__name__)
-        yield {"url": base_url, "error": str(e), "status": "error", "source": source_name, "crawled_at": datetime.now(UTC).isoformat()}
+        yield {
+            "url": base_url,
+            "error": str(e),
+            "status": "error",
+            "source": source_name,
+            "crawled_at": datetime.now(UTC).isoformat(),
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -219,15 +240,17 @@ PRIORITY_SUBJECTS: tuple[str, ...] = (
 
 #: Sources that are always kept regardless of subject — safeguarding/policy
 #: bodies + the NCCE curriculum.
-_KEEP_SOURCES: frozenset[str] = frozenset({
-    "ncca_policy",
-    "uk_ncce",
-    "gov.ie/education",
-    "gov.uk/dfe",
-    "education.gov.scot",
-    "gov.wales/education",
-    "ccea.org.uk/safeguarding",
-})
+_KEEP_SOURCES: frozenset[str] = frozenset(
+    {
+        "ncca_policy",
+        "uk_ncce",
+        "gov.ie/education",
+        "gov.uk/dfe",
+        "education.gov.scot",
+        "gov.wales/education",
+        "ccea.org.uk/safeguarding",
+    }
+)
 
 
 def _prune_row(row: dict[str, Any], seen_sha: set[str]) -> dict[str, Any] | None:
@@ -274,20 +297,13 @@ def _prune_row(row: dict[str, Any], seen_sha: set[str]) -> dict[str, Any] | None
     # Rule 2: pure-title page flag (mark only — don't drop)
     page_count = row.get("page_count")
     has_text_layer = row.get("has_text_layer")
-    if (
-        page_count is not None
-        and page_count <= 2
-        and has_text_layer is False
-    ):
+    if page_count is not None and page_count <= 2 and has_text_layer is False:
         out["pure_title"] = True
 
     # Rule 3: out-of-priority-scope flag (mark only — don't drop)
     subject = row.get("subject") or ""
     source_key = row.get("source_key") or ""
-    if (
-        subject not in PRIORITY_SUBJECTS
-        and source_key not in _KEEP_SOURCES
-    ):
+    if subject not in PRIORITY_SUBJECTS and source_key not in _KEEP_SOURCES:
         out["pruned"] = True
 
     return out
@@ -449,7 +465,10 @@ def crawl_subject(
     """Crawl curriculum pages for a specific subject (graceful no-op without registry)."""
     # SubjectRegistry / URLResolver — gracefully no-op if not installed
     try:
-        from dlt_sources.common.curriculum_registry import SubjectRegistry, URLResolver  # type: ignore
+        from dlt_sources.common.curriculum_registry import (  # type: ignore
+            SubjectRegistry,
+            URLResolver,
+        )
     except ImportError:
         logger.warning("dlt_sources_registry_not_installed", subject=subject, cycle=cycle)
         return
@@ -482,9 +501,14 @@ def crawl_subject(
             if raw_page.get("status") in ("error", "no_api_key", "firecrawl_not_installed"):
                 yield CrawledPage(
                     url=raw_page.get("url", config.base_url),
-                    title=None, content=None, content_hash="",
-                    cycle=cycle, subject=subject, language=language,
-                    source=source_name, document_type="error",
+                    title=None,
+                    content=None,
+                    content_hash="",
+                    cycle=cycle,
+                    subject=subject,
+                    language=language,
+                    source=source_name,
+                    document_type="error",
                     status=raw_page.get("status", "error"),
                     error=raw_page.get("error"),
                 )
@@ -494,21 +518,26 @@ def crawl_subject(
             content = raw_page.get("markdown", "")
             links = raw_page.get("links", [])
             yield CrawledPage(
-                url=url, title=title, content=content,
+                url=url,
+                title=title,
+                content=content,
                 content_hash=compute_content_hash(content),
-                cycle=cycle, subject=subject, language=language,
-                source=source_name, document_type=classify_document_type(url, title),
+                cycle=cycle,
+                subject=subject,
+                language=language,
+                source=source_name,
+                document_type=classify_document_type(url, title),
                 metadata=raw_page.get("metadata", {}),
                 links=links if isinstance(links, list) else [],
             )
 
 
 __all__ = [
-    "CrawledPage",
     "DOCUMENT_TYPE_PATTERNS",
-    "PDFResource",
     "PRIORITY_SUBJECTS",
     "_KEEP_SOURCES",
+    "CrawledPage",
+    "PDFResource",
     "_prune_row",
     "_prune_rows",
     "classify_document_type",

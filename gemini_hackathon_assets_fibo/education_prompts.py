@@ -21,18 +21,31 @@ from __future__ import annotations
 
 from typing import Any
 
-
 # The 14 NCCA LC subjects (the canonical subject list per W7 registry)
 NCCA_LC_SUBJECTS: tuple[str, ...] = (
-    "mathematics", "applied_mathematics", "chemistry", "geography",
-    "history", "english", "gaeilge", "computer_science",
-    "accounting", "biology", "business", "french",
-    "irish_t2", "physics",
+    "mathematics",
+    "applied_mathematics",
+    "chemistry",
+    "geography",
+    "history",
+    "english",
+    "gaeilge",
+    "computer_science",
+    "accounting",
+    "biology",
+    "business",
+    "french",
+    "irish_t2",
+    "physics",
 )
 
 # The 5 British Isles education stages
 FIVE_STAGES: tuple[str, ...] = (
-    "aistear", "bunscoil", "meanscoil", "scoil_sinsearach", "ollscoil",
+    "aistear",
+    "bunscoil",
+    "meanscoil",
+    "scoil_sinsearach",
+    "ollscoil",
 )
 
 
@@ -52,35 +65,43 @@ EDUCATION_FIBO_PROMPTS: dict[str, dict[str, Any]] = {
             "graph paper texture, blue ink, clean white background"
         ),
         "color_palette": [
-            "subject_mathematics_blue", "ncca_stone_grey",
-            "scotland_sqa_blue", "england_aqa_purple",
+            "subject_mathematics_blue",
+            "ncca_stone_grey",
+            "scotland_sqa_blue",
+            "england_aqa_purple",
         ],
         "font_style": "CMU Serif",
         "background": "graph paper (light grey grid on white)",
         "typical_diagrams": [
-            "equation render", "function plot", "geometric shape",
-            "statistical distribution", "matrix array",
+            "equation render",
+            "function plot",
+            "geometric shape",
+            "statistical distribution",
+            "matrix array",
         ],
     },
     "applied_mathematics": {
         "title": "Applied Mathematics Educational Asset",
         "short_description": (
-            "Irish Leaving Certificate Applied Mathematics — mechanics, "
-            "statistics, modelling"
+            "Irish Leaving Certificate Applied Mathematics — mechanics, statistics, modelling"
         ),
         "visual_cue": (
             "Mathematical typography with applied context (mechanics diagrams, "
             "statistical charts, real-world scenarios)"
         ),
         "color_palette": [
-            "subject_mathematics_blue", "scotland_sqa_blue",
+            "subject_mathematics_blue",
+            "scotland_sqa_blue",
             "meanscoil_green",
         ],
         "font_style": "CMU Serif",
         "background": "white with faint mathematical grid",
         "typical_diagrams": [
-            "force diagram", "projectile motion", "statistical inference",
-            "linear regression", "particle collision",
+            "force diagram",
+            "projectile motion",
+            "statistical inference",
+            "linear regression",
+            "particle collision",
         ],
     },
     "chemistry": {
@@ -94,14 +115,20 @@ EDUCATION_FIBO_PROMPTS: dict[str, dict[str, Any]] = {
             "laboratory glassware, reaction arrows"
         ),
         "color_palette": [
-            "cpk_atoms", "subject_chemistry_orange", "england_aqa_purple",
+            "cpk_atoms",
+            "subject_chemistry_orange",
+            "england_aqa_purple",
             "meanscoil_green",
         ],
         "font_style": "CMU Serif",
         "background": "white laboratory sheet",
         "typical_diagrams": [
-            "lewis_structure", "ball_and_stick", "skeletal_formula",
-            "reaction_equation", "energy_diagram", "apparatus_setup",
+            "lewis_structure",
+            "ball_and_stick",
+            "skeletal_formula",
+            "reaction_equation",
+            "energy_diagram",
+            "apparatus_setup",
         ],
     },
     "geography": {
@@ -115,35 +142,44 @@ EDUCATION_FIBO_PROMPTS: dict[str, dict[str, Any]] = {
             "brown (relief), contour lines, grid references"
         ),
         "color_palette": [
-            "topographic_green", "ocean_blue", "relief_brown",
+            "topographic_green",
+            "ocean_blue",
+            "relief_brown",
             "subject_geography_orange",
         ],
         "font_style": "Inter",
         "background": "topographic map texture",
         "typical_diagrams": [
-            "choropleth_map", "climate_graph", "population_pyramid",
-            "geological_cross_section", "river_system",
+            "choropleth_map",
+            "climate_graph",
+            "population_pyramid",
+            "geological_cross_section",
+            "river_system",
         ],
     },
     "history": {
         "title": "History Educational Asset",
         "short_description": (
-            "Irish Leaving Certificate History — primary sources, "
-            "chronologies, maps of events"
+            "Irish Leaving Certificate History — primary sources, chronologies, maps of events"
         ),
         "visual_cue": (
             "Sepia-toned historical documents, parchment texture, "
             "handwritten script style, period-accurate typography"
         ),
         "color_palette": [
-            "parchment", "sepia_brown", "ink_black",
+            "parchment",
+            "sepia_brown",
+            "ink_black",
             "scoil_sinsearach_gold",
         ],
         "font_style": "Cormorant Garamond (serif)",
         "background": "aged parchment",
         "typical_diagrams": [
-            "timeline", "primary_source_excerpt", "historical_map",
-            "event_diagram", "cause_and_effect",
+            "timeline",
+            "primary_source_excerpt",
+            "historical_map",
+            "event_diagram",
+            "cause_and_effect",
         ],
     },
     "english": {
@@ -153,18 +189,22 @@ EDUCATION_FIBO_PROMPTS: dict[str, dict[str, Any]] = {
             "comparative tables, textual analysis"
         ),
         "visual_cue": (
-            "Clean serif typography on cream paper, "
-            "marginalia annotations, literary quotations"
+            "Clean serif typography on cream paper, marginalia annotations, literary quotations"
         ),
         "color_palette": [
-            "parchment", "ink_black", "margin_red",
+            "parchment",
+            "ink_black",
+            "margin_red",
             "subject_english_burgundy",
         ],
         "font_style": "Cormorant Garamond (serif)",
         "background": "cream paper texture",
         "typical_diagrams": [
-            "comparative_table", "quote_extract", "theme_map",
-            "character_diagram", "plot_arc",
+            "comparative_table",
+            "quote_extract",
+            "theme_map",
+            "character_diagram",
+            "plot_arc",
         ],
     },
     "gaeilge": {
@@ -178,13 +218,17 @@ EDUCATION_FIBO_PROMPTS: dict[str, dict[str, Any]] = {
             "borders, Irish-language typography"
         ),
         "color_palette": [
-            "subject_gaeilge_green", "trinity_cream", "celtic_gold",
+            "subject_gaeilge_green",
+            "trinity_cream",
+            "celtic_gold",
             "scoil_sinsearach_gold",
         ],
         "font_style": "Gaelic / Cló Gaelach typography",
         "background": "aged Celtic manuscript",
         "typical_diagrams": [
-            "irish_quote", "grammar_table", "celtic_interlace_border",
+            "irish_quote",
+            "grammar_table",
+            "celtic_interlace_border",
             "seanfhocail_collection",
         ],
     },
@@ -199,14 +243,19 @@ EDUCATION_FIBO_PROMPTS: dict[str, dict[str, Any]] = {
             "flowchart symbols, UML notation, blue accent"
         ),
         "color_palette": [
-            "code_background_dark", "syntax_blue", "syntax_green",
+            "code_background_dark",
+            "syntax_blue",
+            "syntax_green",
             "syntax_yellow",
         ],
         "font_style": "Fira Code / JetBrains Mono",
         "background": "IDE dark theme or white",
         "typical_diagrams": [
-            "flowchart", "pseudocode_block", "data_structure_diagram",
-            "recursion_tree", "complexity_graph",
+            "flowchart",
+            "pseudocode_block",
+            "data_structure_diagram",
+            "recursion_tree",
+            "complexity_graph",
         ],
     },
     # 6 NCCA-adjacent subjects
@@ -224,8 +273,11 @@ EDUCATION_FIBO_PROMPTS: dict[str, dict[str, Any]] = {
         "font_style": "CMU Serif",
         "background": "ledger paper",
         "typical_diagrams": [
-            "t_account", "balance_sheet", "trial_balance",
-            "ratio_analysis_chart", "cash_flow_statement",
+            "t_account",
+            "balance_sheet",
+            "trial_balance",
+            "ratio_analysis_chart",
+            "cash_flow_statement",
         ],
     },
     "biology": {
@@ -239,34 +291,43 @@ EDUCATION_FIBO_PROMPTS: dict[str, dict[str, Any]] = {
             "ecological pyramid, microscope lens effect"
         ),
         "color_palette": [
-            "membrane_pink", "dna_blue", "chlorophyll_green",
+            "membrane_pink",
+            "dna_blue",
+            "chlorophyll_green",
             "subject_biology_green",
         ],
         "font_style": "Inter",
         "background": "white lab slide",
         "typical_diagrams": [
-            "cell_diagram", "dna_helix", "ecosystem_pyramid",
-            "heart_diagram", "calvin_cycle", "punnett_square",
+            "cell_diagram",
+            "dna_helix",
+            "ecosystem_pyramid",
+            "heart_diagram",
+            "calvin_cycle",
+            "punnett_square",
         ],
     },
     "business": {
         "title": "Business Educational Asset",
         "short_description": (
-            "Irish Leaving Certificate Business — SWOT analysis, "
-            "org charts, business model canvas"
+            "Irish Leaving Certificate Business — SWOT analysis, org charts, business model canvas"
         ),
         "visual_cue": (
-            "Corporate slide template, blue accent, infographic style, "
-            "sans-serif typography"
+            "Corporate slide template, blue accent, infographic style, sans-serif typography"
         ),
         "color_palette": [
-            "business_blue", "subject_business_grey", "accent_orange",
+            "business_blue",
+            "subject_business_grey",
+            "accent_orange",
         ],
         "font_style": "Inter",
         "background": "white corporate",
         "typical_diagrams": [
-            "swot_grid", "org_chart", "business_model_canvas",
-            "porter_5_forces", "value_chain",
+            "swot_grid",
+            "org_chart",
+            "business_model_canvas",
+            "porter_5_forces",
+            "value_chain",
         ],
     },
     "french": {
@@ -280,14 +341,19 @@ EDUCATION_FIBO_PROMPTS: dict[str, dict[str, Any]] = {
             "Belle Époque decorative motifs"
         ),
         "color_palette": [
-            "french_blue", "french_white", "french_red",
+            "french_blue",
+            "french_white",
+            "french_red",
             "parchment_cream",
         ],
         "font_style": "Garamond",
         "background": "aged French paper",
         "typical_diagrams": [
-            "french_quote", "grammar_table", "tense_conjugation",
-            "literary_timeline", "verb_conjugation_chart",
+            "french_quote",
+            "grammar_table",
+            "tense_conjugation",
+            "literary_timeline",
+            "verb_conjugation_chart",
         ],
     },
     "irish_t2": {
@@ -301,35 +367,43 @@ EDUCATION_FIBO_PROMPTS: dict[str, dict[str, Any]] = {
             "bilingual EN/GA annotations"
         ),
         "color_palette": [
-            "subject_gaeilge_green", "english_blue",
+            "subject_gaeilge_green",
+            "english_blue",
             "high_contrast_white",
         ],
         "font_style": "Gaelic / Cló Gaelach typography",
         "background": "white",
         "typical_diagrams": [
-            "bilingual_quote", "t2_vocabulary_table",
-            "t2_grammar_summary", "t2_simple_literary_extract",
+            "bilingual_quote",
+            "t2_vocabulary_table",
+            "t2_grammar_summary",
+            "t2_simple_literary_extract",
         ],
     },
     "physics": {
         "title": "Physics Educational Asset",
         "short_description": (
-            "Irish Leaving Certificate Physics — forces, energy, "
-            "circuits, waves, particle diagrams"
+            "Irish Leaving Certificate Physics — forces, energy, circuits, waves, particle diagrams"
         ),
         "visual_cue": (
             "Chalkboard or whiteboard style, blue (vectors) + red (scalars) "
             "+ green (energy), physics symbols"
         ),
         "color_palette": [
-            "physics_chalkboard_dark", "vector_blue", "scalar_red",
+            "physics_chalkboard_dark",
+            "vector_blue",
+            "scalar_red",
             "energy_green",
         ],
         "font_style": "CMU Serif",
         "background": "chalkboard or white",
         "typical_diagrams": [
-            "force_diagram", "circuit_diagram", "ray_optics",
-            "wave_diagram", "particle_track", "field_diagram",
+            "force_diagram",
+            "circuit_diagram",
+            "ray_optics",
+            "wave_diagram",
+            "particle_track",
+            "field_diagram",
         ],
     },
 }
@@ -345,9 +419,7 @@ def get_subject_prompt_template(subject_slug: str) -> dict[str, Any]:
         return dict(EDUCATION_FIBO_PROMPTS[subject_slug])
     return {
         "title": f"{subject_slug.replace('_', ' ').title()} Educational Asset",
-        "short_description": (
-            f"British Isles education visual for the {subject_slug} subject"
-        ),
+        "short_description": (f"British Isles education visual for the {subject_slug} subject"),
         "visual_cue": "Clean educational typography on white background",
         "color_palette": ["ncca_stone_grey"],
         "font_style": "Inter",
@@ -397,9 +469,9 @@ def get_stage_modifier(stage: str) -> dict[str, Any]:
 
 
 __all__ = [
-    "NCCA_LC_SUBJECTS",
-    "FIVE_STAGES",
     "EDUCATION_FIBO_PROMPTS",
-    "get_subject_prompt_template",
+    "FIVE_STAGES",
+    "NCCA_LC_SUBJECTS",
     "get_stage_modifier",
+    "get_subject_prompt_template",
 ]

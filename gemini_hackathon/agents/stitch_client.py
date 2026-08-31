@@ -21,11 +21,9 @@ Reference: stitch-skills/plugins/stitch-design/skills/manage-design-system/SKILL
 
 from __future__ import annotations
 
-import json
 import logging
 import os
-import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import httpx
@@ -176,8 +174,11 @@ class StitchClient:
             r = await client.post(path, json=payload, headers=self._headers())
             r.raise_for_status()
             data = r.json()
-        logger.info("generate_screen_from_text: prompt=%s → %d outputComponents",
-                    prompt[:80], len(data.get("outputComponents", [])))
+        logger.info(
+            "generate_screen_from_text: prompt=%s → %d outputComponents",
+            prompt[:80],
+            len(data.get("outputComponents", [])),
+        )
         return data
 
     # --- full Phase-A pipeline -------------------------------------------------
@@ -193,7 +194,9 @@ class StitchClient:
         )
         logger.info(
             "bootstrap_design_system: design_md=%s → instance=%s asset=%s",
-            design_md_path, instance_id, asset_id,
+            design_md_path,
+            instance_id,
+            asset_id,
         )
         return {"instance_id": instance_id, "asset_id": asset_id}
 
@@ -208,7 +211,9 @@ def default_stitch_client() -> StitchClient:
     if not api_key:
         raise RuntimeError("STITCH_API_KEY env var is not set")
     if not project_id:
-        raise RuntimeError("STITCH_PROJECT_ID env var is not set — create the project at https://stitch.withgoogle.com first")
+        raise RuntimeError(
+            "STITCH_PROJECT_ID env var is not set — create the project at https://stitch.withgoogle.com first"
+        )
     return StitchClient(api_key=api_key, project_id=project_id)
 
 

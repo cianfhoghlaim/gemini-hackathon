@@ -41,7 +41,9 @@ def test_vertex_target_init_with_full_env(
     monkeypatch.setenv("GCP_PROJECT_ID", "agentic-hackathon-august-26")
     monkeypatch.setenv("VERTEX_VECTOR_SEARCH_REGION", "europe-west1")
     monkeypatch.setenv("VERTEX_VECTOR_SEARCH_INDEX_ID", "projects/p/locations/l/indexes/123")
-    monkeypatch.setenv("VERTEX_VECTOR_SEARCH_INDEX_ENDPOINT_ID", "projects/p/locations/l/indexEndpoints/456")
+    monkeypatch.setenv(
+        "VERTEX_VECTOR_SEARCH_INDEX_ENDPOINT_ID", "projects/p/locations/l/indexEndpoints/456"
+    )
     monkeypatch.setenv("VERTEX_VECTOR_SEARCH_DEPLOYED_INDEX_ID", "deployed_abc")
     monkeypatch.setenv("VERTEX_VECTOR_SEARCH_DIMENSIONS", "1536")
 
@@ -125,7 +127,7 @@ def test_vertex_target_upsert_sync_writes_one_datapoint(
     # Patch upsert_batch so the async shim doesn't try to use the real
     # event loop (the underlying MatchingEngineIndex is a MagicMock, so
     # it would silently succeed but we want a deterministic assertion).
-    async def _fake_upsert_batch(rows):  # noqa: ANN001 — async shim
+    async def _fake_upsert_batch(rows):
         return len(rows)
 
     monkeypatch.setattr(target, "upsert_batch", _fake_upsert_batch)

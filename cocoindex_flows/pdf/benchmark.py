@@ -44,8 +44,7 @@ def benchmark_pdf(pdf_path: pathlib.Path) -> dict[str, Any]:
 
     # pypdfium2 (always available)
     try:
-        import pypdfium2  # noqa: F401
-
+        import pypdfium2
         from cocoindex_flows.pdf._shared import extract_markdown as pd_md
 
         results.append(_time_one("pypdfium2", pd_md, content))

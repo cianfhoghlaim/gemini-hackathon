@@ -23,6 +23,7 @@ faithfulness/answer-relevance/context-precision computation — the
 keep that honesty rather than overstating. When a labelled eval set
 exists, swap the consensus for a real RAGAS vote.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -50,10 +51,12 @@ class Level2Result:
 # blocking I/O; threads parallelise them, no async-client variants needed).
 # ---------------------------------------------------------------------------
 
+
 def _path_document_ai(pdf_path: str) -> dict[str, Any]:
     """Path 1 — Document AI Layout Parser. Returns (text, confidence_score)."""
     try:
-        from gemini_hackathon.ocr import run_backend, Backend
+        from gemini_hackathon.ocr import Backend, run_backend
+
         text, _ = run_backend(Backend.DOCUMENT_AI, pdf_path, prompt="Extract every text block.")
         return {"path": "document_ai", "text": text, "confidence_score": 0.92}
     except Exception as exc:
@@ -63,7 +66,8 @@ def _path_document_ai(pdf_path: str) -> dict[str, Any]:
 def _path_gemini_vision(pdf_path: str) -> dict[str, Any]:
     """Path 2 — Gemini 3.5 Flash via Vertex AI."""
     try:
-        from gemini_hackathon.ocr import run_backend, Backend
+        from gemini_hackathon.ocr import Backend, run_backend
+
         text, _ = run_backend(
             Backend.GEMINI_VISION,
             pdf_path,
@@ -78,7 +82,8 @@ def _path_gemini_vision(pdf_path: str) -> dict[str, Any]:
 def _path_gemma4_vertex(pdf_path: str) -> dict[str, Any]:
     """Path 3 — Gemma 4 26B-A4B on Vertex AI Model Garden (opt-in)."""
     try:
-        from gemini_hackathon.ocr import run_backend, Backend
+        from gemini_hackathon.ocr import Backend, run_backend
+
         text, _ = run_backend(
             Backend.GEMMA_VERTEX,
             pdf_path,
@@ -99,13 +104,19 @@ def _path_pypdfium2(pdf_path: str) -> dict[str, Any]:
     """
     try:
         import pypdfium2 as pdfium
+
         pdf = pdfium.PdfDocument(pdf_path)
         page_texts = []
         for page in pdf:
             textpage = page.get_textpage()
             page_texts.append(textpage.get_text_range())
         text = "\n\n".join(page_texts)
-        return {"path": "pypdfium2", "text": text, "confidence_score": 1.0 if text.strip() else 0.0, "page_count": len(pdf)}
+        return {
+            "path": "pypdfium2",
+            "text": text,
+            "confidence_score": 1.0 if text.strip() else 0.0,
+            "page_count": len(pdf),
+        }
     except Exception as exc:
         return {"path": "pypdfium2", "text": "", "confidence_score": 0.0, "error": str(exc)}
 
@@ -113,6 +124,7 @@ def _path_pypdfium2(pdf_path: str) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # ADK 2 Workflow nodes
 # ---------------------------------------------------------------------------
+
 
 async def extract_4_paths(node_input: Any) -> dict[str, Any]:
     """Function node: run the 4 OCR paths in parallel (asyncio.to_thread).
@@ -181,6 +193,7 @@ def _extract_ncca_citations(text: str) -> list[str]:
     certificate pipeline's "every claim cites a page" provenance rule.
     """
     import re
+
     candidates = [
         "SC-L1-L2-Programme-Statement.pdf",
         "key-competencies-in-senior-cycle_en.pdf",
@@ -203,9 +216,13 @@ async def run_level_2(*, pdf_path: str = "") -> Level2Result:
     `pdf_path` defaults to "" -> offline-stub path (uses embedded-text-layer
     as the only path, so the consensus vote still demos with synthetic data).
     """
-    paths_data = await extract_4_paths({"pdf_path": pdf_path, "pdf_text": "Sample past paper text for the offline workshop."})
+    paths_data = await extract_4_paths(
+        {"pdf_path": pdf_path, "pdf_text": "Sample past paper text for the offline workshop."}
+    )
     vote = await consensus_vote_node(paths_data)
-    page_count = next((p.get("page_count", 0) for p in paths_data["paths"] if p.get("path") == "pypdfium2"), 1)
+    page_count = next(
+        (p.get("page_count", 0) for p in paths_data["paths"] if p.get("path") == "pypdfium2"), 1
+    )
     return Level2Result(
         pdf_path=pdf_path or "<offline-stub>",
         page_count=page_count or 1,

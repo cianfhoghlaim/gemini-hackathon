@@ -48,7 +48,9 @@ def test_get_destination_bigquery_calls_factory_with_kwarg(monkeypatch: pytest.M
     mock_factory.assert_called_once_with(dataset_name="test_biep")
 
 
-def test_get_destination_bigquery_defaults_dataset_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_get_destination_bigquery_defaults_dataset_from_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """When `bigquery_dataset=None` and `BIGQUERY_DATASET=test_env`, uses the env var."""
     if "dlt_pipelines._shared" in sys.modules:
         importlib.reload(sys.modules["dlt_pipelines._shared"])
@@ -92,7 +94,9 @@ def test_get_destination_rejects_unknown_name() -> None:
         mod.get_destination("bogus")
 
 
-def test_get_destination_duckdb_returns_local_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_get_destination_duckdb_returns_local_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """`get_destination("duckdb")` returns the canonical DUCKDB_PATH destination.
 
     Verifies the duckdb branch creates the parent dir + uses the
@@ -108,13 +112,15 @@ def test_get_destination_duckdb_returns_local_path(tmp_path: Path, monkeypatch: 
     # The duckdb factory is the runtime import target.
     sentinel = object()
     try:
-        from dlt.destinations import duckdb as _duckdb  # noqa: PLC0415
+        from dlt.destinations import duckdb as _duckdb
     except ImportError:
         pytest.skip("dlt is not installed; skipping the duckdb branch test")
 
-    with patch.object(mod, "_duckdb", _duckdb, create=True) if False else patch(  # noqa: SIM222
-        "dlt.destinations.duckdb", return_value=sentinel, create=True
-    ) as mock_factory:
+    with (
+        patch.object(mod, "_duckdb", _duckdb, create=True)
+        if False
+        else patch("dlt.destinations.duckdb", return_value=sentinel, create=True) as mock_factory
+    ):
         result = mod.get_destination("duckdb")
 
     assert result is sentinel

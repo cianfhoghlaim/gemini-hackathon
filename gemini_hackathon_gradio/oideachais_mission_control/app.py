@@ -21,7 +21,6 @@ the live evidence rows per stage.
 from __future__ import annotations
 
 import logging
-import os
 from pathlib import Path
 
 try:
@@ -35,9 +34,10 @@ from .._common import (
     GRADIO_CSS,
     apply_education_theme,
     render_anam_bonneagar_footer,
+)
+from .._common import (
     translate as t,
 )
-
 
 _log = logging.getLogger("oideachais_mission_control.app")
 
@@ -52,7 +52,10 @@ _STAGE_FILTERS = {
     "aistear": ("Ireland", ("Early Years", "Aistear", "Foundation")),
     "bunscoil": ("Ireland", ("Primary", "Bunscoil", "KS1", "KS2")),
     "meanscoil": ("Ireland", ("Junior Cycle", "MeanScoil", "KS3", "GCSE")),
-    "scoil-sinsearach": ("Ireland", ("Senior Cycle", "Scoil Sinsearach", "KS4", "A-Level", "Leaving Certificate")),
+    "scoil-sinsearach": (
+        "Ireland",
+        ("Senior Cycle", "Scoil Sinsearach", "KS4", "A-Level", "Leaving Certificate"),
+    ),
     "ollscoil": ("Ireland", ("Tertiary", "Ollscoil", "Higher Education", "Degree")),
 }
 
@@ -74,8 +77,12 @@ def _stage_documents(jurisdiction: str, level_filter: tuple[str, ...]) -> list[l
         )
         with duckdb.connect(str(_DUCKDB_PATH), read_only=True) as con:
             rows = con.execute(sql, [jurisdiction, *params]).fetchall()
-        return [list(r) for r in rows] if rows else [["", "(no rows match this stage)", "", "", "", ""]]
-    except Exception as exc:  # noqa: BLE001 — surfaces in UI
+        return (
+            [list(r) for r in rows]
+            if rows
+            else [["", "(no rows match this stage)", "", "", "", ""]]
+        )
+    except Exception as exc:
         return [["ERROR", str(exc), "", "", "", ""]]
 
 
@@ -88,16 +95,18 @@ def _subjects_dataframe_rows() -> list[list]:
     """Render the 14-subject SUBJECT_WIRING_REGISTRY as a Dataframe."""
     rows: list[list] = []
     for slug, wire in sorted(SUBJECT_WIRING_REGISTRY.items()):
-        rows.append([
-            slug,
-            wire.ncca_subject,
-            "(stage-agnostic)",  # subjects are stage-agnostic in the registry
-            "EN+GA",  # default bilingual
-            wire.langfuse_trace_name,
-            wire.baml_prefix,
-            wire.memory_namespace,
-            wire.litellm_routing_key,
-        ])
+        rows.append(
+            [
+                slug,
+                wire.ncca_subject,
+                "(stage-agnostic)",  # subjects are stage-agnostic in the registry
+                "EN+GA",  # default bilingual
+                wire.langfuse_trace_name,
+                wire.baml_prefix,
+                wire.memory_namespace,
+                wire.litellm_routing_key,
+            ]
+        )
     return rows
 
 
@@ -109,14 +118,16 @@ def _models_dataframe_rows() -> list[list]:
         return [["ERROR", f"MODEL_REGISTRY import failed: {exc}", "", "", "", ""]]
     rows: list[list] = []
     for entry in MODEL_REGISTRY:
-        rows.append([
-            entry.key,
-            str(entry.family),
-            entry.role,
-            str(entry.backend),
-            str(entry.profile),
-            "yes" if entry.available else "no",
-        ])
+        rows.append(
+            [
+                entry.key,
+                str(entry.family),
+                entry.role,
+                str(entry.backend),
+                str(entry.profile),
+                "yes" if entry.available else "no",
+            ]
+        )
     return rows
 
 
@@ -128,8 +139,7 @@ def _outputs_dataframe_rows() -> list[list]:
     if not paths:
         return [["", "(no certificates generated yet)", "", "", ""]]
     return [
-        [p.name, str(p.stat().st_size), p.stat().st_mtime, str(p.parent), p.name]
-        for p in paths
+        [p.name, str(p.stat().st_size), p.stat().st_mtime, str(p.parent), p.name] for p in paths
     ]
 
 
@@ -143,7 +153,12 @@ def _observability_events() -> list[list]:
     return [
         ["ts=10:00:01", "level=INFO", "module=editorial_studio.app", "msg=build_app() OK"],
         ["ts=10:00:02", "level=INFO", "module=anam_education.app", "msg=build_app() OK"],
-        ["ts=10:00:03", "level=INFO", "module=oideachais_mission_control.app", "msg=build_app() OK"],
+        [
+            "ts=10:00:03",
+            "level=INFO",
+            "module=oideachais_mission_control.app",
+            "msg=build_app() OK",
+        ],
         ["ts=10:00:04", "level=INFO", "module=oideachais_pdf_review.app", "msg=build_app() OK"],
         ["ts=10:00:05", "level=INFO", "module=an_scrudu.app", "msg=build_app() OK"],
     ]
@@ -161,9 +176,11 @@ def _settings_markdown() -> str:
     out: list[str] = []
     for line in text.splitlines():
         stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
-            out.append(line)
-        elif "=" in stripped and not stripped.startswith("export "):
+        if (
+            not stripped
+            or stripped.startswith("#")
+            or ("=" in stripped and not stripped.startswith("export "))
+        ):
             out.append(line)
         else:
             out.append(line)
@@ -178,8 +195,7 @@ def build_app():
     """
     if gr is None:
         raise ImportError(
-            "Gradio is required for build_app(); install with "
-            "`pip install gradio>=6.0,<7.0`"
+            "Gradio is required for build_app(); install with `pip install gradio>=6.0,<7.0`"
         )
     with gr.Blocks(
         title="Oideachais — Mission Control",
@@ -227,8 +243,7 @@ canonical platform registries.""",
 
             with gr.Tab("Models", elem_classes="stage-meanscoil"):
                 gr.Markdown(
-                    "**The `MODEL_REGISTRY._entries`** "
-                    "(`gemini_hackathon/model_registry.py:1092`)."
+                    "**The `MODEL_REGISTRY._entries`** (`gemini_hackathon/model_registry.py:1092`)."
                 )
                 models_refresh = gr.Button("Refresh", variant="primary")
                 models_df = gr.Dataframe(
@@ -260,7 +275,7 @@ canonical platform registries.""",
                     "(Logfire / Langfuse) lands in Phase 5 — for now these "
                     "are mocked so the operator sees the panel."
                 )
-                obs_df = gr.Dataframe(
+                gr.Dataframe(
                     headers=["timestamp", "level", "module", "message"],
                     value=_observability_events(),
                     interactive=False,
@@ -269,14 +284,15 @@ canonical platform registries.""",
 
             with gr.Tab("Settings", elem_classes="stage-aistear"):
                 gr.Markdown(
-                    "**The `.env.example` keys.** Every env var the "
-                    "platform reads at runtime."
+                    "**The `.env.example` keys.** Every env var the platform reads at runtime."
                 )
-                settings_md = gr.Markdown(value=_settings_markdown())
+                gr.Markdown(value=_settings_markdown())
 
             # ── Phase 3 baseline — the 5 stage tabs ─────────────────────
             with gr.Tab("Aistear", elem_classes="stage-aistear"):
-                gr.Markdown("**Early Childhood (0-6).** Filtered on Early Years / Aistear / Foundation.")
+                gr.Markdown(
+                    "**Early Childhood (0-6).** Filtered on Early Years / Aistear / Foundation."
+                )
                 gr.Dataframe(
                     headers=headers,
                     value=_stage_documents(*_STAGE_FILTERS["aistear"]),
@@ -294,7 +310,9 @@ canonical platform registries.""",
                 )
 
             with gr.Tab("MeanScoil (Junior Cycle)", elem_classes="stage-meanscoil"):
-                gr.Markdown("**Junior Cycle (Years 1-3, ages 12-15).** 18 NCCA subjects + KS3 / GCSE.")
+                gr.Markdown(
+                    "**Junior Cycle (Years 1-3, ages 12-15).** 18 NCCA subjects + KS3 / GCSE."
+                )
                 gr.Dataframe(
                     headers=headers,
                     value=_stage_documents(*_STAGE_FILTERS["meanscoil"]),

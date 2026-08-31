@@ -27,6 +27,7 @@ app = marimo.App(width="medium")
 @app.cell
 def _intro() -> None:
     import marimo as mo
+
     mo.md(
         """
         # Notebook 17 — LC Syllabus Extract Browser
@@ -48,8 +49,9 @@ def _intro() -> None:
 
 @app.cell
 def _connect(mo) -> None:
-    import sqlite3
     import pathlib
+    import sqlite3
+
     db_path = pathlib.Path("data/bi_ep/extracted_syllabi.sqlite")
     if not db_path.exists():
         mo.md(f"**No SQLite DB at `{db_path}`.** Run the W5 DLT pipeline first.")
@@ -80,7 +82,7 @@ def _subjects(mo, rows) -> None:
         "ExtractMathsLearningGraph": "Mathematics",
     }
     subjects = sorted({baml_to_subject.get(r[2], r[2]) for r in rows})
-    default_subjects = ["(all)"] + subjects
+    default_subjects = ["(all)", *subjects]
     dropdown = mo.ui.dropdown(
         options=default_subjects,
         value="(all)",
@@ -124,6 +126,7 @@ def _filtered(mo, rows, baml_to_subject, dropdown) -> None:
 @app.cell
 def _treemap(mo, rows) -> None:
     import json
+
     try:
         import plotly.graph_objects as go
     except ImportError:
@@ -173,7 +176,7 @@ def _treemap(mo, rows) -> None:
     )
     fig.update_layout(
         title=f"module_topics treemap · {len(rows)} rows",
-        margin=dict(t=40, l=0, r=0, b=0),
+        margin={"t": 40, "l": 0, "r": 0, "b": 0},
         height=420,
     )
     mo.ui.plotly(fig)

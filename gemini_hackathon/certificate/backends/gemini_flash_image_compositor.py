@@ -7,7 +7,7 @@ import time
 from typing import Any
 
 from . import CompositorResult, build_prompt_from_concept
-from .compositor_base import AssetCompositor, _make_stub_result
+from .compositor_base import _make_stub_result
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,8 @@ class GeminiFlashImageCompositor:
 
     def is_available(self) -> bool:
         try:
-            import litellm  # noqa: F401
+            import litellm
+
             return True
         except ImportError:
             return False
@@ -30,15 +31,25 @@ class GeminiFlashImageCompositor:
         if not self.is_available():
             return _make_stub_result(self.backend, self.model_key, seed=seed or 0, duration_ms=0)
         try:
-            from gemini_hackathon.assets.litellm_image import LiteLLMImageRequest, generate_with_litellm
+            from gemini_hackathon.assets.litellm_image import (
+                LiteLLMImageRequest,
+                generate_with_litellm,
+            )
+
             prompt = build_prompt_from_concept(concept)
             actual_seed = seed or int(time.time() * 1000) % (1 << 31)
-            result = generate_with_litellm(LiteLLMImageRequest(
-                prompt=prompt, model=self.model_key, seed=actual_seed,
-            ))
+            result = generate_with_litellm(
+                LiteLLMImageRequest(
+                    prompt=prompt,
+                    model=self.model_key,
+                    seed=actual_seed,
+                )
+            )
             duration_ms = int((time.monotonic() - started) * 1000)
             if not result.b64_images:
-                return _make_stub_result(self.backend, self.model_key, seed=actual_seed, duration_ms=duration_ms)
+                return _make_stub_result(
+                    self.backend, self.model_key, seed=actual_seed, duration_ms=duration_ms
+                )
             return CompositorResult(
                 backend=self.backend,
                 model_key=self.model_key,

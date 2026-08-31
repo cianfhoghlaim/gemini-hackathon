@@ -31,6 +31,7 @@ The `EXCLUDED_REASONS` constant is the closed vocabulary the
 Adding a new reason = adding it here + updating the copilot's
 `instruction=` in `gemini_hackathon/journey/sourcing_copilot/agent.py`.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -41,10 +42,10 @@ from pydantic import BaseModel, Field
 #: Closed vocabulary for `content_artefacts.excluded_reason`. Add a new
 #: reason here + update the copilot's `instruction=` + the codelab.
 EXCLUDED_REASONS: tuple[str, ...] = (
-    "out_of_scope",       # not part of the syllabus pipeline's concern
-    "corrupted",          # failed to parse / page count = 0
-    "duplicate",          # sha256 already exists under a different URL
-    "superseded",         # newer revision available
+    "out_of_scope",  # not part of the syllabus pipeline's concern
+    "corrupted",  # failed to parse / page count = 0
+    "duplicate",  # sha256 already exists under a different URL
+    "superseded",  # newer revision available
     "language_unsupported",  # e.g. an Irish-medium doc when subnation is "scotland"
 )
 

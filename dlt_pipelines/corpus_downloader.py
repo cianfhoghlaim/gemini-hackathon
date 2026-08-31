@@ -31,6 +31,7 @@ richer corpus than exists.
 Run as a module:
     python -m dlt_pipelines.corpus_downloader
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -41,7 +42,6 @@ from pathlib import Path
 from typing import Any
 
 import dlt
-
 from dlt_pipelines._shared import (
     DUCKDB_PATH,
     gcs_uri,
@@ -95,7 +95,9 @@ def _ext_for_content_type(content_type: str) -> str:
     }.get(normalised, ".bin")
 
 
-def _write_bytes(jurisdiction: str, subject: str, sha256_prefix: str, ext: str, content: bytes) -> str:
+def _write_bytes(
+    jurisdiction: str, subject: str, sha256_prefix: str, ext: str, content: bytes
+) -> str:
     """Write `content` to GCS (Phase 2 — `GCS_RAW_BUCKET` env-var gated) or local disk.
 
     The Phase 2 preferred path uses `write_pdf_to_gcs_or_local()` which
@@ -120,7 +122,7 @@ def _write_bytes(jurisdiction: str, subject: str, sha256_prefix: str, ext: str, 
 
     filename = f"{sha256_prefix}{ext}"
     try:
-        from google.cloud import storage  # noqa: PLC0415
+        from google.cloud import storage
 
         project_id = os.environ.get("GCP_PROJECT_ID")
         if project_id:
@@ -151,7 +153,7 @@ def _fetch(url: str) -> Any:
     3x on connection/timeout errors (not on 4xx/5xx — a 403/404 won't fix
     itself on retry).
     """
-    import httpx  # noqa: PLC0415
+    import httpx
 
     return httpx.get(
         url,
@@ -206,7 +208,9 @@ def _build_row(source_key: str, url_row: dict[str, str], jurisdiction: str) -> d
     base_row["content_type"] = content_type
     base_row["byte_size"] = len(content)
     base_row["sha256_hash"] = sha256_hash
-    base_row["storage_uri"] = _write_bytes(jurisdiction, subject or "_uncategorised", sha256_hash[:16], ext, content)
+    base_row["storage_uri"] = _write_bytes(
+        jurisdiction, subject or "_uncategorised", sha256_hash[:16], ext, content
+    )
     return base_row
 
 
@@ -223,8 +227,8 @@ def downloaded_documents() -> Iterator[dict[str, Any]]:
     real bytes on disk, so it's skipped here) and yield the fetched-corpus
     row for each.
     """
-    from dlt_pipelines._shared import JURISDICTION_BOARDS  # noqa: PLC0415
-    from dlt_pipelines.official_doc_fetcher import KNOWN_OFFICIAL_URLS  # noqa: PLC0415
+    from dlt_pipelines._shared import JURISDICTION_BOARDS
+    from dlt_pipelines.official_doc_fetcher import KNOWN_OFFICIAL_URLS
 
     total = 0
     for source_key, url_rows in KNOWN_OFFICIAL_URLS.items():

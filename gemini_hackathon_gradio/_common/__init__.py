@@ -24,13 +24,19 @@ are NOT lifted — out of scope for the education system.
 """
 
 # Re-exports (no Gradio required at import time)
-from gemini_hackathon_gradio._common.i18n import (
-    LANGS,
-    LANG_NAMES,
-    I18N_STRINGS,
-    get_lang,
-    set_lang,
-    translate,
+from gemini_hackathon_gradio._common.baml_client import (
+    T1_API_KEY,
+    T1_BASE_URL,
+    T1_DEFAULT_MODEL,
+    T2_API_KEY,
+    T2_BASE_URL,
+    T2_MODEL,
+    T3_API_KEY,
+    T3_BASE_URL,
+    T3_FALLBACK_CHAIN,
+    chat_complete,
+    chat_complete_json,
+    get_client_config,
 )
 from gemini_hackathon_gradio._common.baml_pydantic_bridge import (
     extract_via_llm,
@@ -39,38 +45,32 @@ from gemini_hackathon_gradio._common.baml_pydantic_bridge import (
     mirror_baml_schema,
     pydantic_to_baml_prompt_hint,
 )
-from gemini_hackathon_gradio._common.baml_client import (
-    T1_BASE_URL,
-    T1_DEFAULT_MODEL,
-    T1_API_KEY,
-    T2_BASE_URL,
-    T2_MODEL,
-    T2_API_KEY,
-    T3_BASE_URL,
-    T3_FALLBACK_CHAIN,
-    T3_API_KEY,
-    chat_complete,
-    chat_complete_json,
-    get_client_config,
+from gemini_hackathon_gradio._common.demo_recorder import (
+    STAGE_LABELS,
+    DemoSequence,
+    DemoStep,
+    record_interaction,
+)
+from gemini_hackathon_gradio._common.hf_hub_push import (
+    build_user_dataset_repo_id,
+    push_assets_to_hub,
 )
 from gemini_hackathon_gradio._common.hlml_emitter import (
     HLML_VERSION,
     emit_hlml_json,
     emit_hlml_pdf_bytes,
 )
+from gemini_hackathon_gradio._common.i18n import (
+    I18N_STRINGS,
+    LANG_NAMES,
+    LANGS,
+    get_lang,
+    set_lang,
+    translate,
+)
 from gemini_hackathon_gradio._common.pclm_emitter import (
     emit_pclm_pdf_bytes,
     emit_pclm_xml,
-)
-from gemini_hackathon_gradio._common.hf_hub_push import (
-    build_user_dataset_repo_id,
-    push_assets_to_hub,
-)
-from gemini_hackathon_gradio._common.demo_recorder import (
-    STAGE_LABELS,
-    DemoSequence,
-    DemoStep,
-    record_interaction,
 )
 
 # Gradio-dependent re-exports (these will raise ImportError if gradio is missing,
@@ -116,56 +116,56 @@ except ImportError:
 
 
 __all__ = [
-    # i18n
-    "LANGS",
-    "LANG_NAMES",
-    "I18N_STRINGS",
-    "get_lang",
-    "set_lang",
-    "translate",
-    # baml_pydantic_bridge
-    "extract_via_llm",
-    "extract_with_fallback",
-    "fallback_regex",
-    "mirror_baml_schema",
-    "pydantic_to_baml_prompt_hint",
-    # baml_client
-    "T1_BASE_URL",
-    "T1_DEFAULT_MODEL",
-    "T1_API_KEY",
-    "T2_BASE_URL",
-    "T2_MODEL",
-    "T2_API_KEY",
-    "T3_BASE_URL",
-    "T3_FALLBACK_CHAIN",
-    "T3_API_KEY",
-    "chat_complete",
-    "chat_complete_json",
-    "get_client_config",
-    # hlml_emitter
-    "HLML_VERSION",
-    "emit_hlml_json",
-    "emit_hlml_pdf_bytes",
-    # pclm_emitter
-    "emit_pclm_pdf_bytes",
-    "emit_pclm_xml",
-    # hf_hub_push
-    "build_user_dataset_repo_id",
-    "push_assets_to_hub",
-    # demo_recorder
-    "STAGE_LABELS",
-    "DemoSequence",
-    "DemoStep",
-    "record_interaction",
     # theme (Gradio-dependent — symbols may be None if Gradio missing)
     "ALL_TOKENS",
     "EDUCATION_PALETTE",
     "GRADIO_CSS",
     "HADES_PALETTE",
+    # hlml_emitter
+    "HLML_VERSION",
+    "I18N_STRINGS",
+    # i18n
+    "LANGS",
+    "LANG_NAMES",
+    # demo_recorder
+    "STAGE_LABELS",
     "SUBNATION_PALETTES",
-    "apply_education_theme",
-    "stage_class",
+    "T1_API_KEY",
+    # baml_client
+    "T1_BASE_URL",
+    "T1_DEFAULT_MODEL",
+    "T2_API_KEY",
+    "T2_BASE_URL",
+    "T2_MODEL",
+    "T3_API_KEY",
+    "T3_BASE_URL",
+    "T3_FALLBACK_CHAIN",
     # anam_bonneagar (Gradio-dependent)
     "_DEFAULT_FOOTER_STUB",
+    "DemoSequence",
+    "DemoStep",
+    "apply_education_theme",
+    # hf_hub_push
+    "build_user_dataset_repo_id",
+    "chat_complete",
+    "chat_complete_json",
+    "emit_hlml_json",
+    "emit_hlml_pdf_bytes",
+    # pclm_emitter
+    "emit_pclm_pdf_bytes",
+    "emit_pclm_xml",
+    # baml_pydantic_bridge
+    "extract_via_llm",
+    "extract_with_fallback",
+    "fallback_regex",
+    "get_client_config",
+    "get_lang",
+    "mirror_baml_schema",
+    "push_assets_to_hub",
+    "pydantic_to_baml_prompt_hint",
+    "record_interaction",
     "render_anam_bonneagar_footer",
+    "set_lang",
+    "stage_class",
+    "translate",
 ]

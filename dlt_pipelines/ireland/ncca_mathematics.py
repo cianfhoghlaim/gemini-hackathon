@@ -33,9 +33,8 @@ Usage:
 
 Reference: openspec/changes/2026-07-16-biiep-v1-lc-per-subject-syllabus-ingestion-v1/
 """
-from __future__ import annotations
-import dlt
 
+from __future__ import annotations
 
 import json
 import os
@@ -44,8 +43,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from ._shared import named_destinations
+import dlt
 
+from ._shared import named_destinations
 
 # Canonical BIEP v1 ingest queue (the curated local cache)
 REPO_ROOT = Path(__file__).resolve().parents[5]
@@ -124,7 +124,9 @@ def _iter_live_crawl(language: str, max_pages: int) -> Iterator[dict[str, Any]]:
     base = "https://ncca.ie/ga" if language == "ga" else "https://ncca.ie/en"
     include_paths = [
         f"{base}/senior-cycle/mathematics/*",
-        f"{base}/senior-cycle/matamaitic/*" if language == "ga" else f"{base}/senior-cycle/mathematics/*",
+        f"{base}/senior-cycle/matamaitic/*"
+        if language == "ga"
+        else f"{base}/senior-cycle/mathematics/*",
     ]
     try:
         result = app.crawl(
@@ -211,10 +213,12 @@ def ncca_mathematics_partitions() -> Any:
     """
     from dagster import MultiPartitionsDefinition, StaticPartitionsDefinition
 
-    return MultiPartitionsDefinition({
-        "subject": StaticPartitionsDefinition(["mathematics"]),
-        "language": StaticPartitionsDefinition(LC_LANGUAGES),
-    })
+    return MultiPartitionsDefinition(
+        {
+            "subject": StaticPartitionsDefinition(["mathematics"]),
+            "language": StaticPartitionsDefinition(LC_LANGUAGES),
+        }
+    )
 
 
 __all__ = [
@@ -235,7 +239,6 @@ def create_ncca_mathematics_pipeline(
     Honours `USE_LOCAL_SCRAPES=true` and the canonical
     `ducklake_cianfhoghlaim` named destination via the named_destinations factory.
     """
-    import dlt_sources as _dlt
 
     return dlt.pipeline(
         pipeline_name=pipeline_name,

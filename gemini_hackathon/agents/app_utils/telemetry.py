@@ -37,7 +37,7 @@ def ensure_vertex_env(*, location: str = "global") -> str | None:
             _, project_id = google.auth.default()
             if project_id:
                 os.environ["GOOGLE_CLOUD_PROJECT"] = project_id
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.debug("ensure_vertex_env: google.auth.default() failed: %s", e)
     if project_id:
         os.environ.setdefault("GOOGLE_CLOUD_LOCATION", location)
@@ -59,9 +59,7 @@ def setup_telemetry() -> str | None:
     os.environ.setdefault("GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY", "true")
 
     bucket = os.environ.get("LOGS_BUCKET_NAME")
-    capture_content = os.environ.get(
-        "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "false"
-    )
+    capture_content = os.environ.get("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "false")
 
     if bucket and capture_content != "false":
         logger.info(
@@ -71,9 +69,7 @@ def setup_telemetry() -> str | None:
         os.environ["OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT"] = "NO_CONTENT"
         os.environ.setdefault("OTEL_INSTRUMENTATION_GENAI_UPLOAD_FORMAT", "jsonl")
         os.environ.setdefault("OTEL_INSTRUMENTATION_GENAI_COMPLETION_HOOK", "upload")
-        os.environ.setdefault(
-            "OTEL_SEMCONV_STABILITY_OPT_IN", "gen_ai_latest_experimental"
-        )
+        os.environ.setdefault("OTEL_SEMCONV_STABILITY_OPT_IN", "gen_ai_latest_experimental")
         commit_sha = os.environ.get("COMMIT_SHA", "dev")
         os.environ.setdefault(
             "OTEL_RESOURCE_ATTRIBUTES",
@@ -93,7 +89,6 @@ def setup_telemetry() -> str | None:
 
     try:
         import google.auth
-
         from google.adk.telemetry.google_cloud import (
             get_gcp_exporters,
             get_gcp_resource,
@@ -105,7 +100,7 @@ def setup_telemetry() -> str | None:
 
     try:
         credentials, project_id = google.auth.default()
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         logger.debug("setup_telemetry: google.auth.default() failed: %s", e)
         return bucket
 
@@ -131,8 +126,7 @@ def setup_telemetry() -> str | None:
         pass
 
     logger.info(
-        "setup_telemetry: Cloud Trace + Cloud Logging exporters wired "
-        "for project=%s bucket=%s",
+        "setup_telemetry: Cloud Trace + Cloud Logging exporters wired for project=%s bucket=%s",
         project_id,
         bucket or "(none)",
     )
@@ -162,7 +156,7 @@ def build_app(root_agent, *, name: str = "gemini_hackathon"):
 
     try:
         return App(root_agent=root_agent, name=name)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         logger.debug("build_app: App() construction failed (%s); returning root_agent", e)
         return root_agent
 

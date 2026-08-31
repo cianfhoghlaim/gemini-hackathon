@@ -27,20 +27,19 @@ compatibility ticket for the upstream fix). When BAML is available the
 tool returns the structured extraction; when it isn't the tool returns
 a deterministic stub dict with the same shape.
 """
+
 from __future__ import annotations
 
 import json
 import logging
-from pathlib import Path
 from typing import Any
 
-from gemini_hackathon_backend.observability import (
-    log_mlflow_metric,
-    record_generation,
-)
 from gemini_hackathon_backend.catalog.a2ui_emitter import (
     record_a2ui_raw_event,
     wrap_a2ui_in_raw_event,
+)
+from gemini_hackathon_backend.observability import (
+    log_mlflow_metric,
 )
 
 logger = logging.getLogger(__name__)
@@ -51,21 +50,31 @@ logger = logging.getLogger(__name__)
 # orchestrator already reads from there). When a citation tool needs to
 # look up a PDF, this table is the lookup.
 _NCCA_PDFS: list[dict[str, str]] = [
-    {"pdf_id": "SC-L1-L2-Programme-Statement",
-     "title": "Leaving Certificate Framework — L1 & L2 Programme Statement",
-     "blurb": "The statutory programme statement for Senior Cycle Leaving Certificate (L1 & L2)."},
-    {"pdf_id": "key-competencies-in-senior-cycle_en",
-     "title": "Key Competencies in Senior Cycle",
-     "blurb": "The five Key Competencies designed to be developed across all Senior Cycle subjects."},
-    {"pdf_id": "scr-advisory-report_en",
-     "title": "Senior Cycle Review — Advisory Report",
-     "blurb": "6-year statutory review of Senior Cycle leading to recommendations on curriculum, assessment, and reporting."},
-    {"pdf_id": "the-potential-of-online-learning-environments_en",
-     "title": "The Potential of Online Learning Environments",
-     "blurb": "Explores how online learning environments can support Senior Cycle delivery and assessment."},
-    {"pdf_id": "the-potential-of-technology-to-support-online-certification-and-reporting",
-     "title": "The Potential of Technology to Support Online Certification and Reporting",
-     "blurb": "Investigates technology-enabled certification and reporting pathways for Senior Cycle outcomes."},
+    {
+        "pdf_id": "SC-L1-L2-Programme-Statement",
+        "title": "Leaving Certificate Framework — L1 & L2 Programme Statement",
+        "blurb": "The statutory programme statement for Senior Cycle Leaving Certificate (L1 & L2).",
+    },
+    {
+        "pdf_id": "key-competencies-in-senior-cycle_en",
+        "title": "Key Competencies in Senior Cycle",
+        "blurb": "The five Key Competencies designed to be developed across all Senior Cycle subjects.",
+    },
+    {
+        "pdf_id": "scr-advisory-report_en",
+        "title": "Senior Cycle Review — Advisory Report",
+        "blurb": "6-year statutory review of Senior Cycle leading to recommendations on curriculum, assessment, and reporting.",
+    },
+    {
+        "pdf_id": "the-potential-of-online-learning-environments_en",
+        "title": "The Potential of Online Learning Environments",
+        "blurb": "Explores how online learning environments can support Senior Cycle delivery and assessment.",
+    },
+    {
+        "pdf_id": "the-potential-of-technology-to-support-online-certification-and-reporting",
+        "title": "The Potential of Technology to Support Online Certification and Reporting",
+        "blurb": "Investigates technology-enabled certification and reporting pathways for Senior Cycle outcomes.",
+    },
 ]
 
 
@@ -85,8 +94,10 @@ def _baml_extract_or_stub(pdf_text: str, subject: str = "") -> dict[str, Any]:
     try:
         from baml_client.sync_client import b  # type: ignore
 
-        return b.ExtractCurriculumSyllabus(pdf_text=pdf_text, subject=subject, language="en").model_dump()
-    except Exception as exc:  # noqa: BLE001 — offline-path fallback
+        return b.ExtractCurriculumSyllabus(
+            pdf_text=pdf_text, subject=subject, language="en"
+        ).model_dump()
+    except Exception as exc:
         return {
             "_stub": True,
             "_stub_reason": str(exc),
@@ -139,15 +150,20 @@ def cite_pdf(pdf_id: str, page: int, snippet: str, tool_context) -> dict[str, An
     """
     pdf = _find_pdf(pdf_id)
     if pdf is None:
-        return {"status": "error", "message": f"unknown pdf_id {pdf_id!r}; must be one of {[p['pdf_id'] for p in _NCCA_PDFS]}"}
+        return {
+            "status": "error",
+            "message": f"unknown pdf_id {pdf_id!r}; must be one of {[p['pdf_id'] for p in _NCCA_PDFS]}",
+        }
 
     citations = tool_context.state.get("citations", [])
-    citations.append({
-        "pdf_id": pdf_id,
-        "title": pdf["title"],
-        "page": page,
-        "snippet": snippet[:200],
-    })
+    citations.append(
+        {
+            "pdf_id": pdf_id,
+            "title": pdf["title"],
+            "page": page,
+            "snippet": snippet[:200],
+        }
+    )
     tool_context.state["citations"] = citations
     tool_context.state["active_pdf"] = pdf_id
     log_mlflow_metric("ncca_panel.cite_pdf.invocations", 1)
@@ -248,8 +264,18 @@ def list_ncca_pdfs(tool_context) -> dict[str, Any]:
     surface_id = "ncca-overview"
     components = [
         {"id": "root", "component": "Column", "children": ["title", "pdf-list"]},
-        {"id": "title", "component": "Text", "text": "NCCA Senior Cycle policy corpus", "variant": "h1"},
-        {"id": "pdf-list", "component": "List", "children": ["pdf-card-template"], "direction": "vertical"},
+        {
+            "id": "title",
+            "component": "Text",
+            "text": "NCCA Senior Cycle policy corpus",
+            "variant": "h1",
+        },
+        {
+            "id": "pdf-list",
+            "component": "List",
+            "children": ["pdf-card-template"],
+            "direction": "vertical",
+        },
         {
             "id": "pdf-card-template",
             "component": "NccaPdfCard",
@@ -318,12 +344,15 @@ def _reinject_state_into_prompt(callback_context, llm_request) -> None:
     grounded across turns (per the Wave Back Home pattern).
     """
     state = callback_context.state
-    payload = json.dumps({
-        "subnation": state.get("subnation"),
-        "learning_outcome": state.get("learning_outcome"),
-        "active_pdf": state.get("active_pdf"),
-        "citations": state.get("citations", []),
-    }, indent=2)
+    payload = json.dumps(
+        {
+            "subnation": state.get("subnation"),
+            "learning_outcome": state.get("learning_outcome"),
+            "active_pdf": state.get("active_pdf"),
+            "citations": state.get("citations", []),
+        },
+        indent=2,
+    )
     prefix = (
         "You are the NCCA policy panel assistant. The user's current session state is:\n"
         f"{payload}\n"
@@ -346,6 +375,7 @@ def build_ncca_panel_agent(model: str = "gemini-3.5-flash", *, tools: list | Non
     the ADKToolset + AGUIToolset (for HITL / client-tool scenarios).
     """
     import warnings
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", DeprecationWarning)
         warnings.simplefilter("ignore", UserWarning)
@@ -379,7 +409,7 @@ async def _persist_session_to_memory(callback_context) -> object:
     """
     try:
         await callback_context.add_session_to_memory()
-    except Exception as exc:  # noqa: BLE001 — observability only
+    except Exception as exc:
         logger.warning(
             "ncca_panel: add_session_to_memory failed (%s); memory not persisted",
             exc,
@@ -407,14 +437,13 @@ def _flush_a2ui_surfaces(tool_context) -> list[dict[str, Any]]:
 
 __all__ = [
     "NCCA_PANEL_INSTRUCTION",
-    "NccaPanelAgent",
     "_NCCA_PDFS",
     "_baml_extract_or_stub",
     "_find_pdf",
     "_flush_a2ui_surfaces",
+    "_persist_session_to_memory",
     "_reinject_state_into_prompt",
     "_seed_participant_state",
-    "_persist_session_to_memory",
     "build_ncca_panel_agent",
     "cite_pdf",
     "fetch_highlight",

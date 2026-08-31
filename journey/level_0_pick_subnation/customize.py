@@ -8,6 +8,7 @@ pre-flight is checking that the `#REPLACE-*` markers in `app.py` are visible
 
 Run it standalone: `python customize.py`
 """
+
 from __future__ import annotations
 
 import sys
@@ -19,9 +20,8 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from gemini_hackathon.journey.level_0_pick_subnation.app import (  # noqa: E402
+from gemini_hackathon.journey.level_0_pick_subnation.app import (
     SUBNATIONS,
-    _apply_palette,
     _build_learner_doc,
     write_learner_profile,
 )
@@ -32,7 +32,7 @@ def main() -> int:
     print()
 
     print(f"SUBNATIONS table: {len(SUBNATIONS)} jurisdictions")
-    for slug, display, palette in SUBNATIONS:
+    for _slug, display, palette in SUBNATIONS:
         print(f"  - {display:<35}  -> {palette}")
 
     print()
@@ -60,13 +60,17 @@ def main() -> int:
     print(f"  palette_file:  {result2['palette_file']}")
 
     print()
-    print("_build_learner_doc shape (matches the Firestore document that the workshop's progress.py will read back):")
+    print(
+        "_build_learner_doc shape (matches the Firestore document that the workshop's progress.py will read back):"
+    )
     doc = _build_learner_doc("alice@school.ie", "Alice O'Brien", "ireland", "ncca_palette.json")
     for k, v in doc.items():
         print(f"  {k:<22}  {v}")
 
     print()
-    print("All ✓ — you can now run `python -m journey.level_0_pick_subnation.app` (after `uv add gradio`).")
+    print(
+        "All ✓ — you can now run `python -m journey.level_0_pick_subnation.app` (after `uv add gradio`)."
+    )
     return 0
 
 

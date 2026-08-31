@@ -60,11 +60,13 @@ def _iter_entries(config: dict) -> list[tuple[str, dict]]:
 
 def seed(project: str, dotenv: dict[str, str], dry_run: bool) -> tuple[int, int, int]:
     try:
-        from google.cloud import secretmanager  # type: ignore[import-not-found]
         from google.api_core import exceptions as gexc  # type: ignore[import-not-found]
+        from google.cloud import secretmanager  # type: ignore[import-not-found]
     except ImportError:
         print("google-cloud-secret-manager not installed. Run:", file=sys.stderr)
-        print("  uv pip install --python .venv-secrets google-cloud-secret-manager", file=sys.stderr)
+        print(
+            "  uv pip install --python .venv-secrets google-cloud-secret-manager", file=sys.stderr
+        )
         sys.exit(2)
 
     config = _load_yaml()
@@ -126,12 +128,20 @@ def seed(project: str, dotenv: dict[str, str], dry_run: bool) -> tuple[int, int,
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--project", default=None, help="Override GCP project (default: from secrets.yaml)")
-    parser.add_argument("--dry-run", action="store_true", help="Print what would happen without writing")
+    parser.add_argument(
+        "--project", default=None, help="Override GCP project (default: from secrets.yaml)"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Print what would happen without writing"
+    )
     args = parser.parse_args()
 
     config = _load_yaml()
-    project = args.project or os.environ.get("GCP_PROJECT") or config.get("project", "agentic-hackathon-august-26")
+    project = (
+        args.project
+        or os.environ.get("GCP_PROJECT")
+        or config.get("project", "agentic-hackathon-august-26")
+    )
 
     print(f"=== seed_gsm: project={project} dry_run={args.dry_run} ===")
     dotenv = _load_dotenv_values()

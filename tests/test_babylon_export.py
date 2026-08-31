@@ -14,7 +14,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # GodotExporter (Python port — logic-only test)
 # ---------------------------------------------------------------------------
@@ -29,8 +28,9 @@ def _fake_record() -> MagicMock:
     return rec
 
 
-def _py_build_godot_scene_text(source_pdf_path: str, node_name: str = "AssetSprite",
-                                  position: dict | None = None) -> str:
+def _py_build_godot_scene_text(
+    source_pdf_path: str, node_name: str = "AssetSprite", position: dict | None = None
+) -> str:
     """Faithful Python port of web/src/components/babylon/GodotExporter.ts
     used for testing without a TS runtime."""
     x = (position or {}).get("x", 0)
@@ -38,19 +38,19 @@ def _py_build_godot_scene_text(source_pdf_path: str, node_name: str = "AssetSpri
     safe_node = re.sub(r"[^A-Za-z0-9_]", "_", node_name)
     return (
         "[gd_scene load_steps=2 format=3]\n\n"
-        f"[ext_resource type=\"Texture2D\" path=\"{source_pdf_path}\" id=\"1_\"]\n\n"
-        "[sub_resource type=\"StandardMaterial3D\" id=\"StandardMaterial3D_1\"]\n"
+        f'[ext_resource type="Texture2D" path="{source_pdf_path}" id="1_"]\n\n'
+        '[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]\n'
         "resource_local_to_scene = false\n"
-        "resource_name = \"asset_material\"\n"
+        'resource_name = "asset_material"\n'
         "albedo_color = Color(1, 1, 1, 1)\n"
-        "albedo_texture = ExtResource(\"1_\")\n\n"
-        f"[node name=\"{safe_node}\" type=\"Sprite3D\"]\n"
-        "material_override = SubResource(\"StandardMaterial3D_1\")\n"
-        "texture = ExtResource(\"1_\")\n"
+        'albedo_texture = ExtResource("1_")\n\n'
+        f'[node name="{safe_node}" type="Sprite3D"]\n'
+        'material_override = SubResource("StandardMaterial3D_1")\n'
+        'texture = ExtResource("1_")\n'
         f"position = Vector3({x}, {y}, 0)\n\n"
-        "[node name=\"AssetCamera\" type=\"Camera3D\" parent=\".\"]\n"
+        '[node name="AssetCamera" type="Camera3D" parent="."]\n'
         "transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3)\n\n"
-        "[node name=\"AssetLight\" type=\"DirectionalLight3D\" parent=\".\"]\n"
+        '[node name="AssetLight" type="DirectionalLight3D" parent="."]\n'
         "transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, 0.5, 0.612, -0.612, 0, 2, 3)\n\n"
         "[editable]\n\n"
     )
@@ -63,9 +63,9 @@ def test_godot_scene_text_is_well_formed_tscn():
     # Required structural elements
     assert "[ext_resource" in text
     assert "[sub_resource" in text
-    assert "type=\"Sprite3D\"" in text
-    assert "type=\"Camera3D\"" in text
-    assert "type=\"DirectionalLight3D\"" in text
+    assert 'type="Sprite3D"' in text
+    assert 'type="Camera3D"' in text
+    assert 'type="DirectionalLight3D"' in text
     assert "[editable]" in text
     # Position defaults to origin
     assert "position = Vector3(0, 0, 0)" in text

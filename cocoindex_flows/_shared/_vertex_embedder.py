@@ -31,6 +31,7 @@ matching the `COCOINDEX_AVAILABLE` degrade pattern used throughout
 `cocoindex_flows/`. `_lifespan.py`'s `EMBED_BACKEND` switch selects between
 this and the offline `sentence_transformers` fallback.
 """
+
 from __future__ import annotations
 
 import os

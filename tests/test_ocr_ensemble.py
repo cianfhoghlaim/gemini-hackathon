@@ -97,7 +97,9 @@ def test_consensus_score_calculated_from_mean_pairwise_similarity():
 def test_consensus_vote_handles_path_with_text_but_error():
     """Path with both non-empty text AND error → failed (succeeded=False)."""
     out = EnsemblePathOutput(
-        path="gemini_vision", raw_response="hello", error="incomplete result",
+        path="gemini_vision",
+        raw_response="hello",
+        error="incomplete result",
     )
     assert out.succeeded is False
 

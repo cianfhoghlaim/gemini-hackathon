@@ -22,9 +22,8 @@ import logging
 from typing import Any
 
 try:
-    from google.adk import Workflow, Event
-    from google.adk.workflow import JoinNode, START
-    from google.adk.workflow import node, RetryConfig
+    from google.adk import Event, Workflow
+    from google.adk.workflow import START, JoinNode, RetryConfig, node
 except ImportError:
     Workflow = None  # type: ignore[assignment,misc]
     Event = None  # type: ignore[assignment,misc]
@@ -48,22 +47,24 @@ NCCA_KEY_COMPETENCIES: tuple[str, ...] = (
 )
 
 
-async def decompose_into_competency_updates(node_input: Any) -> "Event":
+async def decompose_into_competency_updates(node_input: Any) -> Event:
     """Decompose a formative assessment into 6 per-competency updates.
 
     Each exit card / topic mastery event maps onto 0..6 of the
     NCCA Key Competencies. This function returns the list of
     competency-updates to apply (one per competency touched).
     """
-    return Event(output={
-        "competency_updates": [
-            {"competency": c, "delta": 0.05, "evidence_id": "fa-exit-card-001"}
-            for c in NCCA_KEY_COMPETENCIES
-        ]
-    })
+    return Event(
+        output={
+            "competency_updates": [
+                {"competency": c, "delta": 0.05, "evidence_id": "fa-exit-card-001"}
+                for c in NCCA_KEY_COMPETENCIES
+            ]
+        }
+    )
 
 
-async def write_competency_update(node_input: Any) -> "Event":
+async def write_competency_update(node_input: Any) -> Event:
     """One worker that writes a competency update to the skill-progression ledger (W9).
 
     Bounded by `RetryConfig(max_attempts=3)` so a transient Firestore
@@ -90,6 +91,7 @@ def build_cross_subject_workflow() -> Any:
     # The parallel_worker pattern (Pillar 3 dynamic fan-out):
     # the worker decomposes N times at runtime.
     if node is not None:
+
         @node(parallel_worker=True, rerun_on_resume=True, retry_config=retry)
         async def fanout_write(node_input):
             return await write_competency_update(node_input)
@@ -114,8 +116,8 @@ def build_cross_subject_workflow() -> Any:
 
 
 __all__ = [
-    "build_cross_subject_workflow",
     "NCCA_KEY_COMPETENCIES",
+    "build_cross_subject_workflow",
     "decompose_into_competency_updates",
     "write_competency_update",
 ]

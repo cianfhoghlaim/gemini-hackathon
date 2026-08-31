@@ -27,6 +27,7 @@ falls back to the same in-memory adjacency dict the original always used.
 
 from __future__ import annotations
 
+import itertools
 from dataclasses import dataclass
 
 import structlog
@@ -58,7 +59,9 @@ class FirestoreSkillGraph:
             try:
                 self._client = firestore.Client(project=self.project_id)
             except Exception:
-                logger.exception("FirestoreSkillGraph: client init failed, using in-memory fallback")
+                logger.exception(
+                    "FirestoreSkillGraph: client init failed, using in-memory fallback"
+                )
                 self._client = None
 
     @property
@@ -79,7 +82,9 @@ class FirestoreSkillGraph:
                     }
                 )
             except Exception:
-                logger.warning("FirestoreSkillGraph.upsert_node: Firestore write failed (in-memory copy stands)")
+                logger.warning(
+                    "FirestoreSkillGraph.upsert_node: Firestore write failed (in-memory copy stands)"
+                )
 
     def upsert_edge(self, edge: SkillGraphEdge) -> None:
         self._edges.append(edge)
@@ -96,7 +101,9 @@ class FirestoreSkillGraph:
                     }
                 )
             except Exception:
-                logger.warning("FirestoreSkillGraph.upsert_edge: Firestore write failed (in-memory copy stands)")
+                logger.warning(
+                    "FirestoreSkillGraph.upsert_edge: Firestore write failed (in-memory copy stands)"
+                )
 
     def get_node(self, node_id: str) -> SkillGraphNode | None:
         return self._nodes.get(node_id)
@@ -168,35 +175,43 @@ class FirestoreSkillGraph:
             ("MA-LC-MA-4.2", "Maclaurin series"),
         ]
         for code, desc in math_outcomes:
-            self.upsert_node(SkillGraphNode(
-                node_id=code,
-                subject_slug="mathematics",
-                learning_outcome_code=code,
-                description=desc,
-                bloom_level="apply",
-                contributes_to=["communicating", "managing_information_and_thinking"],
-            ))
-        for prev, curr in zip(math_outcomes, math_outcomes[1:]):
-            self.upsert_edge(SkillGraphEdge(
-                edge_type="PREREQUISITE_OF",
-                from_node_id=prev[0],
-                to_node_id=curr[0],
-                weight=1.0,
-            ))
-        for prev, curr in zip(math_outcomes, math_outcomes[1:]):
-            self.upsert_edge(SkillGraphEdge(
+            self.upsert_node(
+                SkillGraphNode(
+                    node_id=code,
+                    subject_slug="mathematics",
+                    learning_outcome_code=code,
+                    description=desc,
+                    bloom_level="apply",
+                    contributes_to=["communicating", "managing_information_and_thinking"],
+                )
+            )
+        for prev, curr in itertools.pairwise(math_outcomes):
+            self.upsert_edge(
+                SkillGraphEdge(
+                    edge_type="PREREQUISITE_OF",
+                    from_node_id=prev[0],
+                    to_node_id=curr[0],
+                    weight=1.0,
+                )
+            )
+        for prev, curr in itertools.pairwise(math_outcomes):
+            self.upsert_edge(
+                SkillGraphEdge(
+                    edge_type="UNLOCKS",
+                    from_node_id=prev[0],
+                    to_node_id=curr[0],
+                    weight=0.8,
+                )
+            )
+        self.upsert_edge(
+            SkillGraphEdge(
                 edge_type="UNLOCKS",
-                from_node_id=prev[0],
-                to_node_id=curr[0],
-                weight=0.8,
-            ))
-        self.upsert_edge(SkillGraphEdge(
-            edge_type="UNLOCKS",
-            from_node_id="exit_card_MA-LC-MA-1.1",
-            to_node_id="MA-LC-MA-1.1",
-            weight=1.0,
-            metadata={"type": "formative_exit_card"},
-        ))
+                from_node_id="exit_card_MA-LC-MA-1.1",
+                to_node_id="MA-LC-MA-1.1",
+                weight=1.0,
+                metadata={"type": "formative_exit_card"},
+            )
+        )
 
 
 __all__ = ["FirestoreSkillGraph"]

@@ -30,7 +30,6 @@ import io
 import json
 from typing import Any
 
-
 HLML_VERSION = "1.0"
 
 
@@ -48,9 +47,7 @@ def emit_hlml_json(
         A JSON string (UTF-8, pretty-printed).
     """
     if len(topics) != len(matrix):
-        raise ValueError(
-            f"len(topics)={len(topics)} != len(matrix)={len(matrix)}"
-        )
+        raise ValueError(f"len(topics)={len(topics)} != len(matrix)={len(matrix)}")
     if matrix and len(years) != len(matrix[0]):
         raise ValueError(
             f"len(years)={len(years)} != len(matrix[0])={len(matrix[0]) if matrix else 0}"
@@ -85,7 +82,7 @@ def emit_hlml_pdf_bytes(
         "Year:    " + "  ".join(f"{y:>4}" for y in years),
         "-" * (8 + 6 * len(years)),
     ]
-    for topic, row in zip(topics, matrix):
+    for topic, row in zip(topics, matrix, strict=False):
         cells = "  ".join(f"{c:>4}" for c in row)
         topic_trunc = topic[:8].ljust(8)
         text_lines.append(f"{topic_trunc}: {cells}")

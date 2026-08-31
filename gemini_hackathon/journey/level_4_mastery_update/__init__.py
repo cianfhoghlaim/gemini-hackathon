@@ -20,6 +20,7 @@ per-backend status board.
 
 There is 1 `#REPLACE-*` marker (REPLACE-1) a workshop participant fills in.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -33,6 +34,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Level4Result:
     """The Level 4 output — per-backend status board + the underlying record."""
+
     learner_id: str
     subject_slug: str
     learning_outcome_code: str
@@ -63,7 +65,12 @@ async def update_mastery_node(node_input: Any) -> dict[str, Any]:
     # ── STUB: in-memory ledger — works without GCP credentials ─────────────
     from gemini_hackathon.ledger import MasteryLedger
     from gemini_hackathon.ledger.types import MasteryRecord, MasteryUpdate
-    ledger = MasteryLedger.default() if not hasattr(update_mastery_node, "_ledger_singleton") else update_mastery_node._ledger_singleton
+
+    ledger = (
+        MasteryLedger.default()
+        if not hasattr(update_mastery_node, "_ledger_singleton")
+        else update_mastery_node._ledger_singleton
+    )
     record = MasteryRecord(
         learner_id=learner_id,
         subject_slug=subject_slug,
@@ -78,9 +85,15 @@ async def update_mastery_node(node_input: Any) -> dict[str, Any]:
 
     per_backend_status = {
         "firestore_achievements": f"OK — {len(state.get('achievements', []))} row(s)",
-        "mastery_vector": "OK — 320-dim Firestore/Vector-Search upsert" if state.get('mastery_vector') else "WARN — empty",
-        "skill_graph": "OK — UNLOCKS edge added" if state.get('graph', {}).get('nodes') else "WARN — no seed",
-        "markdown_memory": "OK — session persisted" if hasattr(ledger, 'memory') and ledger.memory else "WARN — memory service not wired",
+        "mastery_vector": "OK — 320-dim Firestore/Vector-Search upsert"
+        if state.get("mastery_vector")
+        else "WARN — empty",
+        "skill_graph": "OK — UNLOCKS edge added"
+        if state.get("graph", {}).get("nodes")
+        else "WARN — no seed",
+        "markdown_memory": "OK — session persisted"
+        if hasattr(ledger, "memory") and ledger.memory
+        else "WARN — memory service not wired",
     }
     return {
         "learner_id": learner_id,
@@ -88,9 +101,13 @@ async def update_mastery_node(node_input: Any) -> dict[str, Any]:
         "outcome_code": outcome_code,
         "mastery_score": mastery_score,
         "per_backend_status": per_backend_status,
-        "firestore_ledger_doc": state.get("achievements", [None])[0].__dict__ if state.get("achievements") else None,
+        "firestore_ledger_doc": state.get("achievements", [None])[0].__dict__
+        if state.get("achievements")
+        else None,
         "mastery_vector_dim": len(state.get("mastery_vector", [])) or None,
-        "skill_graph_edge_count": len(state.get("graph", {}).get("edges", [])) if state.get("graph") else None,
+        "skill_graph_edge_count": len(state.get("graph", {}).get("edges", []))
+        if state.get("graph")
+        else None,
     }
 
 
@@ -104,16 +121,18 @@ async def run_level_4(
     key_competency_codes: list[str] | None = None,
 ) -> Level4Result:
     """The Level 4 entrypoint — runs the single-node workflow + surfaces the per-backend status."""
-    out = await update_mastery_node({
-        "record": {
-            "learner_id": learner_id,
-            "subject_slug": subject_slug,
-            "learning_outcome_code": outcome_code,
-            "mastery_score": mastery_score,
-            "stage": stage,
-            "key_competency_codes": key_competency_codes or [],
-        },
-    })
+    out = await update_mastery_node(
+        {
+            "record": {
+                "learner_id": learner_id,
+                "subject_slug": subject_slug,
+                "learning_outcome_code": outcome_code,
+                "mastery_score": mastery_score,
+                "stage": stage,
+                "key_competency_codes": key_competency_codes or [],
+            },
+        }
+    )
     return Level4Result(
         learner_id=out["learner_id"],
         subject_slug=out["subject_slug"],

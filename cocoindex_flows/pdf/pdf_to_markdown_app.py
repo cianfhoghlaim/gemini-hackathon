@@ -26,7 +26,6 @@ Or programmatically via ``run()``.
 
 from __future__ import annotations
 
-import io
 import logging
 import pathlib
 import sys
@@ -36,8 +35,9 @@ logger = logging.getLogger(__name__)
 
 # Try to import cocoindex; gracefully degrade when missing.
 try:
-    import cocoindex as coco  # type: ignore[import-not-found]
     from cocoindex.connectors import localfs  # type: ignore[import-not-found]
+
+    import cocoindex as coco  # type: ignore[import-not-found]
 
     COCOINDEX_AVAILABLE = True
 except ImportError:
@@ -50,7 +50,8 @@ except ImportError:
 try:
     from ._shared import extract_markdown, output_path_for
 except ImportError:  # pragma: no cover — standalone-load fallback
-    import importlib.util as _iu, sys as _sys
+    import importlib.util as _iu
+
     _spec = _iu.spec_from_file_location(
         "_shared_mod",
         pathlib.Path(__file__).resolve().parent / "_shared.py",
@@ -90,9 +91,7 @@ def _process_one_pdf(
     try:
         content = pdf_path.read_bytes()
     except OSError as exc:  # pragma: no cover — disk / permissions
-        logger.warning(
-            "pdf_to_markdown.read_failed path=%s reason=%s", pdf_path, exc
-        )
+        logger.warning("pdf_to_markdown.read_failed path=%s reason=%s", pdf_path, exc)
         return None
     md = extract_markdown(content)
     if not md:
@@ -106,13 +105,13 @@ def _process_one_pdf(
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(md, encoding="utf-8")
     except OSError as exc:  # pragma: no cover
-        logger.warning(
-            "pdf_to_markdown.write_failed out=%s reason=%s", out, exc
-        )
+        logger.warning("pdf_to_markdown.write_failed out=%s reason=%s", out, exc)
         return None
     logger.info(
         "pdf_to_markdown.wrote path=%s bytes=%d pages=%d",
-        out, len(md), md.count("## Page"),
+        out,
+        len(md),
+        md.count("## Page"),
     )
     return out
 
@@ -154,10 +153,11 @@ def run(
         for pdf_path in pdfs:
             try:
                 result = _process_one_pdf(pdf_path, raw_root=raw, md_root=md)
-            except Exception as exc:  # noqa: BLE001 — keep going on failure
+            except Exception as exc:
                 logger.warning(
                     "pdf_to_markdown.unhandled_failure path=%s reason=%s",
-                    pdf_path, exc,
+                    pdf_path,
+                    exc,
                 )
                 stats["failed"] += 1
                 continue
@@ -188,9 +188,10 @@ def run(
             try:
                 content = pdf_path.read_bytes()
                 try:
-                    from ._shared import extract_markdown  # noqa: PLC0415
+                    from ._shared import extract_markdown
                 except ImportError:  # pragma: no cover — standalone-load fallback
                     import importlib.util as _iu
+
                     _spec = _iu.spec_from_file_location(
                         "_shared_mod",
                         pathlib.Path(__file__).resolve().parent / "_shared.py",
@@ -205,10 +206,11 @@ def run(
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(md_text, encoding="utf-8")
                 stats["converted"] += 1
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.warning(
                     "pdf_to_markdown.extra_failed path=%s reason=%s",
-                    pdf_path, exc,
+                    pdf_path,
+                    exc,
                 )
                 stats["failed"] += 1
 
@@ -224,10 +226,10 @@ def run(
 # entry point.
 
 if COCOINDEX_AVAILABLE:
-    from typing import TYPE_CHECKING  # noqa: F811
+    from typing import TYPE_CHECKING
 
     if TYPE_CHECKING:
-        from cocoindex import coco as coco_types  # noqa: F401
+        from cocoindex import coco as coco_types
 
     @coco.fn(memo=True)
     def _process_one_pdf_memo(
@@ -239,15 +241,11 @@ if COCOINDEX_AVAILABLE:
             content = pdf_path.read_bytes()
             md = extract_markdown(content)
             if not md:
-                logger.warning(
-                    "pdf_to_markdown.empty_extract path=%s", pdf_path
-                )
+                logger.warning("pdf_to_markdown.empty_extract path=%s", pdf_path)
                 return
             localfs.declare_file(out_path, md, create_parent_dirs=True)
         except OSError as exc:  # pragma: no cover
-            logger.warning(
-                "pdf_to_markdown.os_error path=%s reason=%s", pdf_path, exc
-            )
+            logger.warning("pdf_to_markdown.os_error path=%s reason=%s", pdf_path, exc)
 
     @coco.fn
     def app_main(
@@ -258,14 +256,10 @@ if COCOINDEX_AVAILABLE:
         raw_root = pathlib.Path(raw_root_str)
         md_root = pathlib.Path(md_root_str)
         if not raw_root.exists():
-            logger.warning(
-                "pdf_to_markdown_app.raw_root_missing path=%s", raw_root
-            )
+            logger.warning("pdf_to_markdown_app.raw_root_missing path=%s", raw_root)
             return
         for pdf_path in sorted(raw_root.rglob("*.pdf")):
-            out_path = output_path_for(
-                pdf_path, raw_root=raw_root, md_root=md_root
-            )
+            out_path = output_path_for(pdf_path, raw_root=raw_root, md_root=md_root)
             _process_one_pdf_memo(pdf_path, out_path)
 
     app = coco.App(

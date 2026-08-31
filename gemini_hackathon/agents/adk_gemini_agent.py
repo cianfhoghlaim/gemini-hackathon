@@ -28,8 +28,9 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Optional
+from typing import Any
 
 from .app_utils import build_app, ensure_vertex_env, setup_telemetry
 
@@ -42,7 +43,7 @@ logger = logging.getLogger(__name__)
 ensure_vertex_env()
 try:
     setup_telemetry()
-except Exception as _exc:  # noqa: BLE001
+except Exception as _exc:
     logger.debug("startup telemetry setup skipped: %s", _exc)
 
 
@@ -205,7 +206,10 @@ def _build_adk_tool_wrappers() -> list[Any]:
         (retrieve_resources, "Return top-K resources for a topic from the active subnation."),
         (find_similar_resources, "Cross-national resource discovery across BI jurisdictions."),
         (retrieve_safeguarding, "Return the active subnation's safeguarding policy."),
-        (mark_answer, "Mark a piece of student work using the active jurisdiction's marking scheme."),
+        (
+            mark_answer,
+            "Mark a piece of student work using the active jurisdiction's marking scheme.",
+        ),
     ]:
         try:
             if not fn.__doc__:
@@ -223,7 +227,7 @@ def build_adk_agent(
     awarding_body: str = "NCCA",
     role: str = "student",
     cycle: str = "leaving_cycle",
-    subjects: Optional[list[str]] = None,
+    subjects: list[str] | None = None,
     safeguarding_policy: str = "DEIS + Well-Being Policy Statement",
     palette_primary: str = "#00733B",
     palette_heading: str = "Merriweather",
@@ -294,15 +298,16 @@ def _build_adk_model(model_str: str):
             model=model_str,
             retry_options=types.HttpRetryOptions(attempts=3),
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.debug("Gemini(model=, retry_options=) construction failed: %s", exc)
         return model_str
 
 
 def is_adk_available() -> bool:
     try:
-        import google.adk.agents  # noqa: F401
-        import google.adk.runners  # noqa: F401
+        import google.adk.agents
+        import google.adk.runners
+
         return True
     except ImportError:
         return False
@@ -316,6 +321,7 @@ def is_adk_available() -> bool:
 @dataclass
 class AgUiEvent:
     """A single AG-UI protocol event (subset)."""
+
     type: str
     data: dict = field(default_factory=dict)
 
@@ -334,34 +340,51 @@ def render_agui_events(events: Iterable[Any]) -> list[AgUiEvent]:
                         out.append(AgUiEvent("TEXT_MESSAGE_CONTENT", {"text": text}))
             fc = getattr(ev, "function_calls", None) or []
             for call in fc:
-                out.append(AgUiEvent("TOOL_CALL_START", {
-                    "name": getattr(call, "name", ""),
-                    "id":   getattr(call, "id", ""),
-                }))
-                out.append(AgUiEvent("TOOL_CALL_ARGS", {
-                    "name": getattr(call, "name", ""),
-                    "id":   getattr(call, "id", ""),
-                    "args": getattr(call, "args", {}) if hasattr(call, "args") else {},
-                }))
+                out.append(
+                    AgUiEvent(
+                        "TOOL_CALL_START",
+                        {
+                            "name": getattr(call, "name", ""),
+                            "id": getattr(call, "id", ""),
+                        },
+                    )
+                )
+                out.append(
+                    AgUiEvent(
+                        "TOOL_CALL_ARGS",
+                        {
+                            "name": getattr(call, "name", ""),
+                            "id": getattr(call, "id", ""),
+                            "args": getattr(call, "args", {}) if hasattr(call, "args") else {},
+                        },
+                    )
+                )
         else:
             response = getattr(ev, "function_response", None)
             if response is not None:
                 payload = getattr(response, "response", None)
                 if payload is not None:
-                    out.append(AgUiEvent("TOOL_CALL_RESULT", {
-                        "name": getattr(ev, "author", ""),
-                        "id":   getattr(response, "id", ""),
-                        "result": json.dumps(payload) if not isinstance(payload, str) else payload,
-                    }))
+                    out.append(
+                        AgUiEvent(
+                            "TOOL_CALL_RESULT",
+                            {
+                                "name": getattr(ev, "author", ""),
+                                "id": getattr(response, "id", ""),
+                                "result": json.dumps(payload)
+                                if not isinstance(payload, str)
+                                else payload,
+                            },
+                        )
+                    )
     return out
 
 
 __all__ = [
     "AGUI_EVENT_TYPES",
+    "GEMINI_HACKATHON_AGENT",
+    "AgUiEvent",
     "AgentDefinition",
     "AgentTool",
-    "AgUiEvent",
-    "GEMINI_HACKATHON_AGENT",
     "build_adk_agent",
     "is_adk_available",
     "render_agui_events",
@@ -396,20 +419,20 @@ class AgentTurnResult:
     events: list[AgUiEvent] = field(default_factory=list)
     model_armor_check: Any = None
     observability: Any = None
-    error: Optional[str] = None
+    error: str | None = None
 
 
 def run_agent_turn(
     *,
     message: str,
     user_id: str = "anon",
-    session_id: Optional[str] = None,
+    session_id: str | None = None,
     subnation: str = "ireland",
     subnation_flag: str = "🇮🇪",
     awarding_body: str = "NCCA",
     role: str = "student",
     cycle: str = "leaving_cycle",
-    subjects: Optional[list[str]] = None,
+    subjects: list[str] | None = None,
     safeguarding_policy: str = "DEIS + Well-Being",
     palette_primary: str = "#00733B",
     palette_heading: str = "Merriweather",
@@ -434,7 +457,7 @@ def run_agent_turn(
     # missing.
     try:
         from .fleet import ModelArmor, Observability  # type: ignore
-    except ImportError as exc:  # noqa: BLE001
+    except ImportError as exc:
         logger.debug("Fleet primitives unavailable: %s", exc)
         ModelArmor = None  # type: ignore[assignment]
         Observability = None  # type: ignore[assignment]
@@ -457,7 +480,7 @@ def run_agent_turn(
                     ],
                 )
             message = getattr(sanitised, "clean_text", message) or message
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.debug("ModelArmor preflight failed (non-fatal): %s", exc)
 
     # 2. Build the agent + runner (with App wrapper + Observability handle)
@@ -495,7 +518,7 @@ def run_agent_turn(
                 session_id=sid,
                 subnation=subnation,
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.debug("Observability.trace() failed (non-fatal): %s", exc)
             obs = None
 
@@ -527,7 +550,7 @@ def run_agent_turn(
             )
         )
         events = render_agui_events(raw_events)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         err = str(exc) or "(no detail)"
         return AgentTurnResult(
             status="error",
@@ -545,7 +568,7 @@ def run_agent_turn(
                     event_count=len(events),
                     status="ok",
                 )
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.debug("Observability.record_invocation() failed (non-fatal): %s", exc)
 
     return AgentTurnResult(

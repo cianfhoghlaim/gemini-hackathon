@@ -17,9 +17,7 @@ def list_tables(con: duckdb.DuckDBPyConnection, db: str) -> list[str]:
     return [r[0] for r in rows]
 
 
-def list_columns(
-    con: duckdb.DuckDBPyConnection, db: str, table: str
-) -> list[dict[str, Any]]:
+def list_columns(con: duckdb.DuckDBPyConnection, db: str, table: str) -> list[dict[str, Any]]:
     rows = con.execute(f"DESCRIBE {db}.{table}").fetchall()
     return [{"name": r[0], "type": r[1]} for r in rows]
 
@@ -33,8 +31,5 @@ def sample(
     return con.execute(f"SELECT * FROM {db}.{table} LIMIT {n}").fetchall()
 
 
-def summarize(
-    con: duckdb.DuckDBPyConnection, db: str, table: str
-) -> list[dict[str, Any]]:
-    cols = list_columns(con, db, table)
-    return cols
+def summarize(con: duckdb.DuckDBPyConnection, db: str, table: str) -> list[dict[str, Any]]:
+    return list_columns(con, db, table)

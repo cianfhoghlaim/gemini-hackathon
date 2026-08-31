@@ -15,7 +15,7 @@ Used by:
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 _log = logging.getLogger(__name__)
@@ -35,9 +35,7 @@ async def decompose_into_subquestions(node_input: Any) -> dict:
     """Decompose the learner question into N sub-questions at runtime."""
     question = node_input.get("question", "")
     return {
-        "sub_questions": [
-            f"Sub-question {i+1} for: {question}" for i in range(3)
-        ],
+        "sub_questions": [f"Sub-question {i + 1} for: {question}" for i in range(3)],
     }
 
 
@@ -54,7 +52,7 @@ def build_decompose_research_workflow(config: Pillar3DynamicResearchWorkflow) ->
     """Build the ADK 2 Workflow with parallel_worker fan-out."""
     try:
         from google.adk import Agent, Event, Workflow
-        from google.adk.workflow import RetryConfig, START, node
+        from google.adk.workflow import START, RetryConfig, node
     except ImportError:
         _log.warning("google-adk not installed; pillar3 returns None")
         return None
@@ -62,6 +60,7 @@ def build_decompose_research_workflow(config: Pillar3DynamicResearchWorkflow) ->
     retry = RetryConfig(max_attempts=3, initial_delay=1.0, backoff_factor=2.0)
 
     if node is not None:
+
         @node(parallel_worker=True, rerun_on_resume=True, retry_config=retry)
         async def fanout_research(node_input):
             return Event(output={"sub_answers": [node_input.get("question", "")]})

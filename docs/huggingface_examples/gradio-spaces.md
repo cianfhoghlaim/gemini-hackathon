@@ -35,9 +35,8 @@ description = "Story generation with GPT-2"
 title = "Generate your own story"
 examples = [["Adventurer is approached by a mysterious stranger in the tavern for a new quest."]]
 
-interface = gr.Interface.load("huggingface/pranavpsv/gpt2-genre-story-generator",
-            description=description,
-            examples=examples
+interface = gr.Interface.load(
+    "huggingface/pranavpsv/gpt2-genre-story-generator", description=description, examples=examples
 )
 
 interface.launch()
@@ -52,12 +51,14 @@ Under the hood, Gradio calls the Inference API which supports Transformers as we
 
 ```python
 import gradio as gr
+
 description = "BigGAN text-to-image demo."
 title = "BigGAN ImageNet"
-interface = gr.Interface.load("huggingface/osanseviero/BigGAN-deep-128", 
-            description=description,
-            title = title,
-            examples=[["american robin"]]
+interface = gr.Interface.load(
+    "huggingface/osanseviero/BigGAN-deep-128",
+    description=description,
+    title=title,
+    examples=[["american robin"]],
 )
 interface.launch()
 ```
@@ -85,10 +86,15 @@ story_gen = gr.Interface.load("huggingface/pranavpsv/gpt2-genre-story-generator"
 translator_en = gr.Interface.load("huggingface/Helsinki-NLP/opus-mt-en-fr")
 examples = [["L'aventurier est approché par un mystérieux étranger, pour une nouvelle quête."]]
 
-Series(translator_fr, story_gen, translator_en, description = description,
-        title = title,
-        examples=examples, inputs = gr.inputs.Textbox(lines = 10)).launch()
-
+Series(
+    translator_fr,
+    story_gen,
+    translator_en,
+    description=description,
+    title=title,
+    examples=examples,
+    inputs=gr.inputs.Textbox(lines=10),
+).launch()
 ```
 
 You can check out the French Story Generator [here](https://huggingface.co/spaces/merve/french-story-gen)

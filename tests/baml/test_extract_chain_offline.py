@@ -73,12 +73,7 @@ def test_lc6_extraction_app_writes_to_sqlite_offline(
         rows = con.execute("SELECT COUNT(*) FROM extracted_syllabi").fetchone()[0]
         assert rows >= 1, f"extracted_syllabi has 0 rows; stats={stats!r}"
         # Spot-check the columns are the canonical 11.
-        cols = [
-            d[0]
-            for d in con.execute(
-                "SELECT * FROM extracted_syllabi LIMIT 1"
-            ).description
-        ]
+        cols = [d[0] for d in con.execute("SELECT * FROM extracted_syllabi LIMIT 1").description]
         expected = {
             "subnation",
             "stage",
@@ -93,8 +88,6 @@ def test_lc6_extraction_app_writes_to_sqlite_offline(
             "fetched_at",
         }
         missing = expected - set(cols)
-        assert not missing, (
-            f"extracted_syllabi missing columns: {missing}; cols={cols!r}"
-        )
+        assert not missing, f"extracted_syllabi missing columns: {missing}; cols={cols!r}"
     finally:
         con.close()

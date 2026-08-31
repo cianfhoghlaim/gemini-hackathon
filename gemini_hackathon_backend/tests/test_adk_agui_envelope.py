@@ -21,6 +21,7 @@ The test:
      "Hard invariants" — every run MUST start with `RUN_STARTED` and end
      with `RUN_FINISHED` or `RUN_ERROR`)
 """
+
 from __future__ import annotations
 
 import warnings
@@ -78,11 +79,13 @@ class _AclosingNoop:
 
 # Install the stub globally BEFORE any google.adk import resolves.
 import google.adk.utils.context_utils as _ctx_utils
+
 _ctx_utils.Aclosing = _AclosingNoop
 # Also patch the import surface inside `base_llm_flow` (it does
 # `from ...utils.context_utils import Aclosing` which is already bound at
 # import time).
 import google.adk.flows.llm_flows.base_llm_flow as _blf
+
 _blf.Aclosing = _AclosingNoop
 
 
@@ -118,6 +121,7 @@ class _StubModel(BaseLlm):
     async def generate_content_async(self, llm_request, stream: bool = False):
         from google.adk.models.llm_response import LlmResponse
         from google.genai import types
+
         # ADK expects an async generator that yields LlmResponse objects
         # (NOT raw GenerateContentResponse — ADK's `_call_llm_async` reads
         # `.partial` on what we yield, which only LlmResponse has). A single
@@ -159,11 +163,12 @@ def _build_test_agent():
     suppress it). The lazy import keeps the collection phase clean.
     """
     import warnings
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", DeprecationWarning)
         warnings.simplefilter("ignore", UserWarning)
-        from google.adk.agents import LlmAgent
         from ag_ui_adk import ADKAgent, AGUIToolset
+        from google.adk.agents import LlmAgent
 
     llm = LlmAgent(
         name="SmokeTestAgent",
@@ -185,19 +190,19 @@ def _build_test_agent():
         warnings.simplefilter("ignore", DeprecationWarning)
         warnings.simplefilter("ignore", UserWarning)
         from google.adk.models.registry import LLMRegistry
+
         LLMRegistry._register("smoke-test-stub-model", _StubModel)
 
     llm.model = _StubModel()
     object.__setattr__(llm, "model", "smoke-test-stub-model")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
-        adk_wrapper = ADKAgent(
+        return ADKAgent(
             adk_agent=llm,
             app_name="smoke_test",
             user_id="smoke_user",
             use_in_memory_services=True,
         )
-    return adk_wrapper
 
 
 def _find_free_port() -> int:
@@ -214,6 +219,7 @@ async def _running_app(agent):
 
     app = FastAPI(title="SmokeTest")
     from ag_ui_adk import add_adk_fastapi_endpoint
+
     add_adk_fastapi_endpoint(app, agent, path="/")
 
     port = _find_free_port()
@@ -279,7 +285,7 @@ async def test_adk_agui_envelope_shape():
                 async for line in resp.aiter_lines():
                     if not line or not line.startswith("data: "):
                         continue
-                    raw = line[len("data: "):].strip()
+                    raw = line[len("data: ") :].strip()
                     if not raw:
                         continue
                     frames.append(json.loads(raw))
@@ -288,30 +294,38 @@ async def test_adk_agui_envelope_shape():
 
     # Hard invariant 1: first frame is RUN_STARTED with threadId + runId.
     first = frames[0]
-    assert first.get("type") == "RUN_STARTED", f"first frame should be RUN_STARTED, got {first.get('type')!r}: {first!r}"
+    assert first.get("type") == "RUN_STARTED", (
+        f"first frame should be RUN_STARTED, got {first.get('type')!r}: {first!r}"
+    )
     assert first.get("threadId"), f"RUN_STARTED missing threadId: {first!r}"
     assert first.get("runId"), f"RUN_STARTED missing runId: {first!r}"
 
     # Hard invariant 2: at least one TEXT_MESSAGE_CONTENT frame with a non-empty delta.
     text_contents = [f for f in frames if f.get("type") == "TEXT_MESSAGE_CONTENT"]
-    assert text_contents, f"no TEXT_MESSAGE_CONTENT frame: types = {[f.get('type') for f in frames]}"
-    assert any(f.get("delta", "") for f in text_contents), \
+    assert text_contents, (
+        f"no TEXT_MESSAGE_CONTENT frame: types = {[f.get('type') for f in frames]}"
+    )
+    assert any(f.get("delta", "") for f in text_contents), (
         f"all TEXT_MESSAGE_CONTENT frames have empty delta: {text_contents!r}"
+    )
 
     # Hard invariant 3: last frame is RUN_FINISHED (or RUN_ERROR).
     last = frames[-1]
-    assert last.get("type") in ("RUN_FINISHED", "RUN_ERROR"), \
+    assert last.get("type") in ("RUN_FINISHED", "RUN_ERROR"), (
         f"last frame should be RUN_FINISHED or RUN_ERROR, got {last.get('type')!r}"
+    )
 
     # Hard invariant 4: ordering — RUN_STARTED before TEXT_MESSAGE_START before RUN_FINISHED.
     seen_run_started = any(f.get("type") == "RUN_STARTED" for f in frames)
     seen_text_start = any(f.get("type") == "TEXT_MESSAGE_START" for f in frames)
     seen_run_finished = any(f.get("type") == "RUN_FINISHED" for f in frames)
-    assert seen_run_started and seen_text_start and seen_run_finished, \
+    assert seen_run_started and seen_text_start and seen_run_finished, (
         f"missing one of RUN_STARTED/TEXT_MESSAGE_START/RUN_FINISHED: types = {[f.get('type') for f in frames]}"
+    )
 
     # Verify ordering by index.
     idx_started = next(i for i, f in enumerate(frames) if f.get("type") == "RUN_STARTED")
     idx_finished = next(i for i, f in enumerate(frames) if f.get("type") == "RUN_FINISHED")
-    assert idx_started < idx_finished, \
+    assert idx_started < idx_finished, (
         f"RUN_STARTED (idx {idx_started}) must precede RUN_FINISHED (idx {idx_finished})"
+    )

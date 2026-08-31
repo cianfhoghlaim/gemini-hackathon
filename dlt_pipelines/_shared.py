@@ -86,7 +86,11 @@ def resolve_lc_subjects_path() -> Path | str:
     that need local bytes (e.g. `pypdfium2`) should check
     `isinstance(result, Path)` and fetch-to-tmp via `gcsfs` otherwise.
     """
-    if LC_SUBJECTS_PATH.exists() and any(LC_SUBJECTS_PATH.iterdir()) if LC_SUBJECTS_PATH.exists() else False:
+    if (
+        LC_SUBJECTS_PATH.exists() and any(LC_SUBJECTS_PATH.iterdir())
+        if LC_SUBJECTS_PATH.exists()
+        else False
+    ):
         return LC_SUBJECTS_PATH
     return LC_SUBJECTS_GCS_URI
 
@@ -156,6 +160,7 @@ def jurisdiction_detail(source_key: str) -> dict[str, object]:
     (priority_subjects, s3_bucket, etc.) when present.
     """
     return JURISDICTION_DETAILS.get(source_key, {})
+
 
 #: The 5 safeguarding bodies.
 SAFEGUARDING_BODIES: dict[str, str] = {
@@ -433,8 +438,9 @@ def get_destination(
         # Phase 2 keeps the default `uv sync` install GCP-free, so this
         # import is the one that needs the guard.
         try:
-            import dlt  # noqa: PLC0415 — lazy import
-            from dlt.destinations import bigquery as _bigquery  # noqa: PLC0415
+            from dlt.destinations import bigquery as _bigquery
+
+            import dlt
         except ImportError as exc:  # pragma: no cover — defensive
             raise ImportError(
                 "get_destination('bigquery') requires the `dlt[bigquery]` "
@@ -451,7 +457,7 @@ def get_destination(
 
     # Local DuckDB branch (duckdb + ducklake + motherduck all share
     # the local DuckDB file in Phase 2; Phase 3 splits them out).
-    from dlt.destinations import duckdb as _duckdb  # noqa: PLC0415
+    from dlt.destinations import duckdb as _duckdb
 
     if database_path is None:
         env_override = os.environ.get("DUCKDB_PATH")
@@ -483,11 +489,10 @@ def get_duckdb_destination(database_path: Path | None = None) -> duckdb:
     Override via the env var `DUCKDB_PATH` for the CI runner, or pass
     `database_path=` explicitly.
     """
-    result = get_destination("duckdb", database_path=database_path)
+    return get_destination("duckdb", database_path=database_path)
     # The TYPE_CHECKING import is `duckdb` (the class); the runtime
     # return value is a destination instance — duckdb in the type stub
     # is the closest match. Cast via `Any` in callers if needed.
-    return result  # type: ignore[return-value]
 
 
 # ---------------------------------------------------------------------------
@@ -586,8 +591,8 @@ def write_pdf_to_gcs_or_local(
 
     if bucket:
         try:
-            from google.cloud import storage  # noqa: PLC0415 — lazy import
-            from google.cloud.exceptions import GoogleCloudError  # noqa: PLC0415 — lazy
+            from google.cloud import storage
+            from google.cloud.exceptions import GoogleCloudError
 
             client = storage.Client()
             client_bucket = client.bucket(bucket)
@@ -609,7 +614,7 @@ def write_pdf_to_gcs_or_local(
                 language,
                 sha256,
             )
-        except Exception as exc:  # noqa: BLE001 — best-effort fallback
+        except Exception as exc:
             logger.warning(
                 "write_pdf_to_gcs_or_local: GCS upload failed (%s), falling back to local",
                 exc,
@@ -645,9 +650,7 @@ def get_named_destination(name: str) -> str:
         KeyError: when `name` is not a known destination.
     """
     if name not in NAMED_DESTINATIONS:
-        raise KeyError(
-            f"Unknown destination {name!r}. Known: {sorted(NAMED_DESTINATIONS.keys())}"
-        )
+        raise KeyError(f"Unknown destination {name!r}. Known: {sorted(NAMED_DESTINATIONS.keys())}")
     env_key = f"GEMINI_HACKATHON_DESTINATION_{name.upper()}"
     return os.environ.get(env_key, NAMED_DESTINATIONS[name])
 
@@ -658,27 +661,22 @@ def list_named_destinations() -> list[str]:
 
 
 __all__ = [
+    # DLT destination factory (Phase 2 — polymorphic 4-backend)
+    "BIGQUERY_DEFAULT_DATASET",
     "DEFAULT_RETRY_ATTEMPTS",
     "DEFAULT_RETRY_BACKOFF_SECONDS",
     "DUCKDB_PATH",
     # GCS (Phase 1 — GCP-first data substrate)
     "GCS_BUCKETS",
-    "gcs_uri",
-    # GCS PDF substrate (Phase 2 — `GCS_RAW_BUCKET` env-var gated)
-    "write_pdf_to_gcs_or_local",
     # Registries
     "JURISDICTION_BOARDS",
     "JURISDICTION_DETAILS",
-    "jurisdiction_detail",
     "LC_LANGUAGE_DIRS",
     "LC_SUBJECTS_GCS_URI",
     "LC_SUBJECTS_PATH",
     "LC_SUBJECT_DIRS",
-    "resolve_lc_subjects_path",
     # Named destinations factory
     "NAMED_DESTINATIONS",
-    "get_named_destination",
-    "list_named_destinations",
     # Column contracts
     "OFFICIAL_DOC_COLUMNS",
     "PDF_METADATA_COLUMNS",
@@ -688,16 +686,21 @@ __all__ = [
     "SAFEGUARDING_POLICY_COLUMNS",
     # SHA256 read chunk
     "SHA256_CHUNK_BYTES",
-    # DLT destination factory (Phase 2 — polymorphic 4-backend)
-    "BIGQUERY_DEFAULT_DATASET",
     "DestinationName",
+    "gcs_uri",
     "get_destination",
     # Legacy wrapper (kept for Phase 0/1 caller compatibility)
     "get_duckdb_destination",
+    "get_named_destination",
+    "jurisdiction_detail",
+    "list_named_destinations",
     "now_iso",
+    "resolve_lc_subjects_path",
     "safe_stat",
     # File helpers
     "sha256_file",
     # Retry
     "with_retry",
+    # GCS PDF substrate (Phase 2 — `GCS_RAW_BUCKET` env-var gated)
+    "write_pdf_to_gcs_or_local",
 ]

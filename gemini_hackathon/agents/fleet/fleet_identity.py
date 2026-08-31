@@ -36,7 +36,6 @@ from __future__ import annotations
 import hashlib
 import os
 import time
-from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -157,9 +156,7 @@ class IdentityContext:
     role: str = "anonymous"
     jurisdiction: str = "Ireland"
     level: str = "LC"
-    permissions: int = field(
-        default_factory=lambda: _ROLE_PERMISSIONS["anonymous"]
-    )
+    permissions: int = field(default_factory=lambda: _ROLE_PERMISSIONS["anonymous"])
     source_palette_key: str = "ncca.ie"
     authenticated: bool = False
     expires_at: int = 0
@@ -272,18 +269,14 @@ class FleetIdentity:
             )
 
         # Anonymous fallback.
-        user_id = user_id_hint or self._hash_anonymous_id(
-            bearer_token, session_cookie
-        )
+        user_id = user_id_hint or self._hash_anonymous_id(bearer_token, session_cookie)
         return self._make_context(
             user_id=user_id,
             role="anonymous",
             authenticated=False,
         )
 
-    def require_permission(
-        self, ctx: IdentityContext, perm: str
-    ) -> None:
+    def require_permission(self, ctx: IdentityContext, perm: str) -> None:
         """Raise :class:`AuthorisationError` if ``ctx`` lacks ``perm``.
 
         Args:
@@ -300,9 +293,7 @@ class FleetIdentity:
                 role=ctx.role,
                 permission=perm,
             )
-            raise AuthorisationError(
-                f"Role '{ctx.role}' lacks permission '{perm}'"
-            )
+            raise AuthorisationError(f"Role '{ctx.role}' lacks permission '{perm}'")
 
     # ------------------------------------------------------------------
     # Internals
@@ -316,9 +307,7 @@ class FleetIdentity:
                 "Token validation requires PyJWT; install with `uv add pyjwt`."
             )
         if not self.jwt_secret:
-            raise AuthenticationError(
-                "IDENTITY_JWT_SECRET not configured; cannot validate tokens."
-            )
+            raise AuthenticationError("IDENTITY_JWT_SECRET not configured; cannot validate tokens.")
         try:
             decode_kwargs: dict[str, Any] = {
                 "algorithms": [self.jwt_algorithm],
@@ -327,10 +316,8 @@ class FleetIdentity:
             if self.jwt_issuer:
                 decode_kwargs["issuer"] = self.jwt_issuer
             payload = _pyjwt.decode(token, self.jwt_secret, **decode_kwargs)
-        except Exception as e:  # noqa: BLE001
-            raise AuthenticationError(
-                f"Token validation failed: {type(e).__name__}: {e}"
-            ) from e
+        except Exception as e:
+            raise AuthenticationError(f"Token validation failed: {type(e).__name__}: {e}") from e
 
         return self._context_from_payload(payload)
 
@@ -346,19 +333,14 @@ class FleetIdentity:
             )
             role = "pupil"
         permissions = payload.get("permissions")
-        if permissions is None:
-            permissions = _ROLE_PERMISSIONS[role]
-        else:
-            permissions = int(permissions)
+        permissions = _ROLE_PERMISSIONS[role] if permissions is None else int(permissions)
         return self._make_context(
             user_id=user_id,
             role=role,
             authenticated=True,
             jurisdiction=str(payload.get("jurisdiction", self.default_jurisdiction)),
             level=str(payload.get("level", self.default_level)),
-            source_palette_key=str(
-                payload.get("source_palette_key", self.default_source_palette)
-            ),
+            source_palette_key=str(payload.get("source_palette_key", self.default_source_palette)),
             permissions=permissions,
             expires_at=int(payload.get("exp", 0)),
             metadata={
@@ -398,22 +380,14 @@ class FleetIdentity:
             role=role,
             jurisdiction=jurisdiction or self.default_jurisdiction,
             level=level or self.default_level,
-            permissions=(
-                permissions
-                if permissions is not None
-                else _ROLE_PERMISSIONS[role]
-            ),
-            source_palette_key=(
-                source_palette_key or self.default_source_palette
-            ),
+            permissions=(permissions if permissions is not None else _ROLE_PERMISSIONS[role]),
+            source_palette_key=(source_palette_key or self.default_source_palette),
             authenticated=authenticated,
             expires_at=expires_at,
             metadata=dict(metadata or {}),
         )
 
-    def _hash_anonymous_id(
-        self, bearer_token: str | None, session_cookie: str | None
-    ) -> str:
+    def _hash_anonymous_id(self, bearer_token: str | None, session_cookie: str | None) -> str:
         """Return a stable hashed user ID for the anonymous fallback."""
         seed = (bearer_token or session_cookie or "anon").encode("utf-8")
         digest = hashlib.sha256(seed).hexdigest()[:16]
@@ -456,9 +430,7 @@ def make_token(
         RuntimeError: If PyJWT is not installed.
     """
     if not _JWT_AVAILABLE:
-        raise RuntimeError(
-            "make_token() requires PyJWT; install with `uv add pyjwt`."
-        )
+        raise RuntimeError("make_token() requires PyJWT; install with `uv add pyjwt`.")
     secret = jwt_secret or os.getenv("IDENTITY_JWT_SECRET", "")
     if not secret:
         raise RuntimeError("IDENTITY_JWT_SECRET is not set.")
@@ -487,13 +459,13 @@ def roles_with_permission(perm: str) -> list[str]:
 # ---------------------------------------------------------------------------
 
 __all__ = [
+    "PERMISSIONS",
+    "ROLES",
     "AuthenticationError",
     "AuthorisationError",
     "FleetIdentity",
     "IdentityContext",
     "IdentityError",
-    "PERMISSIONS",
-    "ROLES",
     "make_token",
     "roles_with_permission",
 ]

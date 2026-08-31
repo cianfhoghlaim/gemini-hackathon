@@ -28,7 +28,6 @@ from pathlib import Path
 from typing import Any
 
 import dlt
-
 from dlt_pipelines._shared import (
     DUCKDB_PATH,
     SAFEGUARDING_BODIES,

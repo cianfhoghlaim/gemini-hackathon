@@ -26,7 +26,6 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -34,16 +33,18 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class LiteLLMImageRequest:
     """Arguments for a LiteLLM image generation call."""
+
     prompt: str
     model: str = "gemini-2.5-flash-image"
     size: str = "1024x1024"
     n: int = 1
-    seed: Optional[int] = None
+    seed: int | None = None
 
 
 @dataclass(frozen=True)
 class LiteLLMImageResult:
     """A normalised image-generation result."""
+
     b64_images: list[str] = field(default_factory=list)
     model: str = ""
     cost_usd: float = 0.0
@@ -54,7 +55,8 @@ class LiteLLMImageResult:
 
 def _litellm_available() -> bool:
     try:
-        import litellm  # noqa: F401
+        import litellm
+
         return True
     except ImportError:
         return False
@@ -63,13 +65,12 @@ def _litellm_available() -> bool:
 def generate_with_litellm(req: LiteLLMImageRequest) -> LiteLLMImageResult:
     """Call LiteLLM's image_generation with our request and normalise the result."""
     if not _litellm_available():
-        raise RuntimeError(
-            "litellm not installed; install with `uv pip install litellm`."
-        )
+        raise RuntimeError("litellm not installed; install with `uv pip install litellm`.")
 
     start = time.monotonic()
     try:
         from litellm import image_generation
+
         response = image_generation(
             prompt=req.prompt,
             model=req.model,

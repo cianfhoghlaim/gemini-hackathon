@@ -10,6 +10,7 @@ in the repo for documentation discoverability — the `pyproject.toml`'s
 ship with the source distribution. Keeping them as separate files (not
 symlinks) keeps the deploy-artifact self-contained.)
 """
+
 from __future__ import annotations
 
 # Import from the canonical implementation. The two file pairs (one in
@@ -17,7 +18,7 @@ from __future__ import annotations
 # content; the workshop host can `python -m journey.scripts.X` directly,
 # and the in-package import (`gemini_hackathon.journey.scripts.X`) reads
 # the in-package files.
-from gemini_hackathon.journey.scripts import (  # noqa: F401  (re-export)
+from gemini_hackathon.journey.scripts import (
     admin_create_event,
     progress,
 )

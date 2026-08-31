@@ -54,15 +54,26 @@ def all_lc_subjects() -> list[dict[str, Any]]:
 
 def all_active_subjects() -> list[dict[str, Any]]:
     """Return the 8 core NCCA LC subjects shipped for the hackathon."""
-    return [s for s in all_lc_subjects() if s["slug"] in {
-        "mathematics", "english", "gaeilge", "chemistry",
-        "geography", "physics", "biology", "computer_science",
-    }]
+    return [
+        s
+        for s in all_lc_subjects()
+        if s["slug"]
+        in {
+            "mathematics",
+            "english",
+            "gaeilge",
+            "chemistry",
+            "geography",
+            "physics",
+            "biology",
+            "computer_science",
+        }
+    ]
 
 
 __all__ = [
-    "lookup",
-    "all_stages",
-    "all_lc_subjects",
     "all_active_subjects",
+    "all_lc_subjects",
+    "all_stages",
+    "lookup",
 ]

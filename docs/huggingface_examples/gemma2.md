@@ -200,10 +200,7 @@ You can also automatically quantize the model, loading it in 8-bit or even 4-bit
 pipeline = pipeline(
     "text-generation",
     model=model,
-    model_kwargs={
-        "torch_dtype": torch.bfloat16,
-        "quantization_config": {"load_in_4bit": True}
-    },
+    model_kwargs={"torch_dtype": torch.bfloat16, "quantization_config": {"load_in_4bit": True}},
 )
 ```
 
@@ -309,7 +306,7 @@ chat_completion = client.chat.completions.create(
         {"role": "user", "content": "Why is open-source software important?"},
     ],
     stream=True,
-    max_tokens=500
+    max_tokens=500,
 )
 
 # iterate and print stream

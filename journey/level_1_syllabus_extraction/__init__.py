@@ -20,6 +20,7 @@ REPLACE markers are the only learner-level edits; the surrounding code
 is the reference implementation). See the codelab doc:
 docs/journey/02_level_1_syllabus_extraction.md
 """
+
 from __future__ import annotations
 
 import logging
@@ -33,6 +34,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # BAML schema bridge — typed access to the generated client.
 # ---------------------------------------------------------------------------
+
 
 def _baml_extract(subject: str, pdf_text: str, language: str = "en") -> dict[str, Any]:
     """Call `b.ExtractCurriculumSyllabus` and normalise to a dict.
@@ -79,17 +81,25 @@ def _stub_syllabus(subject: str, pdf_text: str, language: str) -> dict[str, Any]
         "language": language,
         "stage": "LC_OL",
         "source_pdf": "",
-        "module_topics": [{"title": "Stub topic (BAML offline)", "estimated_hours": 1, "type": "CORE", "learning_outcomes": []}],
+        "module_topics": [
+            {
+                "title": "Stub topic (BAML offline)",
+                "estimated_hours": 1,
+                "type": "CORE",
+                "learning_outcomes": [],
+            }
+        ],
         "total_learning_outcomes": len(chunks),
         "cross_curricular": [],
         "assessment_objectives": [],
-        "_stub_chunks": chunks,   # consumed by the embed step below
+        "_stub_chunks": chunks,  # consumed by the embed step below
     }
 
 
 # ---------------------------------------------------------------------------
 # The 4 ADK 2 workflow nodes (function nodes + one agent node).
 # ---------------------------------------------------------------------------
+
 
 async def fetch_syllabus_pdf(node_input: Any) -> dict[str, Any]:
     """Function node: read the local syllabus PDF for `{subnation}/{subject}/{lang}`.
@@ -141,7 +151,7 @@ async def extract_baml(node_input: Any) -> dict[str, Any]:
     `gemini_hackathon/agents/workflows/pillar1_grading.py`'s pattern.
     """
     pdf_text = node_input.get("pdf_text", "")
-    subnation = node_input.get("subnation", "ireland")
+    node_input.get("subnation", "ireland")
     subject = node_input.get("subject", "mathematics")
     language = node_input.get("language", "en")
 
@@ -162,8 +172,12 @@ async def embed_chunks(node_input: Any) -> dict[str, Any]:
     import hashlib
 
     chunks = (
-        [t["title"] + ": " + " ".join(lo.get("text", "") for lo in t.get("learning_outcomes", []))
-         for t in node_input.get("module_topics", [])]
+        [
+            t["title"]
+            + ": "
+            + " ".join(lo.get("text", "") for lo in t.get("learning_outcomes", []))
+            for t in node_input.get("module_topics", [])
+        ]
         if node_input.get("module_topics")
         else node_input.get("_stub_chunks", [])
     )
@@ -178,7 +192,13 @@ async def embed_chunks(node_input: Any) -> dict[str, Any]:
         # call replaces this one line.
         seed = hashlib.sha256(text.encode("utf-8")).digest()
         stub = [b / 255.0 for b in (seed * 48)[:1536]]
-        out_chunks.append({"chunk_id": f"{node_input.get('subject', 'unknown')}-{idx:03d}", "text": text[:1000], "vector": stub})
+        out_chunks.append(
+            {
+                "chunk_id": f"{node_input.get('subject', 'unknown')}-{idx:03d}",
+                "text": text[:1000],
+                "vector": stub,
+            }
+        )
     return {"embedded_chunks": out_chunks}
 
 
@@ -201,6 +221,7 @@ async def upsert_vector(node_input: Any) -> dict[str, Any]:
 @dataclass
 class Level1Result:
     """The Level 1 final output (the orchestrator passes this to Level 2)."""
+
     pdf_path: str
     syllabus: dict[str, Any]
     chunks: list[dict[str, Any]] = field(default_factory=list)
@@ -208,15 +229,21 @@ class Level1Result:
     vector_backend: str = ""
 
 
-async def run_level_1(*, subnation: str = "ireland", subject: str = "mathematics", language: str = "en") -> Level1Result:
+async def run_level_1(
+    *, subnation: str = "ireland", subject: str = "mathematics", language: str = "en"
+) -> Level1Result:
     """The Level 1 entrypoint — runs the 4-node pipeline and returns the structured result.
 
     Called by the journey orchestrator (Stream C.3) and by the standalone
     `python -m gemini_hackathon.journey.level_1_syllabus_extraction.app`
     Gradio app.
     """
-    fetch = await fetch_syllabus_pdf({"subnation": subnation, "subject": subject, "language": language})
-    baml = await extract_baml({**fetch, "subnation": subnation, "subject": subject, "language": language})
+    fetch = await fetch_syllabus_pdf(
+        {"subnation": subnation, "subject": subject, "language": language}
+    )
+    baml = await extract_baml(
+        {**fetch, "subnation": subnation, "subject": subject, "language": language}
+    )
     embedded = await embed_chunks(baml)
     upserted = await upsert_vector(embedded)
     return Level1Result(
@@ -230,8 +257,8 @@ async def run_level_1(*, subnation: str = "ireland", subject: str = "mathematics
 
 __all__ = [
     "Level1Result",
-    "extract_baml",
     "embed_chunks",
+    "extract_baml",
     "fetch_syllabus_pdf",
     "run_level_1",
     "upsert_vector",

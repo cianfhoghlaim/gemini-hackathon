@@ -87,8 +87,8 @@ def test_no_wired_in_w12_markers() -> None:
     with open(src_path, encoding="utf-8") as fh:
         src = fh.read()
     assert "Wired in W12" not in src, (
-        f"editorial_studio/app.py still contains 'Wired in W12.' markers — "
-        f"Phase 4 polish incomplete."
+        "editorial_studio/app.py still contains 'Wired in W12.' markers — "
+        "Phase 4 polish incomplete."
     )
 
 
@@ -127,7 +127,8 @@ def test_extract_certificate_handler_returns_markdown_and_json() -> None:
         subject_slug="mathematics",
         stage="scoil_sinsearach",
     )
-    assert isinstance(md, str) and len(md) > 0
+    assert isinstance(md, str)
+    assert len(md) > 0
     assert isinstance(js, dict)
     assert "learner_id" in js
     assert "subject_slug" in js
@@ -141,7 +142,7 @@ def test_extract_certificate_handles_all_5_stages() -> None:
     from gemini_hackathon_gradio.editorial_studio import app as _app
 
     for stage in ("aistear", "bunscoil", "meanscoil", "scoil_sinsearach", "ollscoil"):
-        md, js = _app._on_extract_certificate(
+        _md, js = _app._on_extract_certificate(
             learner_id="test-learner",
             learner_name="Test Learner",
             subject_slug="english",

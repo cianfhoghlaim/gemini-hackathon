@@ -44,7 +44,6 @@ from pathlib import Path
 from typing import Any
 
 import dlt
-
 from dlt_pipelines._shared import (
     DUCKDB_PATH,
     JURISDICTION_BOARDS,
@@ -71,7 +70,14 @@ JURISDICTION_KEY: str = "uk_ncce"
 SOURCE_NAME: str = "NCCE — National Centre for Computing Education"
 
 #: The canonical on-disk root for the NCCE artefacts.
-RAW_ROOT: Path = Path(__file__).resolve().parent.parent / "data" / "bi_ep" / "syllabi_raw" / "uk_ncce" / "curriculum"
+RAW_ROOT: Path = (
+    Path(__file__).resolve().parent.parent
+    / "data"
+    / "bi_ep"
+    / "syllabi_raw"
+    / "uk_ncce"
+    / "curriculum"
+)
 
 #: The 5 NCCE artefacts lifted from the leabharlann source.
 #: Tuple of (file_basename, year_level, subject, kind).
@@ -175,9 +181,7 @@ def _build_placeholder_row(
     try:
         payload = json.loads(placeholder_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        logger.warning(
-            "_build_placeholder_row: failed to read %s: %s", placeholder_path, exc
-        )
+        logger.warning("_build_placeholder_row: failed to read %s: %s", placeholder_path, exc)
         payload = {"source_url": "", "status": "deferred_to_build_phase"}
     return {
         "source_key": source_key,
@@ -233,9 +237,7 @@ def uk_ncce_learning_graphs_documents() -> Iterator[dict[str, Any]]:
     for basename, year_level, subject, pdf_kind in PDF_ARTEFACTS:
         pdf_path = RAW_ROOT / basename
         if not pdf_path.is_file():
-            logger.warning(
-                "uk_ncce_learning_graphs_documents: missing %s", pdf_path
-            )
+            logger.warning("uk_ncce_learning_graphs_documents: missing %s", pdf_path)
             continue
         # Compute `level` from the artefact's year_level (or "cross_year" for pedagogy).
         level = f"KS_{year_level}" if year_level is not None else "cross_year"
@@ -382,12 +384,12 @@ __all__ = [
     "RAW_ROOT",
     "SOURCE_NAME",
     "build_pipeline",
+    "main",
+    "run",
     # The @dlt.resource
     "uk_ncce_learning_graphs_documents",
     # The @dlt.source
     "uk_ncce_learning_graphs_source",
-    "main",
-    "run",
 ]
 
 

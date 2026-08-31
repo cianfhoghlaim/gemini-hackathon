@@ -30,7 +30,6 @@ Migrated to R1-R4 conformance by the
 from __future__ import annotations
 
 import asyncio
-import os
 from dataclasses import dataclass
 from typing import Annotated
 
@@ -40,9 +39,10 @@ from numpy.typing import NDArray
 logger = structlog.get_logger(__name__)
 
 try:
-    import cocoindex as coco  # type: ignore[import-not-found]
     from cocoindex.connectors import lancedb  # type: ignore[import-not-found]
     from cocoindex.resources.id import IdGenerator  # type: ignore[import-not-found]
+
+    import cocoindex as coco  # type: ignore[import-not-found]
 
     COCOINDEX_AVAILABLE = True
 except ImportError as e:
@@ -54,12 +54,10 @@ except ImportError as e:
 
 
 # R1: shared lifespan + canonical ContextKeys from `._lifespan`.
-from .._shared._lifespan import (  # noqa: E402
+from .._shared._lifespan import (
     EMBEDDER,
     LANCE_DB,
-    shared_lifespan,
 )
-
 
 # 8 NCCA subjects × 5 NCCA Key Competencies × 4 levels × 2 languages
 NCCA_SUBJECTS = (
@@ -86,8 +84,7 @@ LANGUAGES = ("en", "ga")
 
 # Number of cross-subject mastery vectors: 8 × 5 × 4 × 2 = 320 rows
 TOTAL_COMPETENCY_VECTORS = (
-    len(NCCA_SUBJECTS) * len(NCCA_KEY_COMPETENCIES)
-    * len(NCCA_LEVELS) * len(LANGUAGES)
+    len(NCCA_SUBJECTS) * len(NCCA_KEY_COMPETENCIES) * len(NCCA_LEVELS) * len(LANGUAGES)
 )
 
 LANCEDB_TABLE = "cianfhoghlaim.lc.cross_subject.competencies"
@@ -187,9 +184,7 @@ if COCOINDEX_AVAILABLE:
             for language in LANGUAGES
         ]
         for subject, competency, level, language in all_keys:
-            await process_competency_row(
-                subject, competency, level, language, target_table
-            )
+            await process_competency_row(subject, competency, level, language, target_table)
 
     cross_subject_competency_app = coco.App(
         coco.AppConfig(name="CrossSubjectCompetencyEmbedding"),

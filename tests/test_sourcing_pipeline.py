@@ -15,14 +15,13 @@ The "fetch the URL" step is the only thing the test can't exercise offline
 test monkeypatches the URL fetcher to return a fixture content. The
 rest of the pipeline runs end-to-end.
 """
+
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
 import pytest
-
 
 # Make the in-package import work from the tests/ directory.
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -49,9 +48,7 @@ def _build_hand_built_pdf_bytes(text: str) -> bytes:
     in reportlab / PIL / fpdf. ~500 bytes for a 50-char string.
     """
     # 1. The content stream: "BT /F1 12 Tf 100 700 Td (<escaped text>) Tj ET"
-    escaped = (
-        text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
-    )
+    escaped = text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
     content = f"BT /F1 12 Tf 100 700 Td ({escaped}) Tj ET".encode("latin-1", errors="replace")
 
     # 2. Compose objects: 1 catalog, 1 pages, 1 page, 1 content stream, 1 font.
@@ -59,8 +56,11 @@ def _build_hand_built_pdf_bytes(text: str) -> bytes:
     obj2 = b"2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n"
     obj3 = b"3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj\n"
     obj4 = (
-        b"4 0 obj\n<< /Length " + str(len(content)).encode() + b" >>\nstream\n"
-        + content + b"\nendstream\nendobj\n"
+        b"4 0 obj\n<< /Length "
+        + str(len(content)).encode()
+        + b" >>\nstream\n"
+        + content
+        + b"\nendstream\nendobj\n"
     )
     obj5 = b"5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n"
 
@@ -82,8 +82,7 @@ def _build_hand_built_pdf_bytes(text: str) -> bytes:
     body += xref
 
     trailer = (
-        b"trailer\n<< /Size 6 /Root 1 0 R >>\n"
-        b"startxref\n" + str(len(body)).encode() + b"\n%%EOF\n"
+        b"trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n" + str(len(body)).encode() + b"\n%%EOF\n"
     )
     return body + trailer
 
@@ -103,8 +102,10 @@ def fs_with_one_seeded_artefact(tmp_path, monkeypatch):
     can find the PDF after the fixture is set up.
     """
     import gemini_hackathon.journey.sourcing.pipeline as pipeline_mod
+
     pipeline_mod._SHARED_FS = None
     import gemini_hackathon.journey.sourcing.cache as cache_mod
+
     monkeypatch.setattr(cache_mod, "_LOCAL_CACHE_ROOT", tmp_path)
 
     from gemini_hackathon.journey.sourcing.fs import get_firestore
@@ -148,7 +149,7 @@ def fs_with_one_seeded_artefact(tmp_path, monkeypatch):
     cache_path = tmp_path / "test" / "mathematics" / "en" / sha
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     cache_path.write_bytes(content_bytes)
-    fs.collection(f"journeys/biep-demo/content_artefacts").document(sha).set(artefact)
+    fs.collection("journeys/biep-demo/content_artefacts").document(sha).set(artefact)
 
     return fs, sha, content_bytes
 
@@ -157,6 +158,7 @@ def test_step_normalised_sets_flag(fs_with_one_seeded_artefact):
     fs, sha, _ = fs_with_one_seeded_artefact
 
     import os
+
     # Make sure we're in offline mode (cache.write_bytes won't try GCS).
     os.environ.pop("GOOGLE_CLOUD_PROJECT", None)
     os.environ.pop("FIRESTORE_EMULATOR_HOST", None)
@@ -167,7 +169,7 @@ def test_step_normalised_sets_flag(fs_with_one_seeded_artefact):
     assert counts["normalised"] >= 1
 
     # The artefact's `normalised_at` should now be set.
-    snap = fs.collection(f"journeys/biep-demo/content_artefacts").document(sha).get()
+    snap = fs.collection("journeys/biep-demo/content_artefacts").document(sha).get()
     assert snap.exists
     doc = snap.to_dict()
     assert doc.get("normalised_at") is not None
@@ -187,7 +189,7 @@ def test_step_filtered_marks_excluded(fs_with_one_seeded_artefact):
     )
     assert counts["excluded_marked"] >= 1
 
-    snap = fs.collection(f"journeys/biep-demo/content_artefacts").document(sha).get()
+    snap = fs.collection("journeys/biep-demo/content_artefacts").document(sha).get()
     assert snap.exists
     assert snap.to_dict().get("excluded") is True
     assert snap.to_dict().get("excluded_reason") == "out_of_scope"
@@ -195,9 +197,13 @@ def test_step_filtered_marks_excluded(fs_with_one_seeded_artefact):
 
 def test_step_ready_counts_reflect_artefact_flags(fs_with_one_seeded_artefact):
     """Status counts after normalise-then-exclude should reflect the artefact's flags."""
-    fs, sha, _ = fs_with_one_seeded_artefact
+    _fs, sha, _ = fs_with_one_seeded_artefact
 
-    from gemini_hackathon.journey.sourcing.pipeline import step_normalised, step_filtered, step_ready
+    from gemini_hackathon.journey.sourcing.pipeline import (
+        step_filtered,
+        step_normalised,
+        step_ready,
+    )
 
     step_normalised(project_id=None)
     step_filtered(

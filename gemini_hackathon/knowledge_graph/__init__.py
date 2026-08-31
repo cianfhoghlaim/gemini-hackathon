@@ -33,7 +33,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import Any
 
 import structlog
@@ -42,7 +42,7 @@ from pydantic import BaseModel, Field
 logger = structlog.get_logger(__name__)
 
 
-class SearchMode(str, Enum):
+class SearchMode(StrEnum):
     """Search strategy modes."""
 
     VECTOR = "vector"
@@ -50,7 +50,7 @@ class SearchMode(str, Enum):
     HYBRID = "hybrid"
 
 
-class ContentType(str, Enum):
+class ContentType(StrEnum):
     """The education-system content types indexed by the hybrid search."""
 
     CURRICULUM_UNIT = "curriculum_unit"
@@ -165,7 +165,9 @@ class HybridSearchEngine:
 
         embedder = VertexEmbedder()
         if not embedder.available:
-            logger.warning("_vector_search: VertexEmbedder unavailable, returning no vector results")
+            logger.warning(
+                "_vector_search: VertexEmbedder unavailable, returning no vector results"
+            )
             return []
 
         query_vector = await embedder.embed_query(query)

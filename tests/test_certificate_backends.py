@@ -7,9 +7,7 @@ paths + `render()`'s stub fallback when the backend is unreachable
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import MagicMock
 
 
 def _compositor_for_subclass(subclass_path: str):
@@ -17,9 +15,7 @@ def _compositor_for_subclass(subclass_path: str):
     import importlib
 
     mod = importlib.import_module(subclass_path)
-    name = next(
-        n for n in dir(mod) if n.endswith("Compositor") and n != "AssetCompositor"
-    )
+    name = next(n for n in dir(mod) if n.endswith("Compositor") and n != "AssetCompositor")
     return getattr(mod, name), name
 
 
@@ -42,6 +38,7 @@ def test_diffusiongemma_is_available_false_without_httpx(monkeypatch):
     from gemini_hackathon.certificate.backends.diffusiongemma_compositor import (
         DiffusionGemmaCompositor,
     )
+
     assert DiffusionGemmaCompositor().is_available() is False
 
 
@@ -65,9 +62,7 @@ def test_diffusiongemma_render_returns_stub_when_backend_down(monkeypatch):
         DiffusionGemmaCompositor,
     )
 
-    result = DiffusionGemmaCompositor().render(
-        concept=MagicMock(), seed=42
-    )
+    result = DiffusionGemmaCompositor().render(concept=MagicMock(), seed=42)
     assert result.backend == "diffusiongemma"
     assert result.model_key == "google/diffusiongemma-26B-A4B-it"
     assert result.seed == 42
@@ -89,17 +84,18 @@ def test_fibo_render_returns_stub_when_backend_down():
     """`FIBOCompositor.render()` returns the stub when the backend is down."""
     import builtins
 
-    real_import = builtins.__import__ if isinstance(builtins, type(builtins)) else builtins["__import__"]
+    real_import = (
+        builtins.__import__ if isinstance(builtins, type(builtins)) else builtins["__import__"]
+    )
 
     def fake_import(name, *args, **kwargs):
         if name == "httpx":
             raise ImportError("no httpx")
         return real_import(name, *args, **kwargs)
 
-    import importlib
-
     saved_httpx = __import__("sys").modules.get("httpx")
     import sys as _sys
+
     if "httpx" in _sys.modules:
         del _sys.modules["httpx"]
     builtins.__import__ = fake_import
@@ -159,12 +155,8 @@ def test_all_compositors_have_render_method():
         "gemini_flash_image_compositor",
         "imagen3_compositor",
     ):
-        mod = importlib.import_module(
-            f"gemini_hackathon.certificate.backends.{name}"
-        )
-        cls = next(
-            n for n in dir(mod) if n.endswith("Compositor") and n != "AssetCompositor"
-        )
+        mod = importlib.import_module(f"gemini_hackathon.certificate.backends.{name}")
+        cls = next(n for n in dir(mod) if n.endswith("Compositor") and n != "AssetCompositor")
         cls_obj = getattr(mod, cls)
         # No inheritance from AssetCompositor (the base is a Protocol).
         assert hasattr(cls_obj, "render"), f"{cls} missing render()"
@@ -184,12 +176,8 @@ def test_all_compositors_carry_backend_class_attribute():
         "gemini_flash_image_compositor",
         "imagen3_compositor",
     ):
-        mod = importlib.import_module(
-            f"gemini_hackathon.certificate.backends.{name}"
-        )
-        cls = next(
-            n for n in dir(mod) if n.endswith("Compositor") and n != "AssetCompositor"
-        )
+        mod = importlib.import_module(f"gemini_hackathon.certificate.backends.{name}")
+        cls = next(n for n in dir(mod) if n.endswith("Compositor") and n != "AssetCompositor")
         cls_obj = getattr(mod, cls)
         assert isinstance(cls_obj.backend, str)
         assert cls_obj.backend  # non-empty

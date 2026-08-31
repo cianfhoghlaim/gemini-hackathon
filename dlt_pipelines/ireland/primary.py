@@ -26,8 +26,6 @@ BAML extraction (per `baml/education/stages/primary.baml`):
 """
 
 from __future__ import annotations
-import dlt
-
 
 import hashlib
 import os
@@ -37,11 +35,11 @@ from typing import Any
 
 import structlog
 
+import dlt
+
 logger = structlog.get_logger(__name__)
 
-PRIMARY_CACHE_DIR = Path(
-    os.getenv("STEDDING_INGEST_QUEUE", "/stedding/ingest_queue")
-) / "primary"
+PRIMARY_CACHE_DIR = Path(os.getenv("STEDDING_INGEST_QUEUE", "/stedding/ingest_queue")) / "primary"
 
 PRIMARY_SOURCE_URLS = [
     "https://www.curriculumonline.ie/en/primary/",
@@ -197,7 +195,9 @@ def primary_curriculum_areas() -> Any:
                     "area_code": item.get("code", pdf.stem) + f"_{idx}",
                     "title_en": item.get("title", pdf.stem),
                     "stages": item.get("stages", []),
-                    "strands_count": len(item.get("strands", [])) if isinstance(item.get("strands"), list) else 0,
+                    "strands_count": len(item.get("strands", []))
+                    if isinstance(item.get("strands"), list)
+                    else 0,
                     "extracted_at": datetime.now(UTC).isoformat(),
                 }
         elif isinstance(items, dict):
@@ -209,7 +209,9 @@ def primary_curriculum_areas() -> Any:
                 "area_code": items.get("code", pdf.stem),
                 "title_en": items.get("title", pdf.stem),
                 "stages": items.get("stages", []),
-                "strands_count": len(items.get("strands", [])) if isinstance(items.get("strands"), list) else 0,
+                "strands_count": len(items.get("strands", []))
+                if isinstance(items.get("strands"), list)
+                else 0,
                 "extracted_at": datetime.now(UTC).isoformat(),
             }
 

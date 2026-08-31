@@ -195,10 +195,15 @@ options:
 """
 
 
-def deploy_command_for(target: StudioTarget, *, project_id: str, region: str = "europe-west1") -> list[str]:
+def deploy_command_for(
+    target: StudioTarget, *, project_id: str, region: str = "europe-west1"
+) -> list[str]:
     """The `gcloud run deploy` command (for local + CI use)."""
     return [
-        "gcloud", "run", "deploy", target.service_name,
+        "gcloud",
+        "run",
+        "deploy",
+        target.service_name,
         f"--project={project_id}",
         f"--region={region}",
         "--platform=managed",

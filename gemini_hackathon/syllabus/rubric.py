@@ -13,7 +13,7 @@ on 4 objective metrics + 1 LLM-judge subjective score:
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -50,10 +50,11 @@ def compute_pydantic_conformance(*, raw_dict: dict, schema_cls: type) -> float:
     except Exception:
         # Try a more lenient validation — check each field
         try:
-            instance = schema_cls.model_construct(**raw_dict)
+            schema_cls.model_construct(**raw_dict)
             # Count fields that have valid types
             valid = sum(
-                1 for name, field in schema_cls.model_fields.items()
+                1
+                for name, field in schema_cls.model_fields.items()
                 if name in raw_dict and isinstance(raw_dict[name], field.annotation)
             )
             return valid / max(1, len(schema_cls.model_fields))
@@ -85,7 +86,7 @@ def llm_judge_score(
         return 3, "[stub] litellm not installed — defaulting to 3"
 
     topics_str = "\n".join(f"  - {t}" for t in topic_titles[:50])  # cap at 50
-    prompt = f"{rubric}\n\nTopics to rate:\n{topics_str}\n\nReturn a JSON object: {{\"score\": <1-5>, \"rationale\": \"<one sentence>\"}}"
+    prompt = f'{rubric}\n\nTopics to rate:\n{topics_str}\n\nReturn a JSON object: {{"score": <1-5>, "rationale": "<one sentence>"}}'
     try:
         resp = litellm.completion(
             model=model,
@@ -95,6 +96,7 @@ def llm_judge_score(
         )
         content = resp.choices[0].message.content or "{}"
         import json
+
         result = json.loads(content)
         return int(result.get("score", 3)), str(result.get("rationale", ""))
     except Exception as exc:
@@ -111,7 +113,7 @@ class ExtractionRubric:
     jaccard_vs_baml: float
     lo_coverage: float
     pydantic_conformance: float
-    judge_score: int # 1-5
+    judge_score: int  # 1-5
     judge_rationale: str
     cost_usd: float
     latency_ms: int

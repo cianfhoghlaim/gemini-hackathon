@@ -25,8 +25,8 @@ import pytest
 import structlog
 
 from gemini_hackathon.agents.fleet import (
-    AGUIEventType,
     AGENT_NAMES,
+    AGUIEventType,
     FleetAGUIBridge,
     FleetIdentity,
     FleetMemory,
@@ -40,7 +40,6 @@ from gemini_hackathon.agents.fleet import (
     namespace_for_agent,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -52,6 +51,7 @@ def _make_gateway_invoker(agent_name: str) -> Any:
     The invoker satisfies the :meth:`FleetGateway.invoke` contract
     without exercising any of the idea-agent code paths.
     """
+
     def invoker(
         *,
         sanitised_input: SanitisedPrompt,
@@ -70,7 +70,7 @@ def _make_gateway_invoker(agent_name: str) -> Any:
 
 
 @pytest.mark.parametrize(
-    "query,expected_agent,role",
+    ("query", "expected_agent", "role"),
     [
         ("please mark this script against the rubric", "marking_grader_workflow", "teacher"),
         ("explain quadratic functions to me", "adaptive_tutor", "anonymous"),
@@ -100,7 +100,7 @@ def test_fleet_gateway_routes_to_each_idea_agent(
     agents require elevated permissions — we mint a JWT with the
     correct role so the gateway's permission check passes.
     """
-    from gemini_hackathon.agents.fleet import FleetGateway, AgentInvocation
+    from gemini_hackathon.agents.fleet import AgentInvocation, FleetGateway
 
     # Mint a JWT for the right role. Use a 32+ byte secret to satisfy
     # PyJWT 2.13+'s minimum HMAC key length warning.
@@ -134,7 +134,7 @@ def test_fleet_gateway_routes_to_each_idea_agent(
 
 def test_fleet_gateway_force_agent_bypasses_routing(mock_call_llm, monkeypatch) -> None:
     """``AgentInvocation.force_agent`` bypasses the keyword router."""
-    from gemini_hackathon.agents.fleet import FleetGateway, AgentInvocation
+    from gemini_hackathon.agents.fleet import AgentInvocation, FleetGateway
 
     # Force the marking_grader agent, which requires the teacher role.
     jwt_secret = "test-secret-with-enough-bytes-for-pyjwt-warning-suppression-32"
@@ -432,12 +432,11 @@ def test_fleet_agui_emits_expected_event_sequence() -> None:
     """
     from gemini_hackathon.agents.fleet import (
         AgentResponse,
-        FleetAGUIBridge,
+        IdentityContext,
         SanitisedCompletion,
         SanitisedPrompt,
     )
     from gemini_hackathon.call_llm import LLMResponse, TierAttempt
-    from gemini_hackathon.agents.fleet import IdentityContext
 
     # Build a minimal AgentResponse.
     sanitised_input = SanitisedPrompt(text="hello")
@@ -454,7 +453,17 @@ def test_fleet_agui_emits_expected_event_sequence() -> None:
         tokens_in=1,
         tokens_out=1,
         cost_usd=0.0,
-        attempts=[TierAttempt(tier=1, family="text_llm", role="default", model="minimax-m3", backend="minimax", latency_ms=10, succeeded=True)],
+        attempts=[
+            TierAttempt(
+                tier=1,
+                family="text_llm",
+                role="default",
+                model="minimax-m3",
+                backend="minimax",
+                latency_ms=10,
+                succeeded=True,
+            )
+        ],
     )
     response = AgentResponse(
         agent="adaptive_tutor",

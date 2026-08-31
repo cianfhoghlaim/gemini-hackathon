@@ -21,8 +21,7 @@ from pathlib import Path
 
 import pytest
 
-import gemini_hackathon.cli as cli
-
+from gemini_hackathon import cli
 
 # ---------------------------------------------------------------------------
 # Parser / banner / subcommand tests
@@ -158,7 +157,9 @@ def test_cli_main_returns_2_for_missing_command(capsys: pytest.CaptureFixture[st
     assert exit_code == 0  # no command → print help, exit 0
 
 
-def test_cli_theme_list_runs_cleanly(tmp_themes_dir: object, capsys: pytest.CaptureFixture[str]) -> None:
+def test_cli_theme_list_runs_cleanly(
+    tmp_themes_dir: object, capsys: pytest.CaptureFixture[str]
+) -> None:
     """``theme list`` runs and prints the palette roster."""
     exit_code = cli.main(["--quiet", "theme", "list"])
     captured = capsys.readouterr()

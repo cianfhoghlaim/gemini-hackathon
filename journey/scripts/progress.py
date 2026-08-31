@@ -15,6 +15,7 @@ Usage:
     python -m journey.scripts.progress --event-code bwai-mycity --learner-id alice@school.ie
     python -m journey.scripts.progress --event-code bwai-mycity --leaderboard --json | jq -s 'sort_by(.current_level) | reverse | .[0:10]'
 """
+
 from __future__ import annotations
 
 import argparse
@@ -53,7 +54,13 @@ def _list_participants(client, event_code: str) -> list[dict]:
     """Return the participants under `journeys/{event_code}/participants`."""
     if client is None:
         return []
-    return [doc.to_dict() for doc in client.collection("journeys").document(event_code).collection("participants").stream()]
+    return [
+        doc.to_dict()
+        for doc in client.collection("journeys")
+        .document(event_code)
+        .collection("participants")
+        .stream()
+    ]
 
 
 def _format_leaderboard(participants: list[dict]) -> str:

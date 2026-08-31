@@ -60,7 +60,7 @@ gr.HTML(
             props.value = { count: props.value.count + 1 };
             trigger('change');
         };
-    """
+    """,
 )
 ```
 
@@ -77,7 +77,7 @@ class Heatmap(gr.HTML):
             html_template=TEMPLATE,
             css_template=STYLES,
             js_on_load=SCRIPT,
-            **kwargs
+            **kwargs,
         )
 ```
 

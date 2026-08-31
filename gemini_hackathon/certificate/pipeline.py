@@ -44,13 +44,12 @@ import io
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Optional
 
 from gemini_hackathon.certificate.types import (
-    CertificationCitation,
-    CertificationCriteria,
     CertificateOutcomeRecord,
     CertificateRecord,
+    CertificationCitation,
+    CertificationCriteria,
 )
 
 _log = logging.getLogger(__name__)
@@ -114,9 +113,7 @@ class CertificatePipeline:
         outcome_records = await self._decompose_outcomes(outcomes)
 
         # Stage 3: Extract exam paper + marking scheme
-        exam_paper, marking_scheme = await self._extract_paper_and_marking(
-            subject_slug, stage
-        )
+        _exam_paper, _marking_scheme = await self._extract_paper_and_marking(subject_slug, stage)
 
         # Stage 4: RAG over the 5 NCCA policy corpus
         policy_citations = await self._search_official_documents(
@@ -176,9 +173,7 @@ class CertificatePipeline:
             issued_at=datetime.now().isoformat(),
         )
 
-    async def _extract_criteria(
-        self, subject_slug: str, stage: str
-    ) -> CertificationCriteria:
+    async def _extract_criteria(self, subject_slug: str, stage: str) -> CertificationCriteria:
         """Stage 1: extract the official certification criteria.
 
         Stub: returns a populated record from the 5 NCCA PDF filenames.
@@ -198,12 +193,16 @@ class CertificatePipeline:
             stage=stage,
             subject_slug=subject_slug,
             award_descriptor=(
-                "Exceptional" if stage == "scoil_sinsearach"
-                else "Above expectations" if stage == "meanscoil"
+                "Exceptional"
+                if stage == "scoil_sinsearach"
+                else "Above expectations"
+                if stage == "meanscoil"
                 else "In line with expectations"
             ),
             descriptor_vocabulary=[
-                "Exceptional", "Above expectations", "In line with expectations",
+                "Exceptional",
+                "Above expectations",
+                "In line with expectations",
                 "Yet to meet expectations",
             ],
             key_competencies=[
@@ -225,7 +224,7 @@ class CertificatePipeline:
 
     async def _extract_paper_and_marking(
         self, subject_slug: str, stage: str
-    ) -> tuple[Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None]:
         """Stage 3: extract exam paper + marking.
 
         Stub: returns None (the W5 DLT pipeline populates these).
@@ -242,18 +241,19 @@ class CertificatePipeline:
         citations = []
         for outcome in outcomes:
             for pdf in NCCA_POLICY_PDFS:
-                citations.append(CertificationCitation(
-                    source_pdf=pdf,
-                    page=self._mock_page_lookup(outcome.outcome_code),
-                    quote=(
-                        f"[Stub quote from {pdf} supporting outcome "
-                        f"{outcome.outcome_code}]"
-                    ),
-                    relevance=(
-                        f"Outcome {outcome.outcome_code} ({outcome.subject_slug}): "
-                        f"NCCA-aligned descriptor '{outcome.descriptor}'"
-                    ),
-                ))
+                citations.append(
+                    CertificationCitation(
+                        source_pdf=pdf,
+                        page=self._mock_page_lookup(outcome.outcome_code),
+                        quote=(
+                            f"[Stub quote from {pdf} supporting outcome {outcome.outcome_code}]"
+                        ),
+                        relevance=(
+                            f"Outcome {outcome.outcome_code} ({outcome.subject_slug}): "
+                            f"NCCA-aligned descriptor '{outcome.descriptor}'"
+                        ),
+                    )
+                )
         return citations
 
     @staticmethod
@@ -310,11 +310,11 @@ class CertificatePipeline:
           +----------------------------------+
         """
         try:
-            from PIL import Image, ImageDraw, ImageFont
             from gemini_hackathon_assets_fibo.processors.texture_processor import (
                 apply_subject_watermark,
             )
             from gemini_hackathon_gradio._common.theme import stage_class
+            from PIL import Image, ImageDraw, ImageFont
         except ImportError as e:
             _log.warning("PIL/gradio missing — returning stub PNG: %s", e)
             return background  # fallback to the 1×1 stub
@@ -359,7 +359,10 @@ class CertificatePipeline:
         # Stage-class CSS colour
         stage_cls = stage_class(stage)
         from gemini_hackathon_gradio._common.theme import EDUCATION_PALETTE
-        stage_colour = EDUCATION_PALETTE.get(stage_cls.replace("stage-", "").split("_")[0], "#cc9966")
+
+        stage_colour = EDUCATION_PALETTE.get(
+            stage_cls.replace("stage-", "").split("_")[0], "#cc9966"
+        )
 
         # Header
         draw.text((60, 60), f"{stage.title()} Certificate", fill=stage_colour, font=title_font)
@@ -367,7 +370,12 @@ class CertificatePipeline:
 
         # Award descriptor pill
         draw.rectangle([60, 180, 600, 230], fill=stage_colour)
-        draw.text((80, 195), f"Award descriptor: {criteria.award_descriptor}", fill="#fdfaf3", font=body_font)
+        draw.text(
+            (80, 195),
+            f"Award descriptor: {criteria.award_descriptor}",
+            fill="#fdfaf3",
+            font=body_font,
+        )
 
         # Learner name (large serif)
         draw.text((60, 270), learner_name, fill="#2a1f0c", font=name_font)
@@ -376,7 +384,12 @@ class CertificatePipeline:
         draw.text((60, 400), "Learning Outcomes Mastered:", fill="#5c3a1a", font=body_font)
         y = 440
         for o in outcomes[:5]:
-            draw.text((80, y), f"• {o.outcome_code}: {o.descriptor} (mastery {o.mastery_score:.0%})", fill="#2a1f0c", font=small_font)
+            draw.text(
+                (80, y),
+                f"• {o.outcome_code}: {o.descriptor} (mastery {o.mastery_score:.0%})",
+                fill="#2a1f0c",
+                font=small_font,
+            )
             y += 25
 
         # Key Competencies strip
@@ -384,25 +397,33 @@ class CertificatePipeline:
         y += 70
         col_width = (w - 120) // 5
         for i, kc in enumerate(criteria.key_competencies[:5]):
-            draw.rectangle([60 + i * col_width, y, 60 + (i + 1) * col_width - 4, y + 30],
-                           fill=stage_colour)
+            draw.rectangle(
+                [60 + i * col_width, y, 60 + (i + 1) * col_width - 4, y + 30], fill=stage_colour
+            )
             draw.text((60 + i * col_width + 8, y + 8), kc, fill="#fdfaf3", font=small_font)
 
         # Provenance footer
         y += 60
-        draw.text((60, y), "Generated from 5 NCCA policy documents:", fill="#5c3a1a", font=small_font)
+        draw.text(
+            (60, y), "Generated from 5 NCCA policy documents:", fill="#5c3a1a", font=small_font
+        )
         y += 18
         for cite in policy_citations[:5]:
-            draw.text((60, y), f"• {cite.source_pdf}, p.{cite.page}", fill="#5c3a1a", font=small_font)
+            draw.text(
+                (60, y), f"• {cite.source_pdf}, p.{cite.page}", fill="#5c3a1a", font=small_font
+            )
             y += 16
 
         # UNOFFICIAL banner (red pill — always present)
         if self.config.include_unofficial_banner:
             banner_y = h - 80
             draw.rectangle([60, banner_y, w - 60, banner_y + 50], fill="#a83a2a")
-            draw.text((w // 2 - 200, banner_y + 12),
-                      "UNOFFICIAL — NOT an NCCA-issued credential",
-                      fill="#fdfaf3", font=body_font)
+            draw.text(
+                (w // 2 - 200, banner_y + 12),
+                "UNOFFICIAL — NOT an NCCA-issued credential",
+                fill="#fdfaf3",
+                font=body_font,
+            )
 
         # Convert back to RGB and save to bytes
         img = img_rgba.convert("RGB")
@@ -416,9 +437,10 @@ class CertificatePipeline:
         # In production, embed the PNG into a multi-page PDF.
         try:
             from gemini_hackathon_gradio._common.pclm_emitter import _render_minimal_pdf
+
             # Build a simple text-based PDF wrapping the PNG metadata
             text_lines = [
-                f"LC/JC Certificate",
+                "LC/JC Certificate",
                 f"(Image format: PNG, {len(png_bytes)} bytes)",
                 "",
                 "(Open the PNG to view the rendered certificate.)",
@@ -426,12 +448,14 @@ class CertificatePipeline:
             return _render_minimal_pdf(text_lines)
         except ImportError:
             # Fallback: 1-page minimal PDF
-            return self._render_minimal_pdf_fallback(text_lines=[
-                f"LC/JC Certificate",
-                f"(Image: PNG, {len(png_bytes)} bytes)",
-                "",
-                "(Open the PNG to view the rendered certificate.)",
-            ])
+            return self._render_minimal_pdf_fallback(
+                text_lines=[
+                    "LC/JC Certificate",
+                    f"(Image: PNG, {len(png_bytes)} bytes)",
+                    "",
+                    "(Open the PNG to view the rendered certificate.)",
+                ]
+            )
 
     @staticmethod
     def _render_minimal_pdf_fallback(lines: list[str]) -> bytes:
@@ -448,10 +472,16 @@ class CertificatePipeline:
         objects: list[bytes] = [
             b"<< /Type /Catalog /Pages 2 0 R >>",
             b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-            (b"<< /Type /Page /Parent 2 0 R "
-             b"/MediaBox [0 0 612 792] /Contents 4 0 R "
-             b"/Resources << /Font << /F1 5 0 R >> >> >>"),
-            b"<< /Length " + str(len(content)).encode() + b" >>\nstream\n" + content + b"\nendstream",
+            (
+                b"<< /Type /Page /Parent 2 0 R "
+                b"/MediaBox [0 0 612 792] /Contents 4 0 R "
+                b"/Resources << /Font << /F1 5 0 R >> >> >>"
+            ),
+            b"<< /Length "
+            + str(len(content)).encode()
+            + b" >>\nstream\n"
+            + content
+            + b"\nendstream",
             b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
         ]
         out = _io.BytesIO()
@@ -494,26 +524,28 @@ class CertificatePipeline:
             # Issue one MasteryUpdate per outcome (the certificate is the
             # evidence of the cumulative mastery)
             for o in outcome_records:
-                await ledger.update_mastery(MasteryUpdate(
-                    record=MasteryRecord(
-                        learner_id=learner_id,
-                        subject_slug=subject_slug,
-                        learning_outcome_code=o.outcome_code,
-                        stage=stage,
-                        mastery_score=o.mastery_score,
-                        formative_evidence_ids=[f"certificate:{o.outcome_code}"],
-                        key_competency_codes=o.key_competency_codes,
-                    ),
-                    delta=0.0,  # no change — this is a recorded event
-                    evidence_id=f"certificate:{o.outcome_code}",
-                    source_module="certificate_pipeline",
-                ))
+                await ledger.update_mastery(
+                    MasteryUpdate(
+                        record=MasteryRecord(
+                            learner_id=learner_id,
+                            subject_slug=subject_slug,
+                            learning_outcome_code=o.outcome_code,
+                            stage=stage,
+                            mastery_score=o.mastery_score,
+                            formative_evidence_ids=[f"certificate:{o.outcome_code}"],
+                            key_competency_codes=o.key_competency_codes,
+                        ),
+                        delta=0.0,  # no change — this is a recorded event
+                        evidence_id=f"certificate:{o.outcome_code}",
+                        source_module="certificate_pipeline",
+                    )
+                )
         except Exception as e:
             _log.warning("Ledger save failed: %s", e)
 
 
 __all__ = [
     "NCCA_POLICY_PDFS",
-    "CertificatePipelineConfig",
     "CertificatePipeline",
+    "CertificatePipelineConfig",
 ]

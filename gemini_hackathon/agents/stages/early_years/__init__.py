@@ -16,8 +16,8 @@ import logging
 from typing import Any
 
 try:
-    from google.adk import Workflow, Event
-    from google.adk.workflow import JoinNode, START
+    from google.adk import Event, Workflow
+    from google.adk.workflow import START, JoinNode
 except ImportError:
     Workflow = None  # type: ignore[assignment,misc]
     Event = None  # type: ignore[assignment,misc]
@@ -37,12 +37,12 @@ AISTEAR_THEMES: tuple[str, ...] = (
 )
 
 
-async def fetch_aistear_theme(node_input: Any) -> "Event":
+async def fetch_aistear_theme(node_input: Any) -> Event:
     """Fetch the Aistear framework content for one of the 4 themes."""
     return Event(output={"theme_id": "aistear-theme-stub"})
 
 
-async def synthesize_play_plan(node_input: Any) -> "Event":
+async def synthesize_play_plan(node_input: Any) -> Event:
     """Combine the 4 Aistear themes into a play-based learning plan."""
     return Event(output={"play_plan_id": "aistear-play-plan-stub"})
 
@@ -50,7 +50,7 @@ async def synthesize_play_plan(node_input: Any) -> "Event":
 aistear_join = JoinNode(name="aistear_join")
 
 
-async def route_aistear_theme(node_input: Any) -> "Event":
+async def route_aistear_theme(node_input: Any) -> Event:
     """Route to the appropriate Aistear theme specialist."""
     theme = node_input.get("theme", "wellbeing")
     return Event(output={"theme": theme}, route=theme)
@@ -78,9 +78,9 @@ def build_early_years_workflow() -> Any:
 
 
 __all__ = [
-    "build_early_years_workflow",
     "AISTEAR_THEMES",
+    "build_early_years_workflow",
     "fetch_aistear_theme",
-    "synthesize_play_plan",
     "route_aistear_theme",
+    "synthesize_play_plan",
 ]

@@ -56,10 +56,7 @@ def _build_asset() -> Any:
 
             stats = build_pedagogy_cache()
         except ImportError:
-            logger.warning(
-                "uk_ncce_pedagogy_cache: cocoindex_flows module not available — "
-                "no-op."
-            )
+            logger.warning("uk_ncce_pedagogy_cache: cocoindex_flows module not available — no-op.")
             stats = {
                 "extracted": False,
                 "from_cache": False,

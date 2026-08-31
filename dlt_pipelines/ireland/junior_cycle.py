@@ -25,8 +25,6 @@ BAML extraction (per `baml/education/stages/junior_cycle.baml`):
 """
 
 from __future__ import annotations
-import dlt
-
 
 import hashlib
 import os
@@ -36,11 +34,11 @@ from typing import Any
 
 import structlog
 
+import dlt
+
 logger = structlog.get_logger(__name__)
 
-JC_CACHE_DIR = Path(
-    os.getenv("STEDDING_INGEST_QUEUE", "/stedding/ingest_queue")
-) / "junior_cycle"
+JC_CACHE_DIR = Path(os.getenv("STEDDING_INGEST_QUEUE", "/stedding/ingest_queue")) / "junior_cycle"
 
 JC_SOURCE_URLS = [
     "https://www.curriculumonline.ie/en/junior-cycle/",
@@ -226,8 +224,12 @@ def jc_specifications() -> Any:
             "subject": subject,
             "title_en": spec.get("title", pdf.stem),
             "level": spec.get("level", "ordinary"),
-            "strands_count": len(spec.get("strands", [])) if isinstance(spec.get("strands"), list) else 0,
-            "outcomes_count": len(spec.get("outcomes", [])) if isinstance(spec.get("outcomes"), list) else 0,
+            "strands_count": len(spec.get("strands", []))
+            if isinstance(spec.get("strands"), list)
+            else 0,
+            "outcomes_count": len(spec.get("outcomes", []))
+            if isinstance(spec.get("outcomes"), list)
+            else 0,
             "wellbeing": spec.get("wellbeing", ""),
             "file_path": str(pdf),
             "account": "ireland_junior_cycle",

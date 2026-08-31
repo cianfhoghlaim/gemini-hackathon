@@ -29,7 +29,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     pass
 
-logger = structlog.get_logger(__name__) if False else logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 @functools.lru_cache(maxsize=1)
@@ -64,12 +64,12 @@ def _extract_markdown_pypdfium2(content: bytes) -> str:
         return ""
     try:
         doc = pdfium.PdfDocument(content)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning("pdf._shared: pypdfium2.PdfDocument failed: %s", exc)
         return ""
     try:
         n_pages = len(doc)
-    except Exception:  # noqa: BLE001
+    except Exception:
         n_pages = 0
     parts: list[str] = []
     for i in range(n_pages):
@@ -78,7 +78,7 @@ def _extract_markdown_pypdfium2(content: bytes) -> str:
             tp = page.get_textpage()
             text = tp.get_text_range() or ""
             parts.append(f"## Page {i + 1}\n\n{text.strip()}\n")
-        except Exception as exc:  # noqa: BLE001 — skip page on error
+        except Exception as exc:
             logger.warning("pdf._shared: page %d decode failed: %s", i, exc)
             parts.append(f"## Page {i + 1}\n\n_(decode error)_\n")
     return "\n".join(parts)
@@ -101,7 +101,7 @@ def _extract_markdown_docling(content: bytes) -> str:
             "falling back to pypdfium2"
         )
         return _extract_markdown_pypdfium2(content)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning("pdf._shared: docling convert failed: %s", exc)
         return _extract_markdown_pypdfium2(content)
 

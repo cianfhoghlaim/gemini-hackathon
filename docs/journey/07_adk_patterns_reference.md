@@ -75,10 +75,9 @@ What it teaches:
 ```python
 from google.adk.events.request_input import RequestInput
 
+
 async def request_human_confirmation(ctx):
-    return RequestInput(
-        message="Mastery ledger updated across 4 backends. Continue to Level 5?"
-    )
+    return RequestInput(message="Mastery ledger updated across 4 backends. Continue to Level 5?")
 ```
 
 What it teaches:

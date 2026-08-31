@@ -119,18 +119,21 @@ from transformers import pipeline
 
 pipe = pipeline(
     "image-text-to-text",
-    model="google/gemma-3-4b-it", # "google/gemma-3-12b-it", "google/gemma-3-27b-it" 
+    model="google/gemma-3-4b-it",  # "google/gemma-3-12b-it", "google/gemma-3-27b-it"
     device="cuda",
-    torch_dtype=torch.bfloat16
+    torch_dtype=torch.bfloat16,
 )
 
 messages = [
     {
         "role": "user",
         "content": [
-            {"type": "image", "url": "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/p-blog/candy.JPG"},
-            {"type": "text", "text": "What animal is on the candy?"}
-        ]
+            {
+                "type": "image",
+                "url": "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/p-blog/candy.JPG",
+            },
+            {"type": "text", "text": "What animal is on the candy?"},
+        ],
     }
 ]
 
@@ -147,22 +150,24 @@ You can **interleave** images with text. To do so, just cut off the input text w
 
 ```py
 messages = [
-        {
-            "role": "system",
-            "content": [{"type": "text", "text": "You are a helpful assistant."}]
-        },
-        {
-            "role": "user",
-            "content": [
-                {"type": "text", "text": "I'm already using this supplement "},
-                {"type": "image", "url": "https://huggingface.co/datasets/merve/vlm_test_images/resolve/main/IMG_3018.JPG"},
-                {"type": "text", "text": "and I want to use this one too "},
-                {"type": "image", "url": "https://huggingface.co/datasets/merve/vlm_test_images/resolve/main/IMG_3015.jpg"},
-                {"type": "text", "text": " what are cautions?"},
-            ]
-        },
-
-    ]
+    {"role": "system", "content": [{"type": "text", "text": "You are a helpful assistant."}]},
+    {
+        "role": "user",
+        "content": [
+            {"type": "text", "text": "I'm already using this supplement "},
+            {
+                "type": "image",
+                "url": "https://huggingface.co/datasets/merve/vlm_test_images/resolve/main/IMG_3018.JPG",
+            },
+            {"type": "text", "text": "and I want to use this one too "},
+            {
+                "type": "image",
+                "url": "https://huggingface.co/datasets/merve/vlm_test_images/resolve/main/IMG_3015.jpg",
+            },
+            {"type": "text", "text": " what are cautions?"},
+        ],
+    },
+]
 ```
 
 #### Detailed Inference with Transformers
@@ -180,7 +185,9 @@ from transformers import AutoProcessor, Gemma3ForConditionalGeneration
 
 ckpt = "google/gemma-3-4b-it"
 model = Gemma3ForConditionalGeneration.from_pretrained(
-    ckpt, device_map="auto", torch_dtype=torch.bfloat16,
+    ckpt,
+    device_map="auto",
+    torch_dtype=torch.bfloat16,
 )
 processor = AutoProcessor.from_pretrained(ckpt)
 
@@ -188,14 +195,16 @@ messages = [
     {
         "role": "user",
         "content": [
-            {"type": "image", "url": "https://huggingface.co/spaces/big-vision/paligemma-hf/resolve/main/examples/password.jpg"},
-            {"type": "text", "text": "What is the password?"}
-        ]
+            {
+                "type": "image",
+                "url": "https://huggingface.co/spaces/big-vision/paligemma-hf/resolve/main/examples/password.jpg",
+            },
+            {"type": "text", "text": "What is the password?"},
+        ],
     }
 ]
 inputs = processor.apply_chat_template(
-    messages, add_generation_prompt=True, tokenize=True,
-    return_dict=True, return_tensors="pt"
+    messages, add_generation_prompt=True, tokenize=True, return_dict=True, return_tensors="pt"
 ).to(model.device)
 
 input_len = inputs["input_ids"].shape[-1]
@@ -219,26 +228,30 @@ import torch
 from transformers import AutoTokenizer, Gemma3ForCausalLM
 
 ckpt = "google/gemma-3-4b-it"
-model = Gemma3ForCausalLM.from_pretrained(
-    ckpt, torch_dtype=torch.bfloat16, device_map="auto"
-)
+model = Gemma3ForCausalLM.from_pretrained(ckpt, torch_dtype=torch.bfloat16, device_map="auto")
 tokenizer = AutoTokenizer.from_pretrained(ckpt)
 
 messages = [
     [
         {
             "role": "system",
-            "content": [{"type": "text", "text": "You are a helpful assistant who is fluent in Shakespeare English"},]
+            "content": [
+                {
+                    "type": "text",
+                    "text": "You are a helpful assistant who is fluent in Shakespeare English",
+                },
+            ],
         },
         {
             "role": "user",
-            "content": [{"type": "text", "text": "Who are you?"},]
+            "content": [
+                {"type": "text", "text": "Who are you?"},
+            ],
         },
     ],
 ]
 inputs = tokenizer.apply_chat_template(
-    messages, add_generation_prompt=True, tokenize=True,
-    return_dict=True, return_tensors="pt"
+    messages, add_generation_prompt=True, tokenize=True, return_dict=True, return_tensors="pt"
 ).to(model.device)
 
 input_len = inputs["input_ids"].shape[-1]

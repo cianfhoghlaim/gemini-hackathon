@@ -42,31 +42,21 @@ import urllib.error
 import urllib.request
 from typing import Any, Final
 
-
 _log = logging.getLogger("baml_client")
 
 
 # Tier 1 — call_llm() (LiteLLM gateway via gemini_hackathon.call_llm)
 T1_BASE_URL: Final[str] = os.environ.get("LITELLM_BASE_URL", "http://litellm:4000/v1")
 T1_DEFAULT_MODEL: Final[str] = os.environ.get("LITELLM_MODEL", "minimax")
-T1_API_KEY: Final[str] = os.environ.get(
-    "LITELLM_MASTER_KEY", os.environ.get("LITELLM_API_KEY", "")
-)
+T1_API_KEY: Final[str] = os.environ.get("LITELLM_MASTER_KEY", os.environ.get("LITELLM_API_KEY", ""))
 
 # Tier 2 — Unsloth Studio (local Gemma 4 26B-A4B)
-T2_BASE_URL: Final[str] = os.environ.get(
-    "UNSLOTH_BASE_URL", "http://127.0.0.1:8888/v1"
-)
-T2_MODEL: Final[str] = os.environ.get(
-    "UNSLOTH_MODEL", "unsloth/gemma-4-26B-A4B-it-GGUF"
-)
+T2_BASE_URL: Final[str] = os.environ.get("UNSLOTH_BASE_URL", "http://127.0.0.1:8888/v1")
+T2_MODEL: Final[str] = os.environ.get("UNSLOTH_MODEL", "unsloth/gemma-4-26B-A4B-it-GGUF")
 T2_API_KEY: Final[str] = os.environ.get("UNSLOTH_API_KEY", "ollama")
 
 # Tier 3 — HuggingFace Inference Providers
-T3_BASE_URL: Final[str] = (
-    os.environ.get("HF_INFERENCE_URL")
-    or "https://router.huggingface.co/v1"
-)
+T3_BASE_URL: Final[str] = os.environ.get("HF_INFERENCE_URL") or "https://router.huggingface.co/v1"
 T3_FALLBACK_CHAIN: Final[tuple[str, ...]] = (
     "Qwen/Qwen2.5-7B-Instruct",
     "meta-llama/Llama-3.1-8B-Instruct",
@@ -215,8 +205,7 @@ def chat_complete(
         last_err = RuntimeError(f"{tier_name} failed")
 
     raise RuntimeError(
-        f"All 3 LLM tiers failed (LiteLLM + Unsloth Studio + HF Inference). "
-        f"Last error: {last_err}"
+        f"All 3 LLM tiers failed (LiteLLM + Unsloth Studio + HF Inference). Last error: {last_err}"
     )
 
 

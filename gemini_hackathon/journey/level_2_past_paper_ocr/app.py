@@ -1,10 +1,12 @@
 """Level 2 Gradio app entrypoint (top-level workshop host)."""
+
 from __future__ import annotations
 
 import json
 
 try:
     import gradio as gr  # type: ignore[import-not-found]
+
     GRADIO_AVAILABLE = True
 except ImportError:
     gr = None  # type: ignore[assignment]
@@ -15,10 +17,19 @@ from gemini_hackathon.journey.level_2_past_paper_ocr import run_level_2
 
 def _run(pdf_path: str):
     import asyncio
+
     r = asyncio.run(run_level_2(pdf_path=pdf_path))
     return (
-        json.dumps([{"path": p["path"], "len": len(p.get("text", "")), "error": p.get("error")} for p in r.paths], indent=2),
-        f"{r.voted_path}  (consensus: {r.consensus_score:.2f})" if r.voted_path else "(no consensus — all paths failed)",
+        json.dumps(
+            [
+                {"path": p["path"], "len": len(p.get("text", "")), "error": p.get("error")}
+                for p in r.paths
+            ],
+            indent=2,
+        ),
+        f"{r.voted_path}  (consensus: {r.consensus_score:.2f})"
+        if r.voted_path
+        else "(no consensus — all paths failed)",
         r.voted_text[:6000],
         "\n".join(r.ncca_policy_citations) or "(none — every path returned empty)",
     )
@@ -57,4 +68,5 @@ def main():
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

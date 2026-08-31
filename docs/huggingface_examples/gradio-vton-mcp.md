@@ -42,8 +42,7 @@ import gradio as gr
 import re
 
 
-client = Client("freddyaboulton/IDM-VTON",
-                hf_token="<Your-token>")
+client = Client("freddyaboulton/IDM-VTON", hf_token="<Your-token>")
 
 
 def vton_generation(human_model_img: str, garment: str):
@@ -54,25 +53,26 @@ def vton_generation(human_model_img: str, garment: str):
         garment: The garment to wear.
     """
     output = client.predict(
-        dict={"background": handle_file(human_model_img), "layers":[], "composite":None},
+        dict={"background": handle_file(human_model_img), "layers": [], "composite": None},
         garm_img=handle_file(garment),
         garment_des="",
         is_checked=True,
         is_checked_crop=False,
         denoise_steps=30,
         seed=42,
-        api_name="/tryon"
+        api_name="/tryon",
     )
 
     return output[0]
+
 
 vton_mcp = gr.Interface(
     vton_generation,
     inputs=[
         gr.Image(type="filepath", label="Human Model Image URL"),
-        gr.Image(type="filepath", label="Garment Image URL or File")
+        gr.Image(type="filepath", label="Garment Image URL or File"),
     ],
-    outputs=gr.Image(type="filepath", label="Generated Image")
+    outputs=gr.Image(type="filepath", label="Generated Image"),
 )
 
 if __name__ == "__main__":

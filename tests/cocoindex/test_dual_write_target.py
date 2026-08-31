@@ -24,7 +24,6 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
-
 from cocoindex_flows._shared._vector_target import DualWriteTarget
 
 

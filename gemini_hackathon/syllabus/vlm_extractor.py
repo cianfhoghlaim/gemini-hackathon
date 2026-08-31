@@ -13,13 +13,11 @@ is the online primary; the local two are the offline fallbacks.
 
 from __future__ import annotations
 
-import base64
 import logging
-import os
 import time
 from typing import Any
 
-from .baml_extractor import _baml_to_extracted, _read_source_text
+from .baml_extractor import _read_source_text
 from .extractor import (
     ExtractedSyllabus,
     ExtractionMethod,
@@ -93,6 +91,7 @@ def _call_vlm(
     content = resp.choices[0].message.content or ""
     try:
         import json
+
         return json.loads(content)
     except json.JSONDecodeError as exc:
         raise SyllabusExtractionError(f"VLM returned non-JSON for {model}: {exc}") from exc
@@ -158,26 +157,29 @@ def _stub_result(*, subject: str, language: str) -> dict[str, Any]:
 
 class GeminiFlashVLMSyllabusExtractor(_BaseVLMSyllabusExtractor):
     """The Gemini 3.5 Flash VLM extractor (online primary)."""
+
     method = ExtractionMethod.VLM_GEMINI_FLASH
     model = "gemini-3.5-flash"
 
 
 class Gemma4E4BVLMSyllabusExtractor(_BaseVLMSyllabusExtractor):
     """The Gemma 4 E4B-it VLM extractor (local fallback via llama-swap)."""
+
     method = ExtractionMethod.VLM_GEMMA4_E4B
     model = "google/gemma-4-E4B-it-qat-q4_0-gguf"
 
 
 class PaliGemma2VLMSyllabusExtractor(_BaseVLMSyllabusExtractor):
     """The PaliGemma 2 VLM extractor (OCR specialist for scanned PDFs)."""
+
     method = ExtractionMethod.VLM_PALIGEMMA2
     model = "google/paligemma2-3b-mix-448-gguf"
 
 
 __all__ = [
+    "VLM_RESPONSE_SCHEMA",
+    "VLM_SYSTEM_PROMPT",
     "GeminiFlashVLMSyllabusExtractor",
     "Gemma4E4BVLMSyllabusExtractor",
     "PaliGemma2VLMSyllabusExtractor",
-    "VLM_RESPONSE_SCHEMA",
-    "VLM_SYSTEM_PROMPT",
 ]

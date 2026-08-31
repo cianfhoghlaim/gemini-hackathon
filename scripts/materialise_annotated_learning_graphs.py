@@ -111,7 +111,7 @@ def _stub_graph(subject: str) -> dict[str, Any]:
             / "learning_graph_intro_to_python_programming_y8.pdf"
         ),
         "source_pages": [1],
-        "generated_at": _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),  # noqa: UP017
+        "generated_at": _dt.datetime.now(_dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
 
 

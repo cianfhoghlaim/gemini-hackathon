@@ -258,31 +258,31 @@ from translate.storage.tmx import tmxfile
 import json
 from pathlib import Path
 
+
 def parse_tmx_file(tmx_path: str) -> list:
     """Parse TMX file and extract translation units."""
-    with open(tmx_path, 'rb') as f:
+    with open(tmx_path, "rb") as f:
         tmx = tmxfile(f)
 
     translation_units = []
     for unit in tmx.units:
-        translation_units.append({
-            'source': unit.source,
-            'target': unit.target,
-            'source_lang': 'en',
-            'target_lang': 'ga'
-        })
+        translation_units.append(
+            {"source": unit.source, "target": unit.target, "source_lang": "en", "target_lang": "ga"}
+        )
 
     return translation_units
 
+
 def export_to_jsonl(units: list, output_path: str):
     """Export translation units to JSONL format."""
-    with open(output_path, 'w', encoding='utf-8') as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         for unit in units:
-            f.write(json.dumps(unit, ensure_ascii=False) + '\n')
+            f.write(json.dumps(unit, ensure_ascii=False) + "\n")
+
 
 # Usage
-units = parse_tmx_file('gaois_parallel_corpus.tmx')
-export_to_jsonl(units, 'irish_english_parallel.jsonl')
+units = parse_tmx_file("gaois_parallel_corpus.tmx")
+export_to_jsonl(units, "irish_english_parallel.jsonl")
 print(f"Exported {len(units)} translation units")
 ```
 
@@ -325,7 +325,8 @@ hunalign -text en-ga.dic english.txt irish.txt > aligned.txt
 import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
 
-nltk.download('punkt')
+nltk.download("punkt")
+
 
 def tokenize_irish_text(text: str) -> list:
     """Tokenize Irish text into sentences and words."""
@@ -389,19 +390,17 @@ import json
 from typing import List, Dict
 from pathlib import Path
 
+
 class GaoisAPICollector:
     def __init__(self, api_key: str):
         self.api_key = api_key
         self.base_urls = {
-            'logainm': 'https://www.logainm.ie/api/v1.0',
-            'duchas': 'https://www.duchas.ie/api/v0.6'
+            "logainm": "https://www.logainm.ie/api/v1.0",
+            "duchas": "https://www.duchas.ie/api/v0.6",
         }
-        self.headers = {'X-Api-Key': api_key}
+        self.headers = {"X-Api-Key": api_key}
 
-    async def fetch_logainm_placenames(
-        self,
-        session: aiohttp.ClientSession
-    ) -> List[Dict]:
+    async def fetch_logainm_placenames(self, session: aiohttp.ClientSession) -> List[Dict]:
         """Fetch all placenames from Logainm API"""
         url = f"{self.base_urls['logainm']}/placenames"
         placenames = []
@@ -409,17 +408,16 @@ class GaoisAPICollector:
 
         while True:
             async with session.get(
-                f"{url}?page={page}&per_page=100",
-                headers=self.headers
+                f"{url}?page={page}&per_page=100", headers=self.headers
             ) as response:
                 if response.status != 200:
                     break
 
                 data = await response.json()
-                if not data.get('results'):
+                if not data.get("results"):
                     break
 
-                placenames.extend(data['results'])
+                placenames.extend(data["results"])
                 page += 1
 
                 # Rate limiting
@@ -427,22 +425,18 @@ class GaoisAPICollector:
 
         return placenames
 
-    async def fetch_duchas_stories(
-        self,
-        session: aiohttp.ClientSession
-    ) -> List[Dict]:
+    async def fetch_duchas_stories(self, session: aiohttp.ClientSession) -> List[Dict]:
         """Fetch folklore stories from Duchas API"""
         url = f"{self.base_urls['duchas']}/stories"
         stories = []
 
-        for lang in ['ga', 'en']:
+        for lang in ["ga", "en"]:
             async with session.get(
-                f"{url}?language={lang}&per_page=100",
-                headers=self.headers
+                f"{url}?language={lang}&per_page=100", headers=self.headers
             ) as response:
                 if response.status == 200:
                     data = await response.json()
-                    stories.extend(data.get('results', []))
+                    stories.extend(data.get("results", []))
 
         return stories
 
@@ -450,14 +444,10 @@ class GaoisAPICollector:
         """Main collection orchestrator"""
         async with aiohttp.ClientSession() as session:
             placenames, stories = await asyncio.gather(
-                self.fetch_logainm_placenames(session),
-                self.fetch_duchas_stories(session)
+                self.fetch_logainm_placenames(session), self.fetch_duchas_stories(session)
             )
 
-            return {
-                'placenames': placenames,
-                'folklore': stories
-            }
+            return {"placenames": placenames, "folklore": stories}
 
     def save_dataset(self, data: Dict, output_dir: Path):
         """Save collected data to disk"""
@@ -465,11 +455,12 @@ class GaoisAPICollector:
 
         for dataset_name, records in data.items():
             output_file = output_dir / f"{dataset_name}.jsonl"
-            with output_file.open('w', encoding='utf-8') as f:
+            with output_file.open("w", encoding="utf-8") as f:
                 for record in records:
-                    f.write(json.dumps(record, ensure_ascii=False) + '\n')
+                    f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
             print(f"Saved {len(records)} records to {output_file}")
+
 
 async def main():
     api_key = "YOUR_API_KEY_HERE"  # Get from gaois.ie
@@ -477,6 +468,7 @@ async def main():
     collector = GaoisAPICollector(api_key)
     data = await collector.collect_all_data()
     collector.save_dataset(data, Path("./gaois_datasets"))
+
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -509,11 +501,11 @@ import pandas as pd
 import pyarrow.parquet as pq
 
 # Convert to Parquet
-df = pd.read_json('parallel_corpus.jsonl', lines=True)
-df.to_parquet('irish_english_parallel.parquet', compression='snappy')
+df = pd.read_json("parallel_corpus.jsonl", lines=True)
+df.to_parquet("irish_english_parallel.parquet", compression="snappy")
 
 # Read Parquet
-df = pd.read_parquet('irish_english_parallel.parquet')
+df = pd.read_parquet("irish_english_parallel.parquet")
 print(f"Loaded {len(df)} records")
 ```
 
@@ -530,18 +522,20 @@ The standard format for ML/LLM training:
 from datasets import Dataset, DatasetDict
 
 # Load from JSONL
-dataset = Dataset.from_json('parallel_corpus.jsonl')
+dataset = Dataset.from_json("parallel_corpus.jsonl")
 
 # Or from Pandas DataFrame
 dataset = Dataset.from_pandas(df)
 
 # Create train/validation/test splits
 dataset_dict = dataset.train_test_split(test_size=0.1)
-dataset_dict = DatasetDict({
-    'train': dataset_dict['train'],
-    'validation': dataset_dict['test'].train_test_split(test_size=0.5)['train'],
-    'test': dataset_dict['test'].train_test_split(test_size=0.5)['test']
-})
+dataset_dict = DatasetDict(
+    {
+        "train": dataset_dict["train"],
+        "validation": dataset_dict["test"].train_test_split(test_size=0.5)["train"],
+        "test": dataset_dict["test"].train_test_split(test_size=0.5)["test"],
+    }
+)
 
 # Push to HuggingFace Hub
 dataset_dict.push_to_hub("your-username/irish-english-parallel")
@@ -593,17 +587,18 @@ Maintain TMX for CAT tool compatibility:
 ```python
 from translate.storage.tmx import tmxfile, tmxunit
 
+
 def create_tmx_file(parallel_data: list, output_path: str):
     """Create TMX file from parallel data."""
     tmx = tmxfile()
-    tmx.settargetlanguage('ga')
+    tmx.settargetlanguage("ga")
 
     for pair in parallel_data:
-        unit = tmxunit(pair['english'])
-        unit.target = pair['irish']
+        unit = tmxunit(pair["english"])
+        unit.target = pair["irish"]
         tmx.addunit(unit)
 
-    with open(output_path, 'wb') as f:
+    with open(output_path, "wb") as f:
         tmx.serialize(f)
 ```
 
@@ -825,12 +820,7 @@ from transformers.serving import ModelServer
 model = AutoModelForSeq2SeqLM.from_pretrained("google/t5gemma-2-4b")
 tokenizer = AutoTokenizer.from_pretrained("google/t5gemma-2-4b")
 
-server = ModelServer(
-    model=model,
-    tokenizer=tokenizer,
-    continuous_batching=True,
-    max_batch_size=32
-)
+server = ModelServer(model=model, tokenizer=tokenizer, continuous_batching=True, max_batch_size=32)
 
 server.start(port=8000)
 ```

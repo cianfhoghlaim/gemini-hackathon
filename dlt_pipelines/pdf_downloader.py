@@ -39,7 +39,6 @@ import re
 import sqlite3
 import sys
 from collections.abc import Iterator
-from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -90,7 +89,7 @@ def _page_count(pdf_bytes: bytes) -> int | None:
     try:
         reader = PdfReader(io.BytesIO(pdf_bytes))
         return len(reader.pages)
-    except Exception as exc:  # noqa: BLE001 — defensive: any decode error
+    except Exception as exc:
         logger.warning("pdf_downloader.page_count_failed reason=%s", exc)
         return None
 
@@ -102,8 +101,8 @@ def _fetch_bytes(url: str, *, timeout_seconds: int = 30) -> bytes:
     modern TLS), but the stdlib path is the canonical one for production
     CI environments without httpx pre-installed.
     """
-    import urllib.request
     import urllib.error
+    import urllib.request
 
     last_exc: BaseException | None = None
     for attempt in range(1, 4):  # 3 attempts
@@ -118,7 +117,9 @@ def _fetch_bytes(url: str, *, timeout_seconds: int = 30) -> bytes:
             last_exc = exc
             logger.warning(
                 "pdf_downloader.fetch_failed attempt=%d url=%s reason=%s",
-                attempt, url, exc,
+                attempt,
+                url,
+                exc,
             )
     raise RuntimeError(f"failed to fetch {url} after 3 attempts: {last_exc}")
 
@@ -155,12 +156,10 @@ def _output_path_for(
     upload when the env var is set). The function signature here
     matches the Phase 2 task spec snippet.
     """
-    from dlt_pipelines._shared import write_pdf_to_gcs_or_local  # noqa: PLC0415
-
     # The Phase 2 helper writes bytes; this function is path-only so
     # we delegate the actual upload to the caller (`_write_bytes`).
     # When `GCS_RAW_BUCKET` is unset, return the local path only.
-    import os  # noqa: PLC0415
+    import os
 
     if os.environ.get("GCS_RAW_BUCKET"):
         # Caller must pass bytes via write_pdf_to_gcs_or_local; we
@@ -171,13 +170,15 @@ def _output_path_for(
             language=language,
             sha256=sha256,
         )
-    return str(_local_path_for(
-        source_key=source_key,
-        subject=subject,
-        language=language,
-        sha256=sha256,
-        root=root,
-    ))
+    return str(
+        _local_path_for(
+            source_key=source_key,
+            subject=subject,
+            language=language,
+            sha256=sha256,
+            root=root,
+        )
+    )
 
 
 def _gcs_path_for(*, source_key: str, subject: str, language: str, sha256: str) -> str:
@@ -187,7 +188,7 @@ def _gcs_path_for(*, source_key: str, subject: str, language: str, sha256: str) 
     `dlt_pipelines/_shared.write_pdf_to_gcs_or_local`:
         gs://<bucket>/<source_key>/<subject>/<language>/<sha256>.pdf
     """
-    import os  # noqa: PLC0415
+    import os
 
     bucket = os.environ["GCS_RAW_BUCKET"]
     return f"gs://{bucket}/{source_key}/{subject}/{language}/{sha256}.pdf"
@@ -208,7 +209,7 @@ def _write_pdf_bytes(
     for the actual upload logic (so the lazy-import + fallback pattern
     lives in one place).
     """
-    from dlt_pipelines._shared import write_pdf_to_gcs_or_local  # noqa: PLC0415
+    from dlt_pipelines._shared import write_pdf_to_gcs_or_local
 
     return write_pdf_to_gcs_or_local(
         content,
@@ -248,7 +249,7 @@ def _iter_remote_url_rows(
     )
     cols = [d[0] for d in cur.description]
     for row in cur.fetchall():
-        yield dict(zip(cols, row))
+        yield dict(zip(cols, row, strict=False))
 
 
 def _upsert_downloaded_row(
@@ -284,8 +285,17 @@ def _upsert_downloaded_row(
           AND fetched_at = ?
         """,
         (
-            new_pdf_path, file_size_bytes, page_count, sha256, fetched_at,
-            source_key, jurisdiction, level, language, subject, fetched_at,
+            new_pdf_path,
+            file_size_bytes,
+            page_count,
+            sha256,
+            fetched_at,
+            source_key,
+            jurisdiction,
+            level,
+            language,
+            subject,
+            fetched_at,
         ),
     )
 
@@ -295,10 +305,7 @@ def _already_downloaded(sha256: str, root: pathlib.Path) -> bool:
     if not root.exists():
         return False
     # Walk the tree once; on a typical 13-PDF corpus this is < 100 files.
-    for path in root.rglob(f"{sha256}.pdf"):
-        if path.is_file():
-            return True
-    return False
+    return any(path.is_file() for path in root.rglob(f"{sha256}.pdf"))
 
 
 def run_downloader(
@@ -416,12 +423,17 @@ def run_downloader(
                 stats["downloaded"] += 1
                 logger.info(
                     "pdf_downloader.downloaded path=%s sha256=%s bytes=%d pages=%s",
-                    stored_uri, sha, len(content), page_count,
+                    stored_uri,
+                    sha,
+                    len(content),
+                    page_count,
                 )
-            except Exception as exc:  # noqa: BLE001 — keep going on failure
+            except Exception as exc:
                 stats["failed"] += 1
                 logger.warning(
-                    "pdf_downloader.failed url=%s reason=%s", url, exc,
+                    "pdf_downloader.failed url=%s reason=%s",
+                    url,
+                    exc,
                 )
         conn.commit()
     return stats

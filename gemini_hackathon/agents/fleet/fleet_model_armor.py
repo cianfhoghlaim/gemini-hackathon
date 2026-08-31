@@ -62,7 +62,9 @@ INJECTION_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"print\s+(your\s+|the\s+)?(system|initial)\s+prompt", re.IGNORECASE),
     re.compile(r"you\s+are\s+now\s+(in\s+)?(DAN|developer|god|jailbreak)\s+mode", re.IGNORECASE),
     re.compile(r"\bDAN\s+mode\b", re.IGNORECASE),
-    re.compile(r"without\s+(any\s+)?(ethical|safety)\s+(filter|restriction|guideline)", re.IGNORECASE),
+    re.compile(
+        r"without\s+(any\s+)?(ethical|safety)\s+(filter|restriction|guideline)", re.IGNORECASE
+    ),
     re.compile(r"<\|im_start\|>|<\|im_end\|>|\[\[INST\]\]|\[\[/INST\]\]"),
     re.compile(r"<system>\s*</system>|<system>.*?</system>", re.IGNORECASE | re.DOTALL),
     re.compile(r"\\u200b|\\u200c|\\u200d|\\u2060", re.IGNORECASE),  # zero-width smuggling
@@ -239,8 +241,7 @@ class ModelArmor:
         """
         if len(text) > self.max_prompt_chars:
             raise PromptTooLongError(
-                f"Prompt length {len(text)} > max_prompt_chars "
-                f"{self.max_prompt_chars}"
+                f"Prompt length {len(text)} > max_prompt_chars {self.max_prompt_chars}"
             )
 
         reject_inj = self.reject_injections if strict is None else strict
@@ -328,9 +329,7 @@ class ModelArmor:
         # 2. Strip smuggled role tags.
         cleaned = text
         for tag in ("system", "assistant", "user", "tool"):
-            pattern = re.compile(
-                rf"</?{tag}(?:\s[^>]*)?>", re.IGNORECASE
-            )
+            pattern = re.compile(rf"</?{tag}(?:\s[^>]*)?>", re.IGNORECASE)
             if pattern.search(cleaned):
                 stripped.append(tag)
                 cleaned = pattern.sub("", cleaned)
@@ -434,17 +433,17 @@ def _redact_pii(text: str) -> tuple[str, int]:
 # ---------------------------------------------------------------------------
 
 __all__ = [
-    "ArmorError",
     "DEFAULT_MAX_COMPLETION_CHARS",
     "DEFAULT_MAX_PROMPT_CHARS",
     "INJECTION_PATTERNS",
     "JAILBREAK_PATTERNS",
+    "PII_PATTERNS",
+    "ArmorError",
+    "CompletionTooLongError",
     "JailbreakError",
     "ModelArmor",
-    "PII_PATTERNS",
     "PromptInjectionError",
     "PromptTooLongError",
-    "CompletionTooLongError",
     "SanitisedCompletion",
     "SanitisedPrompt",
 ]

@@ -29,8 +29,8 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 try:
-    from google.adk import Agent, Workflow, Event
-    from google.adk.workflow import JoinNode, START
+    from google.adk import Agent, Event, Workflow
+    from google.adk.workflow import START, JoinNode
 except ImportError:
     Agent = None  # type: ignore[assignment,misc]
     Workflow = None  # type: ignore[assignment,misc]
@@ -45,32 +45,40 @@ _log = logging.getLogger(__name__)
 # ─── Function nodes (the parallel fetches; per adk2-tutorial/L2a) ────────
 
 
-async def fetch_syllabus(node_input: Any) -> "Event":
+async def fetch_syllabus(node_input: Any) -> Event:
     """Fetch the LC syllabus for the active subnation + subject.
 
     Reads from `data/ireland/ncca_policy/` + `data/ireland/lc_subject/`
     via the canonical Ireland DLT pipeline (W5).
     """
-    return Event(output={
-        "syllabus_id": "lc-syllabus-stub",
-        "ncca_policy_citations": ["SC-L1-L2, p.12", "key-competencies, p.7"],
-    })
+    return Event(
+        output={
+            "syllabus_id": "lc-syllabus-stub",
+            "ncca_policy_citations": ["SC-L1-L2, p.12", "key-competencies, p.7"],
+        }
+    )
 
 
-async def fetch_exam_paper(node_input: Any) -> "Event":
+async def fetch_exam_paper(node_input: Any) -> Event:
     """Fetch the LC past paper for the active subnation + subject + year."""
-    return Event(output={
-        "paper_id": "lc-exam-stub",
-        "year": 2024,
-    })
+    return Event(
+        output={
+            "paper_id": "lc-exam-stub",
+            "year": 2024,
+        }
+    )
 
 
-async def fetch_marking(node_input: Any) -> "Event":
+async def fetch_marking(node_input: Any) -> Event:
     """Fetch the LC marking scheme for the active past paper."""
-    return Event(output={
-        "marking_id": "lc-marking-stub",
-        "ncca_policy_citations": ["the-potential-of-technology-to-support-online-certification-and-reporting.pdf, p.4"],
-    })
+    return Event(
+        output={
+            "marking_id": "lc-marking-stub",
+            "ncca_policy_citations": [
+                "the-potential-of-technology-to-support-online-certification-and-reporting.pdf, p.4"
+            ],
+        }
+    )
 
 
 join_inputs = JoinNode(name="join_inputs")
@@ -79,25 +87,27 @@ join_inputs = JoinNode(name="join_inputs")
 # ─── Synthesize node (the aggregation; per adk2-tutorial/L2a) ───────────
 
 
-async def synthesize_lesson(node_input: Any) -> "Event":
+async def synthesize_lesson(node_input: Any) -> Event:
     """Combine syllabus + exam paper + marking into a typed lesson.
 
     The output is the per-subject LC lesson record consumed by the
     certificate pipeline (W14) + the editorial canvas (W12).
     """
-    return Event(output={
-        "lesson_id": "lc-lesson-stub",
-        "subject": "chemistry",
-        "ncca_policy_citations": node_input.get("join_inputs", {}).get(
-            "fetch_syllabus", {}
-        ).get("ncca_policy_citations", []),
-    })
+    return Event(
+        output={
+            "lesson_id": "lc-lesson-stub",
+            "subject": "chemistry",
+            "ncca_policy_citations": node_input.get("join_inputs", {})
+            .get("fetch_syllabus", {})
+            .get("ncca_policy_citations", []),
+        }
+    )
 
 
 # ─── Subject specialists (the L2b_router pattern) ──────────────────────
 
 
-async def route_by_subject(node_input: Any) -> "Event":
+async def route_by_subject(node_input: Any) -> Event:
     """Pillar-1 if-else router: pick the subject specialist.
 
     Returns a dict with a `route=` key. The dict edge then picks
@@ -123,7 +133,7 @@ def build_subjects_registry() -> dict[str, Any]:
         return {}
 
     out: dict[str, Any] = {}
-    for slug, wire in SUBJECT_WIRING_REGISTRY.items():
+    for slug, _wire in SUBJECT_WIRING_REGISTRY.items():
         agent = build_specialist_agent(slug)
         if agent is not None:
             out[slug] = agent
@@ -171,9 +181,9 @@ def build_leaving_certificate_workflow() -> Any:
 __all__ = [
     "build_leaving_certificate_workflow",
     "build_subjects_registry",
-    "fetch_syllabus",
     "fetch_exam_paper",
     "fetch_marking",
+    "fetch_syllabus",
     "route_by_subject",
     "synthesize_lesson",
 ]

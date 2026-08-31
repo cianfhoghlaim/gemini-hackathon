@@ -36,7 +36,7 @@ from __future__ import annotations
 
 import re
 import time
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
@@ -46,7 +46,7 @@ from gemini_hackathon.call_llm import LLMResponse, Message, call_llm
 
 from .fleet_identity import FleetIdentity, IdentityContext
 from .fleet_model_armor import ModelArmor, SanitisedCompletion, SanitisedPrompt
-from .fleet_observability import Observability, TraceContext
+from .fleet_observability import Observability
 
 logger = structlog.get_logger(__name__)
 
@@ -84,7 +84,6 @@ KEYWORD_TO_AGENT: dict[str, AgentName] = {
     "change detection": "curriculum_change_sensor",
     "diff syllabus": "curriculum_change_sensor",
     "new syllabus": "curriculum_change_sensor",
-
     # Marking grader workflow (teacher-only).
     "mark this": "marking_grader_workflow",
     "grade this": "marking_grader_workflow",
@@ -93,7 +92,6 @@ KEYWORD_TO_AGENT: dict[str, AgentName] = {
     "compare to marking": "marking_grader_workflow",
     "rubric": "marking_grader_workflow",
     "grade my": "marking_grader_workflow",
-
     # Equivalency generator.
     "equivalent in": "equivalency_generator",
     "equivalent topic": "equivalency_generator",
@@ -107,7 +105,6 @@ KEYWORD_TO_AGENT: dict[str, AgentName] = {
     "pearson equivalent": "equivalency_generator",
     "ocr equivalent": "equivalency_generator",
     "isle of man equivalent": "equivalency_generator",
-
     # Adaptive tutor — catch-all (see `_route`).
 }
 
@@ -230,9 +227,7 @@ class FleetGateway:
         self.identity = identity or FleetIdentity()
         self.armor = armor or ModelArmor()
         self.observability = observability or Observability()
-        self.agent_invokers: dict[str, Callable[..., list[Message]]] = (
-            dict(agent_invokers or {})
-        )
+        self.agent_invokers: dict[str, Callable[..., list[Message]]] = dict(agent_invokers or {})
 
     # ------------------------------------------------------------------
     # Public API
@@ -267,9 +262,7 @@ class FleetGateway:
         sanitised_input = self.armor.sanitise_input(invocation.user_message)
 
         # 3. Route.
-        agent = self._route(
-            sanitised_input.text, force=invocation.force_agent
-        )
+        agent = self._route(sanitised_input.text, force=invocation.force_agent)
 
         # 4. Permission check.
         perm = AGENT_PERMISSIONS.get(agent)
@@ -354,9 +347,7 @@ class FleetGateway:
             invoker: The callable that produces the message list.
         """
         if agent_name not in AGENT_NAMES:
-            raise ValueError(
-                f"Unknown agent '{agent_name}'. Must be one of {AGENT_NAMES}."
-            )
+            raise ValueError(f"Unknown agent '{agent_name}'. Must be one of {AGENT_NAMES}.")
         self.agent_invokers[agent_name] = invoker
 
     # ------------------------------------------------------------------
@@ -375,10 +366,7 @@ class FleetGateway:
         """
         if force:
             if force not in AGENT_NAMES:
-                raise ValueError(
-                    f"Forced agent '{force}' is not in AGENT_NAMES "
-                    f"{AGENT_NAMES}."
-                )
+                raise ValueError(f"Forced agent '{force}' is not in AGENT_NAMES {AGENT_NAMES}.")
             return force
 
         lowered = query.lower()
@@ -445,11 +433,11 @@ def is_administrative_query(query: str) -> bool:
 __all__ = [
     "AGENT_NAMES",
     "AGENT_PERMISSIONS",
+    "KEYWORD_TO_AGENT",
     "AgentInvocation",
     "AgentName",
     "AgentResponse",
     "FleetGateway",
-    "KEYWORD_TO_AGENT",
     "agent_for_query",
     "is_administrative_query",
     "list_known_keywords",

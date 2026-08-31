@@ -24,6 +24,7 @@ Usage:
     python -m gemini_hackathon.journey.sourcing_copilot.cli          # interactive REPL
     python -m gemini_hackathon.journey.sourcing_copilot.cli --status  # one-shot summary
 """
+
 from __future__ import annotations
 
 import logging

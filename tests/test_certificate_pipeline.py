@@ -95,13 +95,15 @@ def test_pipeline_runs_through_all_seven_stages():
     pipeline._export_pdf = AsyncMock(return_value=b"%PDF-1.4\n")
     pipeline._save_to_provenance = AsyncMock()
 
-    record = _do_run(pipeline.run(
-        learner_id="learner-uuid-1",
-        learner_name="Maya O'Brien",
-        subject_slug="chemistry_lc",
-        stage="scoil_sinsearach",
-        outcomes=[_outcome()],
-    ))
+    record = _do_run(
+        pipeline.run(
+            learner_id="learner-uuid-1",
+            learner_name="Maya O'Brien",
+            subject_slug="chemistry_lc",
+            stage="scoil_sinsearach",
+            outcomes=[_outcome()],
+        )
+    )
 
     # All 7 stages were invoked.
     pipeline._extract_criteria.assert_awaited_once()
@@ -140,9 +142,7 @@ def test_citation_carries_required_fields():
 
 def test_citation_is_frozen_dataclass():
     """Citations are frozen so they cannot be mutated mid-pipeline."""
-    cite = CertificationCitation(
-        source_pdf="x.pdf", page=1, quote="q", relevance="r"
-    )
+    cite = CertificationCitation(source_pdf="x.pdf", page=1, quote="q", relevance="r")
     with pytest.raises((AttributeError, Exception)):
         cite.page = 99  # type: ignore[misc]
 

@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
-import io
 import pathlib
 import sqlite3
 
@@ -32,10 +31,10 @@ import pytest
 def _load_module():
     spec = importlib.util.spec_from_file_location(
         "_test_pd_mod",
-        pathlib.Path(__file__).resolve().parent.parent
-        / "dlt_pipelines" / "pdf_downloader.py",
+        pathlib.Path(__file__).resolve().parent.parent / "dlt_pipelines" / "pdf_downloader.py",
     )
-    assert spec is not None and spec.loader is not None
+    assert spec is not None
+    assert spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -50,23 +49,21 @@ def _minimal_pdf_bytes(page_count: int = 1) -> bytes:
     objects: list[str] = []
     objects.append("<< /Type /Catalog /Pages 2 0 R >>")
     objects.append(
-        f"<< /Type /Pages /Kids [{ ' '.join(f'{3+i} 0 R' for i in range(page_count))} ] /Count {page_count} >>"
+        f"<< /Type /Pages /Kids [{' '.join(f'{3 + i} 0 R' for i in range(page_count))} ] /Count {page_count} >>"
     )
     for i in range(page_count):
-        objects.append(
-            f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>"
-        )
+        objects.append("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>")
     body_parts = ["%PDF-1.4\n"]
     offsets: list[int] = []
     for i, obj in enumerate(objects):
         offsets.append(sum(len(p.encode("latin-1")) for p in body_parts))
-        body_parts.append(f"{i+1} 0 obj\n{obj}\nendobj\n")
+        body_parts.append(f"{i + 1} 0 obj\n{obj}\nendobj\n")
     xref_offset = sum(len(p.encode("latin-1")) for p in body_parts)
     body_parts.append(
-        f"xref\n0 {len(objects)+1}\n0000000000 65535 f \n"
+        f"xref\n0 {len(objects) + 1}\n0000000000 65535 f \n"
         + "".join(f"{o:010d} 00000 n \n" for o in offsets)
         + "trailer\n<< /Size "
-        + str(len(objects)+1)
+        + str(len(objects) + 1)
         + " /Root 1 0 R >>\nstartxref\n"
         + str(xref_offset)
         + "\n%%EOF\n"
@@ -157,9 +154,7 @@ def test_local_path_for_shape() -> None:
         sha256="abc123",
         root=root,
     )
-    assert path == pathlib.Path(
-        "/tmp/raw/aqa-org-uk/mathematics-a-level/en/abc123.pdf"
-    )
+    assert path == pathlib.Path("/tmp/raw/aqa-org-uk/mathematics-a-level/en/abc123.pdf")
 
 
 def test_run_downloader_no_duckdb(tmp_path: pathlib.Path) -> None:
@@ -247,6 +242,7 @@ def test_run_downloader_handles_fetch_failure(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, duckdb_path: pathlib.Path
 ) -> None:
     """If the fetcher raises, the row stays as remote_url (not flipped)."""
+
     def fake_fetch(url: str, *, timeout_seconds: int = 30) -> bytes:
         raise RuntimeError("simulated network failure")
 
@@ -261,8 +257,7 @@ def test_run_downloader_handles_fetch_failure(
 
     with sqlite3.connect(str(duckdb_path)) as conn:
         row = conn.execute(
-            "SELECT source_kind, pdf_path FROM official_documents "
-            "WHERE source_key='aqa.org.uk'"
+            "SELECT source_kind, pdf_path FROM official_documents WHERE source_key='aqa.org.uk'"
         ).fetchone()
     assert row[0] == "remote_url"
     assert row[1] == "http://example.com/sample.pdf"

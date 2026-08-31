@@ -340,7 +340,7 @@ chief_agent = Agent(
     role="Orchestrator for Irish language processing",
     model=irish_llm,
     markdown=True,
-    monitoring=True
+    monitoring=True,
 )
 ```
 
@@ -350,9 +350,7 @@ chief_agent = Agent(
 from agno.tools.mcp import MCPTools
 
 vision_mcp_tools = MCPTools(
-    command="npx",
-    args=["-y", "@vision/mcp-server"],
-    env={"API_KEY": os.getenv("VISION_API_KEY")}
+    command="npx", args=["-y", "@vision/mcp-server"], env={"API_KEY": os.getenv("VISION_API_KEY")}
 )
 
 vision_specialist = Agent(
@@ -395,6 +393,7 @@ function ExtractExamData(exam_text: string) -> ExamPaper {
 
 ```python
 from langfuse.decorators import observe
+
 
 @observe(name="digitize_irish_document")
 def run_digitization(pdf_path):
@@ -448,8 +447,7 @@ model, tokenizer = FastLanguageModel.from_pretrained(
 model = FastLanguageModel.get_peft_model(
     model,
     r=64,  # Higher rank for language adaptation
-    target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
-                    "gate_proj", "up_proj", "down_proj"],
+    target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
     lora_alpha=128,
     lora_dropout=0,
     use_gradient_checkpointing="unsloth",
@@ -471,7 +469,7 @@ model = FastLanguageModel.get_peft_model(
 model.save_pretrained_gguf(
     "Llama-3.2-3B-Irish-Instruct",
     tokenizer,
-    quantization_method="q4_k_m"  # Best balance
+    quantization_method="q4_k_m",  # Best balance
 )
 ```
 

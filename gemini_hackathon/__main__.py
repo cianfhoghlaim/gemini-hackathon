@@ -7,7 +7,7 @@ public demo (per the BIEP Hackathon v3 specification). Running::
 
 is equivalent to invoking the console script::
 
-    gemini-hackathon
+    gemini - hackathon
 
 Both routes go through :func:`gemini_hackathon.cli.main`.
 
@@ -19,7 +19,6 @@ the ``-m`` surface stay byte-identical.
 from __future__ import annotations
 
 from gemini_hackathon.cli import main
-
 
 if __name__ == "__main__":
     main()

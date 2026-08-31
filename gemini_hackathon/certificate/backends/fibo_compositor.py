@@ -7,7 +7,7 @@ import time
 from typing import Any
 
 from . import CompositorResult, build_prompt_from_concept
-from .compositor_base import AssetCompositor, _make_stub_result
+from .compositor_base import _make_stub_result
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +20,10 @@ class FIBOCompositor:
 
     def is_available(self) -> bool:
         try:
-            import httpx
             import os
+
+            import httpx
+
             base_url = os.environ.get("COMFYUI_BASE_URL", "http://127.0.0.1:8188")
             r = httpx.get(f"{base_url}/system_stats", timeout=2.0)
             return r.status_code == 200
@@ -34,7 +36,9 @@ class FIBOCompositor:
             return _make_stub_result(self.backend, self.model_key, seed=seed or 0, duration_ms=0)
         try:
             import os
+
             import httpx
+
             base_url = os.environ.get("COMFYUI_BASE_URL", "http://127.0.0.1:8188").rstrip("/")
             api_key = os.environ.get("COMFYUI_API_KEY", "not-required")
             actual_seed = seed or int(time.time() * 1000) % (1 << 31)

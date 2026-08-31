@@ -28,7 +28,6 @@ calls `BAMLSyllabusExtractor.extract()` honouring `BAML_TEST_MODE=true`.
 
 from __future__ import annotations
 
-import json
 import logging
 import sqlite3
 from pathlib import Path
@@ -85,7 +84,7 @@ def _load_syllabi_rows(limit: int = 25) -> list[list]:
                 (limit,),
             ).fetchall()
         return [list(r) for r in rows]
-    except Exception as exc:  # noqa: BLE001 — surfaces in UI
+    except Exception as exc:
         return [["ERROR", str(exc), "", "", ""]]
 
 
@@ -103,7 +102,7 @@ def _load_skill_progression(limit: int = 50) -> list[list]:
                 (limit,),
             ).fetchall()
         return [list(r) for r in rows]
-    except Exception as exc:  # noqa: BLE001 — surfaces in UI
+    except Exception as exc:
         return [["ERROR", str(exc), "", "", "", ""]]
 
 
@@ -235,8 +234,7 @@ def build_app():
     """
     if gr is None:
         raise ImportError(
-            "Gradio is required for build_app(); install with "
-            "`pip install gradio>=6.0,<7.0`"
+            "Gradio is required for build_app(); install with `pip install gradio>=6.0,<7.0`"
         )
 
     # The 7 features are wired as Gradio tabs. Each tab delegates to the
@@ -249,9 +247,7 @@ def build_app():
     #   - Bilingual EN/GA       -> Side-by-side render (Fiosraigh)
     #   - Certificate           -> gr.Gallery of data/syllabi/*.pdf (W14)
     #   - Skill Progression     -> DuckDB raw.official_documents (W9)
-    with gr.Blocks(
-        theme=apply_education_theme(), css=GRADIO_CSS, title="Anam Oideachais"
-    ) as demo:
+    with gr.Blocks(theme=apply_education_theme(), css=GRADIO_CSS, title="Anam Oideachais") as demo:
         gr.Markdown(
             f"""# {t("anam_education.title")}
 ### *{t("anam_education.subtitle")}*
@@ -277,8 +273,10 @@ system, on one canvas. Each tab maps to one of the 5 stage coordinators
                     interactive=False,
                     wrap=True,
                 )
-                cm_refresh.click(fn=lambda: _load_syllabi_rows(), outputs=[cm_df])
-                _build_baml_operator(default_subject="computer_science", accent_class="stage-bunscoil")
+                cm_refresh.click(fn=_load_syllabi_rows, outputs=[cm_df])
+                _build_baml_operator(
+                    default_subject="computer_science", accent_class="stage-bunscoil"
+                )
 
             # 2. Chemistry Visual — Plotly scatter (Molmo2 placeholder)
             with gr.Tab("Chemistry Visual", elem_classes="stage-meanscoil"):
@@ -303,9 +301,9 @@ system, on one canvas. Each tab maps to one of the 5 stage coordinators
                         xaxis_title="time (s)",
                         yaxis_title="concentration (mol/L)",
                     )
-                    chem_plot = gr.Plot(value=fig, label="Reactivity curve")
+                    gr.Plot(value=fig, label="Reactivity curve")
                 except ImportError:
-                    chem_plot = gr.Markdown("Install `plotly` to see the placeholder chart.")
+                    gr.Markdown("Install `plotly` to see the placeholder chart.")
                 _build_baml_operator(default_subject="chemistry", accent_class="stage-meanscoil")
 
             # 3. Exit Card — BAML-driven formative assessment stub
@@ -361,7 +359,9 @@ system, on one canvas. Each tab maps to one of the 5 stage coordinators
                     inputs=[ec_topic, ec_learner],
                     outputs=[ec_out, ec_status],
                 )
-                _build_baml_operator(default_subject="biology", accent_class="stage-scoil-sinsearach")
+                _build_baml_operator(
+                    default_subject="biology", accent_class="stage-scoil-sinsearach"
+                )
 
             # 4. Gaelscribhneoir — Irish grammar helper stub
             with gr.Tab("Gaelscribhneoir", elem_classes="stage-aistear"):
@@ -383,10 +383,20 @@ system, on one canvas. Each tab maps to one of the 5 stage coordinators
                     if not text:
                         return "_Provide some Irish text above._"
                     notes = []
-                    if "á" not in text and "é" not in text and "í" not in text and "ó" not in text and "ú" not in text:
-                        notes.append("- ⚠️ No fada-marked vowels detected — check whether any should appear.")
+                    if (
+                        "á" not in text
+                        and "é" not in text
+                        and "í" not in text
+                        and "ó" not in text
+                        and "ú" not in text
+                    ):
+                        notes.append(
+                            "- ⚠️ No fada-marked vowels detected — check whether any should appear."
+                        )
                     if "dt" in text:
-                        notes.append("- ✅ Found an eclipsis (`dt` after `go` / `ar` / etc.) — well done.")
+                        notes.append(
+                            "- ✅ Found an eclipsis (`dt` after `go` / `ar` / etc.) — well done."
+                        )
                     if "mb" in text or "gc" in text or "nd" in text or "ng" in text:
                         notes.append("- ✅ Detected at least one séimhiú.")
                     notes.append(f"- {len(text.split())} words · {len(text)} chars")
@@ -435,14 +445,14 @@ system, on one canvas. Each tab maps to one of the 5 stage coordinators
                 )
                 pdf_paths = _list_syllabi_pdfs()
                 if pdf_paths:
-                    cert_gal = gr.Gallery(
+                    gr.Gallery(
                         value=[(p, Path(p).name) for p in pdf_paths],
                         label="Source PDFs in data/syllabi/",
                         columns=2,
                         height="auto",
                     )
                 else:
-                    cert_gal = gr.Markdown("_No PDFs in `data/syllabi/`._")
+                    gr.Markdown("_No PDFs in `data/syllabi/`._")
                 _build_baml_operator(default_subject="geography", accent_class="stage-ollscoil")
 
             # 7. Skill Progression — DuckDB mastery ledger
@@ -454,12 +464,19 @@ system, on one canvas. Each tab maps to one of the 5 stage coordinators
                 )
                 sp_refresh = gr.Button("Refresh", variant="primary")
                 sp_df = gr.Dataframe(
-                    headers=["source_id", "jurisdiction", "level", "subject", "language", "file_size_bytes"],
+                    headers=[
+                        "source_id",
+                        "jurisdiction",
+                        "level",
+                        "subject",
+                        "language",
+                        "file_size_bytes",
+                    ],
                     value=_load_skill_progression(),
                     interactive=False,
                     wrap=True,
                 )
-                sp_refresh.click(fn=lambda: _load_skill_progression(), outputs=[sp_df])
+                sp_refresh.click(fn=_load_skill_progression, outputs=[sp_df])
                 _build_baml_operator(default_subject="physics", accent_class="stage-ollscoil")
 
         render_anam_bonneagar_footer(

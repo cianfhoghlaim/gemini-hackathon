@@ -32,7 +32,6 @@ from pathlib import Path
 from typing import Any
 
 import dlt
-
 from dlt_pipelines._shared import (
     DUCKDB_PATH,
     JURISDICTION_BOARDS,
@@ -424,7 +423,7 @@ def _count_pdf_pages(path: Path) -> int | None:
     general Exception.
     """
     try:
-        from pypdf import PdfReader  # noqa: PLC0415 — pypdf is an optional dependency
+        from pypdf import PdfReader
     except ImportError:
         logger.warning("_count_pdf_pages: pypdf not installed — page_count will be None")
         return None

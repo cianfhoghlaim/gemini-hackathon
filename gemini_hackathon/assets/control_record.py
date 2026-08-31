@@ -59,7 +59,7 @@ class AssetControlRecord:
         style: str = "illustration",
         aspect_ratio: str = "16:9",
         text_overlay: str | None = None,
-    ) -> "AssetControlRecord":
+    ) -> AssetControlRecord:
         """Build a record from a BAML SyllabusDocument + a palette dict."""
         return cls(
             source_pdf_path=source_pdf_path,

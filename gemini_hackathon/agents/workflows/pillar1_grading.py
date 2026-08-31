@@ -20,7 +20,7 @@ Mirrors the adk2-tutorial L2a pattern:
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 _log = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ async def grade_criterion(node_input: Any) -> dict:
     """Grade a single criterion. Returns a dict with criterion_id + marks."""
     criterion_id = node_input.get("criterion_id", "?")
     max_marks = node_input.get("max_marks", 100)
-    student_answer = node_input.get("student_answer", "")
+    node_input.get("student_answer", "")
 
     # Stub: a real implementation calls
     # `baml_extracts/education/lc_subject/GradeMarkingCriterion()`.
@@ -73,8 +73,8 @@ def build_pillar1_grading_workflow(config: Pillar1GradingWorkflow) -> Any:
     Returns None if google-adk is not installed.
     """
     try:
-        from google.adk import Workflow, Event
-        from google.adk.workflow import JoinNode, START
+        from google.adk import Event, Workflow
+        from google.adk.workflow import START, JoinNode
     except ImportError:
         _log.warning("google-adk not installed; pillar1_grading returns None")
         return None
@@ -83,15 +83,17 @@ def build_pillar1_grading_workflow(config: Pillar1GradingWorkflow) -> Any:
     # distinct closures per node (the Graph validator rejects duplicate
     # `__name__`), so we build each via `functools.partial` and a
     # naming helper.
-    import functools
 
     def _make_grade_node(criterion_id: str):
         async def _grade_one(node_input):
-            return Event(output={
-                "criterion_grades": [
-                    await grade_criterion({"criterion_id": criterion_id, **node_input})
-                ]
-            })
+            return Event(
+                output={
+                    "criterion_grades": [
+                        await grade_criterion({"criterion_id": criterion_id, **node_input})
+                    ]
+                }
+            )
+
         _grade_one.__name__ = f"grade_{criterion_id}"
         _grade_one.__qualname__ = f"grade_{criterion_id}"
         return _grade_one
@@ -108,16 +110,21 @@ def build_pillar1_grading_workflow(config: Pillar1GradingWorkflow) -> Any:
     async def _synthesise(node_input):
         joined = await join_outputs(node_input)
         return Event(output=joined)
+
     edges.append((join_node, _synthesise))
 
     return Workflow(
         name=f"pillar1_grading_{config.subject}",
         description=(
-            f"Pillar 1 (Graph Workflow) for {config.subject}: parallel "
-            f"grade + synthesise."
+            f"Pillar 1 (Graph Workflow) for {config.subject}: parallel grade + synthesise."
         ),
         edges=edges,
     )
 
 
-__all__ = ["Pillar1GradingWorkflow", "build_pillar1_grading_workflow", "grade_criterion", "join_outputs"]
+__all__ = [
+    "Pillar1GradingWorkflow",
+    "build_pillar1_grading_workflow",
+    "grade_criterion",
+    "join_outputs",
+]

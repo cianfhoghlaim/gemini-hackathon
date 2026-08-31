@@ -71,7 +71,9 @@ def build_memory_service() -> Any | None:
     # Path 1 — Vertex AI Memory Bank (production).
     if agent_engine_id:
         try:
-            from google.adk.memory import VertexAiMemoryBankService  # type: ignore[import-not-found]
+            from google.adk.memory import (
+                VertexAiMemoryBankService,  # type: ignore[import-not-found]
+            )
 
             project = (
                 os.environ.get("GOOGLE_CLOUD_PROJECT", "").strip()
@@ -92,23 +94,29 @@ def build_memory_service() -> Any | None:
                 logger.info(
                     "memory_service: using VertexAiMemoryBankService "
                     "(project=%s, location=%s, agent_engine_id=%s)",
-                    project, location, agent_engine_id,
+                    project,
+                    location,
+                    agent_engine_id,
                 )
                 return service
         except ImportError as exc:
             logger.warning(
                 "memory_service: google.adk.memory.VertexAiMemoryBankService not importable (%s); "
-                "falling back", exc,
+                "falling back",
+                exc,
             )
         except Exception as exc:
             logger.warning(
-                "memory_service: VertexAiMemoryBankService init failed (%s); falling back", exc,
+                "memory_service: VertexAiMemoryBankService init failed (%s); falling back",
+                exc,
             )
 
     # Path 2 — MarkdownMemoryService (dev / offline).
     if memory_dir:
         try:
-            from gemini_hackathon.memory.markdown import MarkdownMemoryService  # type: ignore[import-not-found]
+            from gemini_hackathon.memory.markdown import (
+                MarkdownMemoryService,  # type: ignore[import-not-found]
+            )
 
             service = MarkdownMemoryService(root=memory_dir)
             logger.info(
@@ -119,7 +127,8 @@ def build_memory_service() -> Any | None:
         except ImportError as exc:
             logger.warning(
                 "memory_service: gemini_hackathon.memory.markdown.MarkdownMemoryService "
-                "not importable (%s); falling back", exc,
+                "not importable (%s); falling back",
+                exc,
             )
 
     # Path 3 — caller falls through to ADK's InMemoryMemoryService default.

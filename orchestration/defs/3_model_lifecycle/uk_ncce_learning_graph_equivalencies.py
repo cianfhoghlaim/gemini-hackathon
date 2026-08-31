@@ -115,10 +115,7 @@ SOURCE_JURISDICTION: Final[str] = "UNITED_KINGDOM_NCCE"
 
 def _asset_key(subject: str, jurisdiction: str) -> str:
     """Return the canonical Dagster asset name for the cross-walk asset."""
-    return (
-        f"uk_ncce_{subject.replace('_', '_')}_"
-        f"{jurisdiction.lower()}_equivalencies"
-    )
+    return f"uk_ncce_{subject.replace('_', '_')}_{jurisdiction.lower()}_equivalencies"
 
 
 def _edge_id(source_cell_id: str, source_jurisdiction: str, target_jurisdiction: str) -> str:
@@ -130,13 +127,13 @@ def _edge_id(source_cell_id: str, source_jurisdiction: str, target_jurisdiction:
     keeps re-runs idempotent — the same source cell always maps to the
     same edge id in FalkorDB.
     """
-    raw = f"{source_cell_id}|{source_jurisdiction}|{target_jurisdiction}".encode("utf-8")
+    raw = f"{source_cell_id}|{source_jurisdiction}|{target_jurisdiction}".encode()
     sha8 = uuid.uuid5(uuid.NAMESPACE_DNS, raw.decode("utf-8")).hex[:8]
     return f"{source_cell_id}__{source_jurisdiction}_TO_{target_jurisdiction}__{sha8}"
 
 
 def _now_iso() -> str:
-    return _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return _dt.datetime.now(_dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _jurisdiction_pair(source: str, target: str) -> dict[str, str]:
@@ -153,10 +150,7 @@ def _cross_reference_doc(
     cell_edges: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """Build the canonical LearningGraphCrossReference JSON document."""
-    if cell_edges:
-        mean_conf = sum(e["confidence"] for e in cell_edges) / len(cell_edges)
-    else:
-        mean_conf = 0.0
+    mean_conf = sum(e["confidence"] for e in cell_edges) / len(cell_edges) if cell_edges else 0.0
     return {
         "source_graph_id": source_graph_id,
         "target_graph_id": target_graph_id,
@@ -297,7 +291,7 @@ def _persist(
                     "conf": float(ce.get("confidence", 0.0)),
                 },
             )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning(
             "uk_ncce_learning_graph_equivalencies._persist: falkordb write "
             "failed for %s — continuing (SQLite is the canonical dev fallback): %s",
@@ -348,11 +342,7 @@ def _call_extract_cell_equivalencies(
             return None
         if hasattr(mapped, "model_dump"):
             return mapped.model_dump()
-        return (
-            dict(mapped)
-            if isinstance(mapped, dict)
-            else None
-        )
+        return dict(mapped) if isinstance(mapped, dict) else None
     except ImportError:
         # Stub: 1:1 identity equivalence (low confidence, dev only).
         return {
@@ -363,10 +353,8 @@ def _call_extract_cell_equivalencies(
             "confidence": 0.7,
             "notes": "stub: identity equivalence for offline dev",
         }
-    except Exception as exc:  # noqa: BLE001
-        logger.warning(
-            "_call_extract_cell_equivalencies: BAML call failed: %s", exc
-        )
+    except Exception as exc:
+        logger.warning("_call_extract_cell_equivalencies: BAML call failed: %s", exc)
         return None
 
 
@@ -393,7 +381,9 @@ def _build_assets() -> Mapping[str, Any]:
         logger.warning(
             "uk_ncce_learning_graph_equivalencies: expected 42 pairs, "
             "got %d (TARGET_JURISDICTIONS=%d × PRIORITY_SUBJECTS=%d)",
-            len(pairs), len(TARGET_JURISDICTIONS), len(PRIORITY_SUBJECTS),
+            len(pairs),
+            len(TARGET_JURISDICTIONS),
+            len(PRIORITY_SUBJECTS),
         )
 
     # Per the Change A asset-group contract: each priority subject has its
@@ -450,23 +440,15 @@ def _build_assets() -> Mapping[str, Any]:
                 cell_edges.append(
                     {
                         "cell_id": equivalent.get("cell_id", cell.get("id", "")),
-                        "jurisdiction": equivalent.get(
-                            "jurisdiction", jurisdiction
-                        ),
+                        "jurisdiction": equivalent.get("jurisdiction", jurisdiction),
                         "subject": equivalent.get("subject", subject),
-                        "year_level": int(
-                            equivalent.get(
-                                "year_level", cell.get("year_level", 8)
-                            )
-                        ),
+                        "year_level": int(equivalent.get("year_level", cell.get("year_level", 8))),
                         "confidence": float(equivalent.get("confidence", 0.0)),
                         "notes": equivalent.get("notes", ""),
                     }
                 )
 
-            source_graph_id = subject_to_slug.get(
-                subject, f"uk_ncce_{subject}_extracted_graph"
-            )
+            source_graph_id = subject_to_slug.get(subject, f"uk_ncce_{subject}_extracted_graph")
             target_graph_id = f"{jurisdiction.lower()}_{subject}_learning_graph"
             firestore_doc = _cross_reference_doc(
                 source_graph_id=source_graph_id,
@@ -532,7 +514,8 @@ def _load_source_cells(*, subject: str) -> list[Any]:
             logger.warning(
                 "_load_source_cells: no row for slug=%s — yield empty cells "
                 "(Change A's per-subject asset for %s hasn't been materialised)",
-                slug, subject,
+                slug,
+                subject,
             )
             return []
         payload = json.loads(row[0])
@@ -543,7 +526,7 @@ def _load_source_cells(*, subject: str) -> list[Any]:
     except (OSError, sqlite3.OperationalError, json.JSONDecodeError) as exc:
         logger.warning("_load_source_cells: %s", exc)
         return []
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning("_load_source_cells: unhandled error: %s", exc)
         return []
 
@@ -591,8 +574,8 @@ def main() -> int:
 __all__ = [
     "FIRESTORE_COLLECTION",
     "PRIORITY_SUBJECTS",
-    "SQLITE_PATH",
     "SOURCE_JURISDICTION",
+    "SQLITE_PATH",
     "TARGET_JURISDICTIONS",
     "iterate_assets",
     "main",

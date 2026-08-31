@@ -17,9 +17,8 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from cocoindex_flows._shared._vector_target import VectorMatch, VectorRow
     from lance_namespace import LanceNamespace  # type: ignore[import-not-found]
-
-    from cocoindex_flows._shared._vector_target import VectorMatch, VectorRow  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -33,10 +32,10 @@ class LanceVectorTarget:
     BigLake Iceberg REST backend (prod).
     """
 
-    def __init__(self, namespace: "LanceNamespace"):
+    def __init__(self, namespace: LanceNamespace):
         self._namespace = namespace
 
-    async def upsert_batch(self, rows: list["VectorRow"]) -> int:
+    async def upsert_batch(self, rows: list[VectorRow]) -> int:
         """Upsert a batch of rows. Returns the count written.
 
         The Lance namespace API is sync; we wrap it in an async method to
@@ -49,7 +48,7 @@ class LanceVectorTarget:
         # Group rows by (namespace_name, table_name) for efficient writes
         from collections import defaultdict
 
-        grouped: dict[tuple[str, str], list["VectorRow"]] = defaultdict(list)
+        grouped: dict[tuple[str, str], list[VectorRow]] = defaultdict(list)
         for row in rows:
             table_id = row.table_id if hasattr(row, "table_id") else "default"
             namespace_name = table_id.split(".")[0] if "." in table_id else "default"
@@ -66,25 +65,21 @@ class LanceVectorTarget:
                 try:
                     import pyarrow as pa  # type: ignore[import-not-found]
                 except ImportError:
-                    logger.warning(
-                        "lance_vector_target.pyarrow_missing — falling back to JSON"
-                    )
-                    return self._upsert_via_json(
-                        namespace_name, table_name, batch
-                    )
+                    logger.warning("lance_vector_target.pyarrow_missing — falling back to JSON")
+                    return self._upsert_via_json(namespace_name, table_name, batch)
                 # Build the Arrow table from the rows.
                 table = self._rows_to_arrow(batch, pa)
                 self._namespace.create_table_if_not_exists(
                     namespace_name, table_name, schema=table.schema
                 )
-                self._namespace.insert_into_table(
-                    namespace_name, table_name, table
-                )
+                self._namespace.insert_into_table(namespace_name, table_name, table)
                 written += len(batch)
-            except Exception as exc:  # noqa: BLE001 — observability only
+            except Exception as exc:
                 logger.warning(
                     "lance_vector_target.upsert_failed ns=%s table=%s reason=%s",
-                    namespace_name, table_name, exc,
+                    namespace_name,
+                    table_name,
+                    exc,
                 )
         return written
 
@@ -92,27 +87,28 @@ class LanceVectorTarget:
         self,
         namespace_name: str,
         table_name: str,
-        batch: list["VectorRow"],
+        batch: list[VectorRow],
     ) -> int:
         """Fallback upsert path when pyarrow is not installed."""
-        import json
 
         written = 0
-        for row in batch:
+        for _row in batch:
             try:
                 self._namespace.insert_into_table(
                     namespace_name,
                     table_name,
-                    [{"id": str(r.id), "vector": list(r.vector), **(r.payload or {})}
-                     for r in batch],
+                    [
+                        {"id": str(r.id), "vector": list(r.vector), **(r.payload or {})}
+                        for r in batch
+                    ],
                 )
                 written += len(batch)
                 break  # Lance namespace batched the insert
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.warning("lance_vector_target.fallback_upsert_failed reason=%s", exc)
         return written
 
-    def _rows_to_arrow(self, rows: list["VectorRow"], pa: Any) -> Any:
+    def _rows_to_arrow(self, rows: list[VectorRow], pa: Any) -> Any:
         """Build a pyarrow.Table from the rows. Falls back to None if schema unknown."""
         ids = [str(r.id) for r in rows]
         vectors = [list(r.vector) for r in rows]
@@ -138,7 +134,7 @@ class LanceVectorTarget:
         *,
         k: int = 10,
         filters: dict[str, Any] | None = None,
-    ) -> list["VectorMatch"]:
+    ) -> list[VectorMatch]:
         """Return the k nearest rows to query_vector.
 
         Uses the Lance namespace's ``query_table`` API for ANN search
@@ -151,7 +147,7 @@ class LanceVectorTarget:
                 k=k,
                 filter=filters,
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("lance_vector_target.query_failed reason=%s", exc)
             return []
         # Map the Lance rows back to the VectorMatch protocol
@@ -160,15 +156,20 @@ class LanceVectorTarget:
         matches: list[VectorMatch] = []
         for row in results:
             row_id = getattr(row, "id", None) or (row.get("id") if isinstance(row, dict) else None)
-            distance = getattr(row, "_distance", None) or (row.get("_distance") if isinstance(row, dict) else 0.0)
-            payload = {k: v for k, v in (row.items() if isinstance(row, dict) else vars(row).items())
-                       if k not in ("id", "vector", "_distance")}
+            distance = getattr(row, "_distance", None) or (
+                row.get("_distance") if isinstance(row, dict) else 0.0
+            )
+            payload = {
+                k: v
+                for k, v in (row.items() if isinstance(row, dict) else vars(row).items())
+                if k not in ("id", "vector", "_distance")
+            }
             matches.append(VectorMatch(id=row_id, distance=float(distance), payload=payload))
         return matches
 
     async def close(self) -> None:
         """No-op for the Lance namespace (it's connectionless)."""
-        return None
+        return
 
 
 __all__ = ["LanceVectorTarget"]

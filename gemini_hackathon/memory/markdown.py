@@ -27,11 +27,10 @@ from __future__ import annotations
 import hashlib
 import os
 import pathlib
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from google.adk.memory.base_memory_service import (
-        BaseMemoryService,
         SearchMemoryResponse,
     )
     from google.adk.memory.memory_entry import MemoryEntry
@@ -67,10 +66,10 @@ class MarkdownMemoryService:
       - `search_memory(app_name, user_id, query)` — hand memories back
     """
 
-    def __init__(self, root: Optional[str | pathlib.Path] = None):
+    def __init__(self, root: str | pathlib.Path | None = None):
         self.root = pathlib.Path(root) if root else MEMORY_DIR
 
-    async def add_session_to_memory(self, session: "Session") -> None:
+    async def add_session_to_memory(self, session: Session) -> None:
         """Persist the session's transcript + state to the user's markdown file.
 
         The format is:
@@ -95,7 +94,7 @@ class MarkdownMemoryService:
                 text = getattr(part, "text", None)
                 if text:
                     lines.append(f"- **{role}**: {text.strip()}")
-            tool_calls = getattr(content, "parts", [])
+            getattr(content, "parts", [])
             for part in parts:
                 fc = getattr(part, "function_call", None)
                 if fc:
@@ -108,7 +107,7 @@ class MarkdownMemoryService:
         app_name: str,
         user_id: str,
         query: str,
-    ) -> "SearchMemoryResponse":
+    ) -> SearchMemoryResponse:
         """Return memories matching the query (simple substring search).
 
         In production this would be a vector similarity search; for the
@@ -116,8 +115,8 @@ class MarkdownMemoryService:
         sufficient (the corpus is small + the 5 NCCA policy PDFs are
         already cited explicitly).
         """
-        from google.adk.memory.memory_entry import MemoryEntry
         from google.adk.memory.base_memory_service import SearchMemoryResponse
+        from google.adk.memory.memory_entry import MemoryEntry
         from google.genai import types as gtypes
 
         path = _memory_path(self.root, user_id, for_writing=False)
@@ -147,4 +146,4 @@ class MarkdownMemoryService:
         return SearchMemoryResponse(memories=matches)
 
 
-__all__ = ["MarkdownMemoryService", "MEMORY_DIR", "MEMORY_USER"]
+__all__ = ["MEMORY_DIR", "MEMORY_USER", "MarkdownMemoryService"]

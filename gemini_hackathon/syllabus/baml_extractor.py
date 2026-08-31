@@ -20,7 +20,6 @@ from .extractor import (
     ExtractedSyllabus,
     ExtractionMethod,
     SyllabusExtractionError,
-    SyllabusExtractor,
 )
 
 logger = logging.getLogger(__name__)
@@ -73,17 +72,23 @@ class BAMLSyllabusExtractor:
                     exc,
                 )
                 doc = b.ExtractCurriculumSyllabus(
-                    pdf_text=pdf_text, subject=subject, language=language,
+                    pdf_text=pdf_text,
+                    subject=subject,
+                    language=language,
                 )
         else:
             logger.info("baml_extractor: using canonical LC6 BAML for subject=%s", subject)
             doc = b.ExtractCurriculumSyllabus(
-                pdf_text=pdf_text, subject=subject, language=language,
+                pdf_text=pdf_text,
+                subject=subject,
+                language=language,
             )
 
         latency_ms = int((time.monotonic() - started) * 1000)
         return _baml_to_extracted(
-            doc, extraction_method=ExtractionMethod.BAML, latency_ms=latency_ms,
+            doc,
+            extraction_method=ExtractionMethod.BAML,
+            latency_ms=latency_ms,
         )
 
 
@@ -133,9 +138,10 @@ def _read_source_text(*, source_pdf_path: str | None, source_pdf_url: str | None
             return f"[stub text — pypdf read failed for {source_pdf_path}]"
     if source_pdf_url:
         try:
+            import io
+
             import httpx  # type: ignore
             from pypdf import PdfReader  # type: ignore
-            import io
         except ImportError:
             return f"[stub text — httpx/pypdf not installed; would fetch {source_pdf_url}]"
         try:
@@ -149,7 +155,9 @@ def _read_source_text(*, source_pdf_path: str | None, source_pdf_url: str | None
     return "[stub text — no source_pdf_path or source_pdf_url provided]"
 
 
-def _baml_to_extracted(doc: Any, *, extraction_method: ExtractionMethod, latency_ms: int) -> ExtractedSyllabus:
+def _baml_to_extracted(
+    doc: Any, *, extraction_method: ExtractionMethod, latency_ms: int
+) -> ExtractedSyllabus:
     """Convert a BAML response to the unified ExtractedSyllabus."""
     # The BAML response is a Pydantic model. We extract the fields.
     if hasattr(doc, "model_dump"):

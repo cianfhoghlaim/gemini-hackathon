@@ -27,10 +27,18 @@ def main() -> int:
     port = _find_free_port()
     print(f"[backend_smoke] using free port {port}")
     proc = subprocess.Popen(
-        [sys.executable, "-m", "gemini_hackathon.backend",
-         "--host", "127.0.0.1", "--port", str(port)],
+        [
+            sys.executable,
+            "-m",
+            "gemini_hackathon.backend",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            str(port),
+        ],
         cwd=REPO_ROOT,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
         text=True,
     )
     try:
@@ -55,7 +63,9 @@ def main() -> int:
             health = json.loads(r.read())
             assert health["status"] == "ok"
             assert health["profile"] in ("hackathon", "dev")
-            print(f"[OK] /api/health → status={health['status']}, profile={health['profile']}, models={health['model_count']}")
+            print(
+                f"[OK] /api/health → status={health['status']}, profile={health['profile']}, models={health['model_count']}"
+            )
 
         # Hit /api/themes.
         with urllib.request.urlopen(f"{base}/api/themes") as r:
@@ -68,7 +78,9 @@ def main() -> int:
             models = json.loads(r.read())
             assert models["object"] == "list"
             assert len(models["data"]) > 0
-            print(f"[OK] /api/models → {len(models['data'])} models under {health['profile']} profile")
+            print(
+                f"[OK] /api/models → {len(models['data'])} models under {health['profile']} profile"
+            )
 
         # Hit /api/chat/completions with a stub-call (only if we have a key).
         # By default we expect this to fail (no Gemini key in dev), but the
@@ -76,18 +88,22 @@ def main() -> int:
         # clear 500. Either is "the backend works".
         req = urllib.request.Request(
             f"{base}/api/chat/completions",
-            data=json.dumps({
-                "messages": [{"role": "user", "content": "Say OK in one word."}],
-                "temperature": 0,
-                "max_tokens": 8,
-            }).encode(),
+            data=json.dumps(
+                {
+                    "messages": [{"role": "user", "content": "Say OK in one word."}],
+                    "temperature": 0,
+                    "max_tokens": 8,
+                }
+            ).encode(),
             headers={"Content-Type": "application/json"},
         )
         try:
             with urllib.request.urlopen(req, timeout=60) as r:
                 body = json.loads(r.read())
                 if r.status == 200:
-                    print(f"[OK] /api/chat/completions → model={body['model']}, content={body['choices'][0]['message']['content']!r}")
+                    print(
+                        f"[OK] /api/chat/completions → model={body['model']}, content={body['choices'][0]['message']['content']!r}"
+                    )
                 else:
                     print(f"[WARN] /api/chat/completions → HTTP {r.status}: {body}")
         except urllib.error.HTTPError as e:
@@ -97,7 +113,9 @@ def main() -> int:
                 err_type = detail.get("error", "unknown")
             except Exception:
                 err_type = "unknown"
-            print(f"[OK] /api/chat/completions → HTTP {e.code} ({err_type}) — backend reachable, no Gemini key in env")
+            print(
+                f"[OK] /api/chat/completions → HTTP {e.code} ({err_type}) — backend reachable, no Gemini key in env"
+            )
         except Exception as e:
             print(f"[WARN] /api/chat/completions → {type(e).__name__}: {e}")
 

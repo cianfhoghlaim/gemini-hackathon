@@ -50,7 +50,7 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-class Capability(str, enum.Enum):
+class Capability(enum.StrEnum):
     FORMS = "forms"
     LAYOUT = "layout"
     TABLES_LATEX = "tables+latex"
@@ -60,7 +60,7 @@ class Capability(str, enum.Enum):
     TESSERACT_FALLBACK = "tesseract-fallback"
 
 
-class Backend(str, enum.Enum):
+class Backend(enum.StrEnum):
     DOCUMENT_AI = "document_ai"
     GEMINI_VISION = "gemini_vision"
     GEMMA_VERTEX = "gemma_vertex"
@@ -131,14 +131,14 @@ def is_backend_available(backend: Backend) -> bool:
     """
     if backend == Backend.PYPDFIUM2_TEXTLAYER:
         try:
-            import pypdfium2  # noqa: F401,PLC0415
+            import pypdfium2
 
             return True
         except ImportError:
             return False
     if backend == Backend.DOCUMENT_AI:
         try:
-            import google.cloud.documentai  # noqa: F401,PLC0415
+            import google.cloud.documentai
         except ImportError:
             return False
         return bool(os.environ.get("GCP_PROJECT_ID")) and bool(
@@ -146,7 +146,7 @@ def is_backend_available(backend: Backend) -> bool:
         )
     if backend in (Backend.GEMINI_VISION, Backend.GEMMA_VERTEX):
         try:
-            import vertexai  # noqa: F401,PLC0415
+            import vertexai
         except ImportError:
             return False
         if not os.environ.get("GCP_PROJECT_ID"):
@@ -162,7 +162,9 @@ def is_backend_available(backend: Backend) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def _call_document_ai(image_path: str, processor_type: str, timeout_seconds: float) -> tuple[str, dict[str, Any]]:
+def _call_document_ai(
+    image_path: str, processor_type: str, timeout_seconds: float
+) -> tuple[str, dict[str, Any]]:
     """Call Document AI's `process_document` (synchronous, single-page).
 
     Uses the Layout Parser processor for both `layout` and `doctags`
@@ -174,7 +176,7 @@ def _call_document_ai(image_path: str, processor_type: str, timeout_seconds: flo
     2 processor IDs or routing all 3 capabilities through one Layout
     Parser processor, which is what this function does by default).
     """
-    from google.cloud import documentai  # noqa: PLC0415
+    from google.cloud import documentai
 
     project_id = os.environ.get("GCP_PROJECT_ID")
     location = os.environ.get("DOCUMENT_AI_LOCATION", "us")
@@ -210,8 +212,8 @@ def _call_gemini_vision(
     image_path: str, prompt: str, model: str, timeout_seconds: float
 ) -> tuple[str, dict[str, Any]]:
     """Call Gemini via Vertex AI's `GenerativeModel` with an inline image part."""
-    import vertexai  # noqa: PLC0415
-    from vertexai.generative_models import GenerationConfig, GenerativeModel, Part  # noqa: PLC0415
+    import vertexai
+    from vertexai.generative_models import GenerationConfig, GenerativeModel, Part
 
     project_id = os.environ.get("GCP_PROJECT_ID")
     location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
@@ -247,7 +249,7 @@ def _call_gemma_vertex(
     not the model — Gemma is served via a prediction endpoint, not the
     `GenerativeModel` Gemini API surface).
     """
-    from google.cloud import aiplatform  # noqa: PLC0415
+    from google.cloud import aiplatform
 
     project_id = os.environ.get("GCP_PROJECT_ID")
     location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
@@ -261,7 +263,7 @@ def _call_gemma_vertex(
     aiplatform.init(project=project_id, location=location)
     endpoint = aiplatform.Endpoint(endpoint_id)
 
-    import base64  # noqa: PLC0415
+    import base64
 
     with open(image_path, "rb") as f:
         b64 = base64.b64encode(f.read()).decode("ascii")
@@ -279,7 +281,7 @@ def _call_pypdfium2_textlayer(pdf_path: str) -> tuple[str, dict[str, Any]]:
     if a PDF already has a text layer, OCRing its rendered pages is wasted
     work).
     """
-    import pypdfium2 as pdfium  # noqa: PLC0415
+    import pypdfium2 as pdfium
 
     pdf = pdfium.PdfDocument(pdf_path)
     page_texts = []
@@ -333,7 +335,9 @@ def ocr(request: OcrRequest) -> OcrResult:
     if backend == Backend.DOCUMENT_AI:
         text, extras = _call_document_ai(request.image_path, model, request.timeout_seconds)
     elif backend == Backend.GEMINI_VISION:
-        text, extras = _call_gemini_vision(request.image_path, prompt, model, request.timeout_seconds)
+        text, extras = _call_gemini_vision(
+            request.image_path, prompt, model, request.timeout_seconds
+        )
     elif backend == Backend.GEMMA_VERTEX:
         text, extras = _call_gemma_vertex(request.image_path, prompt, request.timeout_seconds)
     elif backend == Backend.PYPDFIUM2_TEXTLAYER:
@@ -356,7 +360,9 @@ def ocr(request: OcrRequest) -> OcrResult:
 def auto_capability(pdf_path: str) -> Capability:
     """Best-effort capability heuristic for a PDF path."""
     name = pdf_path.lower()
-    if any(token in name for token in ("gaeilge", "irish", "gaelic", "cymraeg", "welsh", "gaidhlig")):
+    if any(
+        token in name for token in ("gaeilge", "irish", "gaelic", "cymraeg", "welsh", "gaidhlig")
+    ):
         return Capability.GAELIC
     return Capability.ENGLISH
 
@@ -385,7 +391,9 @@ __all__ = [
 
 
 def _render_pdf_pages_to_pngs(
-    pdf_path: str, output_dir: str | None = None, dpi: int = 150,
+    pdf_path: str,
+    output_dir: str | None = None,
+    dpi: int = 150,
     max_pages: int = 200,
 ) -> list[str]:
     """Render each page of a PDF to a PNG. Returns the list of PNG paths.
@@ -395,12 +403,14 @@ def _render_pdf_pages_to_pngs(
     """
     Path(pdf_path).resolve()  # sanity check
     import tempfile
+
     out_dir = Path(output_dir) if output_dir else Path(tempfile.mkdtemp(prefix="ocr-pages-"))
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Try pypdfium2 first.
     try:
         import pypdfium2 as pdfium  # type: ignore[import-not-found]
+
         pdf = pdfium.PdfDocument(pdf_path)
         scale = dpi / 72.0
         png_paths: list[str] = []
@@ -409,7 +419,7 @@ def _render_pdf_pages_to_pngs(
         for i in range(cap):
             page = pdf[i]
             img = page.render(scale=scale).to_pil()
-            p = out_dir / f"page-{i+1:04d}.png"
+            p = out_dir / f"page-{i + 1:04d}.png"
             img.save(p, format="PNG")
             png_paths.append(str(p))
         return png_paths
@@ -419,6 +429,7 @@ def _render_pdf_pages_to_pngs(
     # Fallback: pymupdf.
     try:
         import fitz  # type: ignore[import-not-found]
+
         doc = fitz.open(pdf_path)
         png_paths = []
         total = doc.page_count
@@ -426,7 +437,7 @@ def _render_pdf_pages_to_pngs(
         for i in range(cap):
             page = doc[i]
             pix = page.get_pixmap(dpi=dpi)
-            p = out_dir / f"page-{i+1:04d}.png"
+            p = out_dir / f"page-{i + 1:04d}.png"
             pix.save(str(p))
             png_paths.append(str(p))
         return png_paths
@@ -502,12 +513,14 @@ def extract_pdf_text(
     backend_used = ""
     model_used = ""
     for i, png in enumerate(png_paths):
-        result = ocr(OcrRequest(
-            capability=cap,
-            image_path=png,
-            timeout_seconds=timeout_seconds,
-        ))
-        page_texts.append(f"\n\n[Page {i+1}]\n{result.text}")
+        result = ocr(
+            OcrRequest(
+                capability=cap,
+                image_path=png,
+                timeout_seconds=timeout_seconds,
+            )
+        )
+        page_texts.append(f"\n\n[Page {i + 1}]\n{result.text}")
         backend_used = result.backend.value
         model_used = result.model
 

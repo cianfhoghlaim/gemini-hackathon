@@ -23,7 +23,9 @@ def build_app():
         theme=gr.themes.Soft(primary_hue="indigo", secondary_hue="purple"),
     ) as demo:
         gr.Markdown("# Editorial Studio — British Isles Education Workflow Canvas")
-        gr.Markdown("The full editorial studio — the LC/JC certificate pipeline as a drag-and-drop workflow canvas. The showcase of the gemini_hackathon platform.")
+        gr.Markdown(
+            "The full editorial studio — the LC/JC certificate pipeline as a drag-and-drop workflow canvas. The showcase of the gemini_hackathon platform."
+        )
         # The actual implementation lives in
         # `gemini_hackathon_gradio/editorial_studio/app.py`
         # (the canonical editorial canvas). This Space re-exports
@@ -32,6 +34,7 @@ def build_app():
         # full gemini_hackathon_gradio package at startup.
         try:
             from gemini_hackathon_gradio import build_editorial_studio_app
+
             editor = build_editorial_studio_app()
             gr.Markdown("## Editorial Studio preview")
             gr.Markdown(editor.__doc__ or "Editorial Studio (preview).")

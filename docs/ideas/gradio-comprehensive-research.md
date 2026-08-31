@@ -42,8 +42,10 @@ The `gr.Interface` class is the simplest way to create Gradio demos. It wraps Py
 ```python
 import gradio as gr
 
+
 def greet(name, intensity):
     return "Hello, " + name + "!" * int(intensity)
+
 
 demo = gr.Interface(
     fn=greet,
@@ -82,10 +84,7 @@ Combines multiple Interface objects into a single app with tabs:
 demo1 = gr.Interface(fn=function1, inputs="text", outputs="text")
 demo2 = gr.Interface(fn=function2, inputs="image", outputs="label")
 
-tabbed_interface = gr.TabbedInterface(
-    [demo1, demo2],
-    ["Tab 1 Name", "Tab 2 Name"]
-)
+tabbed_interface = gr.TabbedInterface([demo1, demo2], ["Tab 1 Name", "Tab 2 Name"])
 ```
 
 ### 1.3 Event System
@@ -148,7 +147,7 @@ gr.Interface(fn=process, inputs="text", outputs="text")
 gr.Interface(
     fn=process,
     inputs=gr.Textbox(label="Input", placeholder="Enter text..."),
-    outputs=gr.Textbox(label="Output")
+    outputs=gr.Textbox(label="Output"),
 )
 ```
 
@@ -158,8 +157,10 @@ gr.Interface(
 ```python
 import gradio as gr
 
+
 def increment(count):
     return count + 1, count + 1
+
 
 with gr.Blocks() as demo:
     count_state = gr.State(value=0)  # Initialize with 0
@@ -185,11 +186,7 @@ textbox.change(fn=process_text, inputs=textbox, outputs=label)
 
 **Multiple Inputs/Outputs**:
 ```python
-btn.click(
-    fn=combine_inputs,
-    inputs=[text1, text2, slider],
-    outputs=[output1, output2]
-)
+btn.click(fn=combine_inputs, inputs=[text1, text2, slider], outputs=[output1, output2])
 ```
 
 **Chained Events**:
@@ -264,6 +261,7 @@ def respond(message, history):
     history.append([message, bot_message])
     return history, history
 
+
 chatbot = gr.Chatbot()
 msg = gr.Textbox()
 msg.submit(respond, [msg, chatbot], [msg, chatbot])
@@ -282,7 +280,7 @@ msg.submit(respond, [msg, chatbot], [msg, chatbot])
     "id": "thought-1",
     "parent_id": "parent-thought",
     "duration": 2.5,
-    "status": "complete"
+    "status": "complete",
 }
 ```
 
@@ -561,9 +559,11 @@ demo.launch(auth=("username", "password"))
 # Multiple users
 demo.launch(auth=[("user1", "pass1"), ("user2", "pass2")])
 
+
 # Custom auth function
 def custom_auth(username, password):
     return username == "admin" and password == "secret"
+
 
 demo.launch(auth=custom_auth)
 ```
@@ -578,6 +578,7 @@ def process(text, request: gr.Request):
     headers = request.headers
     # Access custom auth headers
     return result
+
 
 demo = gr.Interface(fn=process, inputs="text", outputs="text")
 ```
@@ -612,7 +613,7 @@ demo = gr.Interface(
     outputs="label",
     flagging_mode="manual",  # "manual", "auto", or "never"
     flagging_options=["Incorrect", "Ambiguous", "Offensive"],
-    flagging_dir="flagged_data"
+    flagging_dir="flagged_data",
 )
 ```
 
@@ -632,12 +633,8 @@ class CustomCallback(gr.FlaggingCallback):
         # Handle flagged data
         pass
 
-demo = gr.Interface(
-    fn=model,
-    inputs="image",
-    outputs="label",
-    flagging_callback=CustomCallback()
-)
+
+demo = gr.Interface(fn=model, inputs="image", outputs="label", flagging_callback=CustomCallback())
 ```
 
 **Data Storage**:
@@ -659,6 +656,7 @@ def long_process(input_data, progress=gr.Progress()):
     progress(1.0, desc="Done!")
     return result
 
+
 demo = gr.Interface(fn=long_process, inputs="text", outputs="text")
 demo.queue().launch()  # Queue required for progress bars
 ```
@@ -666,6 +664,7 @@ demo.queue().launch()  # Queue required for progress bars
 **Automatic tqdm Integration**:
 ```python
 from tqdm import tqdm
+
 
 def process_items(items, progress=gr.Progress(track_tqdm=True)):
     results = []
@@ -697,11 +696,8 @@ def generate_text(prompt):
         output += word + " "
         yield output  # Progressively stream updates
 
-demo = gr.Interface(
-    fn=generate_text,
-    inputs="text",
-    outputs="text"
-)
+
+demo = gr.Interface(fn=generate_text, inputs="text", outputs="text")
 ```
 
 **Media Streaming**:
@@ -710,11 +706,8 @@ def stream_audio():
     for audio_chunk in generate_audio_chunks():
         yield audio_chunk
 
-demo = gr.Interface(
-    fn=stream_audio,
-    inputs=None,
-    outputs=gr.Audio(streaming=True, autoplay=True)
-)
+
+demo = gr.Interface(fn=stream_audio, inputs=None, outputs=gr.Audio(streaming=True, autoplay=True))
 ```
 
 **Key Points**:
@@ -731,11 +724,7 @@ demo = gr.Interface(
     fn=process,
     inputs=["text", "slider"],
     outputs="text",
-    examples=[
-        ["Hello", 3],
-        ["Gradio", 5],
-        ["Example", 2]
-    ]
+    examples=[["Hello", 3], ["Gradio", 5], ["Example", 2]],
 )
 ```
 
@@ -750,14 +739,11 @@ with gr.Blocks() as demo:
     btn.click(fn=process, inputs=[input1, input2], outputs=output)
 
     gr.Examples(
-        examples=[
-            ["Example 1", 5],
-            ["Example 2", 7]
-        ],
+        examples=[["Example 1", 5], ["Example 2", 7]],
         inputs=[input1, input2],
         outputs=output,
         fn=process,
-        cache_examples=True  # Pre-compute example outputs
+        cache_examples=True,  # Pre-compute example outputs
     )
 ```
 
@@ -773,6 +759,7 @@ with gr.Blocks() as demo:
 def handle_select(evt: gr.SelectData):
     return f"You selected: {evt.value} at index {evt.index}"
 
+
 gallery = gr.Gallery()
 output = gr.Textbox()
 
@@ -786,6 +773,7 @@ def process_with_headers(text, request: gr.Request):
     client_ip = request.client.host
     return f"Processed '{text}' from {client_ip}"
 
+
 demo = gr.Interface(fn=process_with_headers, inputs="text", outputs="text")
 ```
 
@@ -796,10 +784,8 @@ def validate_email(email):
     if "@" in email and "." in email:
         return gr.validate(is_valid=True)
     else:
-        return gr.validate(
-            is_valid=False,
-            message="Please enter a valid email address"
-        )
+        return gr.validate(is_valid=False, message="Please enter a valid email address")
+
 
 textbox = gr.Textbox()
 textbox.change(fn=validate_email, inputs=textbox, outputs=None)
@@ -816,8 +802,10 @@ textbox.change(fn=validate_email, inputs=textbox, outputs=None)
 import gradio as gr
 import time
 
+
 def update_time():
     return time.strftime("%H:%M:%S")
+
 
 with gr.Blocks() as demo:
     timer = gr.Timer(value=1)  # Update every 1 second
@@ -855,13 +843,13 @@ theme = gr.themes.Default(
     radius_size="md",
     text_size="md",
     font="IBM Plex Sans",
-    font_mono="IBM Plex Mono"
+    font_mono="IBM Plex Mono",
 )
 
 theme = theme.set(
     button_primary_background_fill="*primary_200",
     button_primary_background_fill_hover="*primary_300",
-    slider_color="#FF0000"
+    slider_color="#FF0000",
 )
 
 demo = gr.Blocks(theme=theme)
@@ -916,9 +904,10 @@ def safe_process(user_input):
 ```python
 import os
 
+
 def process_file(file):
     # Validate file type
-    allowed_extensions = {'.jpg', '.png', '.pdf'}
+    allowed_extensions = {".jpg", ".png", ".pdf"}
     _, ext = os.path.splitext(file.name)
     if ext.lower() not in allowed_extensions:
         raise ValueError(f"File type {ext} not allowed")
@@ -936,9 +925,11 @@ import gradio as gr
 # Load model once at startup (not in function)
 model = load_heavy_model()
 
+
 def predict(input_data):
     # Use pre-loaded model
     return model(input_data)
+
 
 demo = gr.Interface(fn=predict, inputs="text", outputs="text")
 ```
@@ -946,6 +937,7 @@ demo = gr.Interface(fn=predict, inputs="text", outputs="text")
 **Caching**:
 ```python
 from functools import lru_cache
+
 
 @lru_cache(maxsize=128)
 def expensive_computation(input_data):
@@ -956,6 +948,7 @@ def expensive_computation(input_data):
 **Lazy Loading**:
 ```python
 model = None
+
 
 def predict(input_data):
     global model
@@ -969,7 +962,7 @@ def predict(input_data):
 # Balance concurrency vs. memory
 demo.queue(
     default_concurrency_limit=5,  # Limit concurrent executions
-    max_size=100  # Maximum queue size
+    max_size=100,  # Maximum queue size
 ).launch()
 ```
 
@@ -1004,9 +997,7 @@ def safe_predict(input_data):
 ```python
 with gr.Blocks() as demo:
     input_box = gr.Textbox(
-        label="Enter text",
-        placeholder="Type here...",
-        info="Maximum 100 characters"
+        label="Enter text", placeholder="Type here...", info="Maximum 100 characters"
     )
     error_box = gr.Textbox(label="Status", visible=False)
     output = gr.Textbox()
@@ -1020,11 +1011,7 @@ with gr.Blocks() as demo:
         result = process(text)
         return result, gr.update(visible=False)
 
-    input_box.submit(
-        fn=validate_and_process,
-        inputs=input_box,
-        outputs=[output, error_box]
-    )
+    input_box.submit(fn=validate_and_process, inputs=input_box, outputs=[output, error_box])
 ```
 
 ### 6.4 Interface Design
@@ -1036,12 +1023,12 @@ demo = gr.Interface(
     inputs=gr.Textbox(
         label="Input Text",
         placeholder="Enter your text here...",
-        info="We'll process your text and return the result"
+        info="We'll process your text and return the result",
     ),
     outputs=gr.Textbox(label="Processed Result"),
     title="Text Processor",
     description="This tool processes text using advanced ML algorithms.",
-    article="For more information, visit our documentation."
+    article="For more information, visit our documentation.",
 )
 ```
 
@@ -1087,6 +1074,7 @@ load_dotenv()  # Load from .env file
 API_KEY = os.getenv("API_KEY")
 MODEL_PATH = os.getenv("MODEL_PATH", "default/path")
 
+
 def predict(input_data):
     # Use environment variables
     return model.predict(input_data, api_key=API_KEY)
@@ -1099,9 +1087,7 @@ import os
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
 demo.launch(
-    debug=DEBUG,
-    share=False if DEBUG else True,
-    server_name="0.0.0.0" if not DEBUG else "127.0.0.1"
+    debug=DEBUG, share=False if DEBUG else True, server_name="0.0.0.0" if not DEBUG else "127.0.0.1"
 )
 ```
 
@@ -1112,6 +1098,7 @@ demo.launch(
 def test_process_function():
     result = process("test input")
     assert result == "expected output"
+
 
 def test_error_handling():
     try:
@@ -1174,7 +1161,7 @@ demo = gr.Interface(
     ## Limitations
     - Maximum 100 characters
     - Text only (no special formatting)
-    """
+    """,
 )
 ```
 
@@ -1190,8 +1177,9 @@ import torch
 import gradio as gr
 
 # Load PyTorch model
-model = torch.load('model.pth')
+model = torch.load("model.pth")
 model.eval()
+
 
 def predict(image):
     # Preprocess
@@ -1204,11 +1192,8 @@ def predict(image):
     # Postprocess
     return postprocess(output)
 
-demo = gr.Interface(
-    fn=predict,
-    inputs=gr.Image(type="pil"),
-    outputs=gr.Label(num_top_classes=5)
-)
+
+demo = gr.Interface(fn=predict, inputs=gr.Image(type="pil"), outputs=gr.Label(num_top_classes=5))
 ```
 
 #### TensorFlow
@@ -1217,7 +1202,8 @@ import tensorflow as tf
 import gradio as gr
 
 # Load TensorFlow model
-model = tf.keras.models.load_model('model.h5')
+model = tf.keras.models.load_model("model.h5")
+
 
 def predict(image):
     # Preprocess
@@ -1227,14 +1213,10 @@ def predict(image):
     # Predict
     predictions = model.predict(image)
 
-    return {"class_1": float(predictions[0][0]),
-            "class_2": float(predictions[0][1])}
+    return {"class_1": float(predictions[0][0]), "class_2": float(predictions[0][1])}
 
-demo = gr.Interface(
-    fn=predict,
-    inputs=gr.Image(type="pil"),
-    outputs=gr.Label()
-)
+
+demo = gr.Interface(fn=predict, inputs=gr.Image(type="pil"), outputs=gr.Label())
 ```
 
 #### HuggingFace Transformers
@@ -1245,15 +1227,13 @@ import gradio as gr
 # Load pipeline
 classifier = pipeline("sentiment-analysis")
 
+
 def analyze_sentiment(text):
     result = classifier(text)[0]
-    return {result['label']: result['score']}
+    return {result["label"]: result["score"]}
 
-demo = gr.Interface(
-    fn=analyze_sentiment,
-    inputs=gr.Textbox(lines=5),
-    outputs=gr.Label()
-)
+
+demo = gr.Interface(fn=analyze_sentiment, inputs=gr.Textbox(lines=5), outputs=gr.Label())
 ```
 
 #### Scikit-learn
@@ -1263,27 +1243,26 @@ import gradio as gr
 import numpy as np
 
 # Load sklearn model
-with open('model.pkl', 'rb') as f:
+with open("model.pkl", "rb") as f:
     model = pickle.load(f)
+
 
 def predict(feature1, feature2, feature3):
     features = np.array([[feature1, feature2, feature3]])
     prediction = model.predict(features)[0]
     probability = model.predict_proba(features)[0]
 
-    return {
-        "prediction": prediction,
-        "confidence": float(max(probability))
-    }
+    return {"prediction": prediction, "confidence": float(max(probability))}
+
 
 demo = gr.Interface(
     fn=predict,
     inputs=[
         gr.Number(label="Feature 1"),
         gr.Number(label="Feature 2"),
-        gr.Number(label="Feature 3")
+        gr.Number(label="Feature 3"),
     ],
-    outputs=gr.JSON()
+    outputs=gr.JSON(),
 )
 ```
 
@@ -1296,18 +1275,22 @@ import gradio as gr
 
 app = FastAPI()
 
+
 # Regular FastAPI endpoints
 @app.get("/api/status")
 def get_status():
     return {"status": "healthy"}
 
+
 @app.post("/api/predict")
 def predict_api(text: str):
     return {"result": process(text)}
 
+
 # Gradio interface
 def process(text):
     return text.upper()
+
 
 io = gr.Interface(fn=process, inputs="text", outputs="text")
 
@@ -1327,6 +1310,7 @@ app = FastAPI()
 # Connect to external Gradio service
 gradio_client = Client("https://huggingface.co/spaces/some-model")
 
+
 @app.post("/predict")
 def predict(text: str):
     result = gradio_client.predict(text)
@@ -1341,8 +1325,9 @@ import sqlite3
 import gradio as gr
 import pandas as pd
 
+
 def query_database(query):
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect("database.db")
     try:
         df = pd.read_sql_query(query, conn)
         return df
@@ -1351,10 +1336,9 @@ def query_database(query):
     finally:
         conn.close()
 
+
 demo = gr.Interface(
-    fn=query_database,
-    inputs=gr.Textbox(label="SQL Query", lines=3),
-    outputs=gr.Dataframe()
+    fn=query_database, inputs=gr.Textbox(label="SQL Query", lines=3), outputs=gr.Dataframe()
 )
 ```
 
@@ -1363,19 +1347,17 @@ demo = gr.Interface(
 from pymongo import MongoClient
 import gradio as gr
 
-client = MongoClient('mongodb://localhost:27017/')
-db = client['mydb']
-collection = db['mycollection']
+client = MongoClient("mongodb://localhost:27017/")
+db = client["mydb"]
+collection = db["mycollection"]
+
 
 def search_documents(query):
     results = collection.find({"text": {"$regex": query}})
-    return [doc['text'] for doc in results]
+    return [doc["text"] for doc in results]
 
-demo = gr.Interface(
-    fn=search_documents,
-    inputs=gr.Textbox(label="Search Query"),
-    outputs=gr.JSON()
-)
+
+demo = gr.Interface(fn=search_documents, inputs=gr.Textbox(label="Search Query"), outputs=gr.JSON())
 ```
 
 ### 7.4 API Integration
@@ -1385,19 +1367,17 @@ demo = gr.Interface(
 import requests
 import gradio as gr
 
+
 def call_external_api(text):
     response = requests.post(
         "https://api.example.com/process",
         json={"text": text},
-        headers={"Authorization": f"Bearer {API_KEY}"}
+        headers={"Authorization": f"Bearer {API_KEY}"},
     )
     return response.json()
 
-demo = gr.Interface(
-    fn=call_external_api,
-    inputs=gr.Textbox(),
-    outputs=gr.JSON()
-)
+
+demo = gr.Interface(fn=call_external_api, inputs=gr.Textbox(), outputs=gr.JSON())
 ```
 
 **OpenAI Integration**:
@@ -1406,6 +1386,7 @@ import openai
 import gradio as gr
 
 openai.api_key = "your-api-key"
+
 
 def chat_with_gpt(message, history):
     messages = [{"role": "system", "content": "You are a helpful assistant."}]
@@ -1416,12 +1397,10 @@ def chat_with_gpt(message, history):
 
     messages.append({"role": "user", "content": message})
 
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=messages
-    )
+    response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages)
 
     return response.choices[0].message.content
+
 
 demo = gr.ChatInterface(fn=chat_with_gpt)
 ```
@@ -1433,24 +1412,18 @@ demo = gr.ChatInterface(fn=chat_with_gpt)
 import boto3
 import gradio as gr
 
-s3 = boto3.client('s3')
+s3 = boto3.client("s3")
+
 
 def upload_to_s3(file):
     try:
-        s3.upload_file(
-            file.name,
-            'my-bucket',
-            file.name.split('/')[-1]
-        )
+        s3.upload_file(file.name, "my-bucket", file.name.split("/")[-1])
         return f"Uploaded successfully to S3"
     except Exception as e:
         return f"Error: {str(e)}"
 
-demo = gr.Interface(
-    fn=upload_to_s3,
-    inputs=gr.File(),
-    outputs=gr.Textbox()
-)
+
+demo = gr.Interface(fn=upload_to_s3, inputs=gr.File(), outputs=gr.Textbox())
 ```
 
 ### 7.6 Docker Deployment
@@ -1495,8 +1468,10 @@ services:
 ```python
 import gradio as gr
 
+
 def process(text):
     return text.upper()
+
 
 demo = gr.Interface(fn=process, inputs="text", outputs="text")
 demo.launch()
@@ -1544,27 +1519,23 @@ Description of the app...
 # Service 1: Image Processing
 import gradio as gr
 
+
 def process_image(image):
     # Image processing logic
     return processed_image
 
-image_service = gr.Interface(
-    fn=process_image,
-    inputs=gr.Image(),
-    outputs=gr.Image()
-)
+
+image_service = gr.Interface(fn=process_image, inputs=gr.Image(), outputs=gr.Image())
 image_service.launch(server_port=7860)
+
 
 # Service 2: Text Processing
 def process_text(text):
     # Text processing logic
     return processed_text
 
-text_service = gr.Interface(
-    fn=process_text,
-    inputs=gr.Textbox(),
-    outputs=gr.Textbox()
-)
+
+text_service = gr.Interface(fn=process_text, inputs=gr.Textbox(), outputs=gr.Textbox())
 text_service.launch(server_port=7861)
 
 # Service 3: Orchestrator
@@ -1573,15 +1544,15 @@ from gradio_client import Client
 image_client = Client("http://localhost:7860")
 text_client = Client("http://localhost:7861")
 
+
 def orchestrate(image, text):
     processed_image = image_client.predict(image)
     processed_text = text_client.predict(text)
     return processed_image, processed_text
 
+
 orchestrator = gr.Interface(
-    fn=orchestrate,
-    inputs=[gr.Image(), gr.Textbox()],
-    outputs=[gr.Image(), gr.Textbox()]
+    fn=orchestrate, inputs=[gr.Image(), gr.Textbox()], outputs=[gr.Image(), gr.Textbox()]
 )
 orchestrator.launch(server_port=7862)
 ```
@@ -1599,9 +1570,11 @@ from transformers import pipeline
 # Load model
 classifier = pipeline("image-classification", model="google/vit-base-patch16-224")
 
+
 def classify_image(image):
     predictions = classifier(image)
     return {p["label"]: p["score"] for p in predictions}
+
 
 demo = gr.Interface(
     fn=classify_image,
@@ -1609,10 +1582,7 @@ demo = gr.Interface(
     outputs=gr.Label(num_top_classes=5),
     title="Image Classification",
     description="Upload an image to classify it",
-    examples=[
-        ["example1.jpg"],
-        ["example2.jpg"]
-    ]
+    examples=[["example1.jpg"], ["example2.jpg"]],
 )
 
 demo.launch()
@@ -1628,6 +1598,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 model_name = "microsoft/DialoGPT-medium"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(model_name)
+
 
 def chat(message, history):
     # Encode input
@@ -1647,11 +1618,12 @@ def chat(message, history):
 
     return bot_response
 
+
 demo = gr.ChatInterface(
     fn=chat,
     title="Conversational AI Chatbot",
     description="Chat with DialoGPT",
-    theme=gr.themes.Soft()
+    theme=gr.themes.Soft(),
 )
 
 demo.launch()
@@ -1666,6 +1638,7 @@ from transformers import pipeline
 # Load Whisper model
 transcriber = pipeline("automatic-speech-recognition", model="openai/whisper-base")
 
+
 def transcribe_audio(audio):
     if audio is None:
         return "No audio provided"
@@ -1673,12 +1646,13 @@ def transcribe_audio(audio):
     result = transcriber(audio)
     return result["text"]
 
+
 demo = gr.Interface(
     fn=transcribe_audio,
     inputs=gr.Audio(source="microphone", type="filepath"),
     outputs=gr.Textbox(label="Transcription"),
     title="Audio Transcription",
-    description="Speak into your microphone to transcribe audio to text"
+    description="Speak into your microphone to transcribe audio to text",
 )
 
 demo.launch()
@@ -1690,8 +1664,10 @@ demo.launch()
 import gradio as gr
 from PIL import Image, ImageFilter, ImageEnhance
 
+
 def resize_image(image, width, height):
     return image.resize((width, height))
+
 
 def apply_filter(image, filter_type):
     if filter_type == "Blur":
@@ -1702,9 +1678,11 @@ def apply_filter(image, filter_type):
         return image.filter(ImageFilter.EDGE_ENHANCE)
     return image
 
+
 def adjust_brightness(image, factor):
     enhancer = ImageEnhance.Brightness(image)
     return enhancer.enhance(factor)
+
 
 with gr.Blocks(theme=gr.themes.Ocean()) as demo:
     gr.Markdown("# Image Processing Pipeline")
@@ -1719,10 +1697,7 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
                 resize_btn = gr.Button("Resize")
 
             with gr.Tab("Filter"):
-                filter_type = gr.Radio(
-                    ["Blur", "Sharpen", "Edge Enhance"],
-                    label="Filter Type"
-                )
+                filter_type = gr.Radio(["Blur", "Sharpen", "Edge Enhance"], label="Filter Type")
                 filter_btn = gr.Button("Apply Filter")
 
             with gr.Tab("Brightness"):
@@ -1733,22 +1708,12 @@ with gr.Blocks(theme=gr.themes.Ocean()) as demo:
             output_image = gr.Image(type="pil", label="Output Image")
 
     # Event handlers
-    resize_btn.click(
-        fn=resize_image,
-        inputs=[input_image, width, height],
-        outputs=output_image
-    )
+    resize_btn.click(fn=resize_image, inputs=[input_image, width, height], outputs=output_image)
 
-    filter_btn.click(
-        fn=apply_filter,
-        inputs=[input_image, filter_type],
-        outputs=output_image
-    )
+    filter_btn.click(fn=apply_filter, inputs=[input_image, filter_type], outputs=output_image)
 
     brightness_btn.click(
-        fn=adjust_brightness,
-        inputs=[input_image, brightness],
-        outputs=output_image
+        fn=adjust_brightness, inputs=[input_image, brightness], outputs=output_image
     )
 
 demo.launch()
@@ -1760,6 +1725,7 @@ demo.launch()
 import gradio as gr
 import pandas as pd
 import plotly.express as px
+
 
 def analyze_data(file):
     if file is None:
@@ -1776,6 +1742,7 @@ def analyze_data(file):
 
     # Return table, plot, and summary
     return df, fig, summary
+
 
 with gr.Blocks() as demo:
     gr.Markdown("# Data Analysis Dashboard")
@@ -1794,9 +1761,7 @@ with gr.Blocks() as demo:
         summary_html = gr.HTML(label="Statistical Summary")
 
     analyze_btn.click(
-        fn=analyze_data,
-        inputs=file_input,
-        outputs=[data_table, plot_output, summary_html]
+        fn=analyze_data, inputs=file_input, outputs=[data_table, plot_output, summary_html]
     )
 
 demo.launch()
@@ -1808,16 +1773,31 @@ demo.launch()
 import gradio as gr
 import time
 
+
 def generate_stream(prompt, max_length):
     # Simulate streaming text generation
-    words = ["This", "is", "a", "streaming", "text", "generation", "example",
-             "that", "shows", "progressive", "updates", "in", "Gradio"]
+    words = [
+        "This",
+        "is",
+        "a",
+        "streaming",
+        "text",
+        "generation",
+        "example",
+        "that",
+        "shows",
+        "progressive",
+        "updates",
+        "in",
+        "Gradio",
+    ]
 
     output = ""
     for word in words[:max_length]:
         output += word + " "
         time.sleep(0.3)  # Simulate generation delay
         yield output
+
 
 with gr.Blocks() as demo:
     gr.Markdown("# Streaming Text Generation")
@@ -1827,11 +1807,7 @@ with gr.Blocks() as demo:
     generate_btn = gr.Button("Generate")
     output = gr.Textbox(label="Generated Text", lines=5)
 
-    generate_btn.click(
-        fn=generate_stream,
-        inputs=[prompt, max_length],
-        outputs=output
-    )
+    generate_btn.click(fn=generate_stream, inputs=[prompt, max_length], outputs=output)
 
 demo.launch()
 ```
@@ -1840,6 +1816,7 @@ demo.launch()
 
 ```python
 import gradio as gr
+
 
 def process_multimodal(text, image, audio):
     results = []
@@ -1855,6 +1832,7 @@ def process_multimodal(text, image, audio):
 
     return "\n".join(results)
 
+
 with gr.Blocks() as demo:
     gr.Markdown("# Multi-Modal Input Interface")
 
@@ -1869,9 +1847,7 @@ with gr.Blocks() as demo:
             output = gr.Textbox(label="Analysis Results", lines=10)
 
     submit_btn.click(
-        fn=process_multimodal,
-        inputs=[text_input, image_input, audio_input],
-        outputs=output
+        fn=process_multimodal, inputs=[text_input, image_input, audio_input], outputs=output
     )
 
 demo.launch()
@@ -1883,6 +1859,7 @@ demo.launch()
 import gradio as gr
 import time
 
+
 def long_running_task(iterations, progress=gr.Progress()):
     results = []
 
@@ -1891,18 +1868,19 @@ def long_running_task(iterations, progress=gr.Progress()):
     for i in range(iterations):
         # Simulate work
         time.sleep(0.5)
-        results.append(f"Completed step {i+1}")
+        results.append(f"Completed step {i + 1}")
 
         # Update progress
-        progress((i+1)/iterations, desc=f"Processing {i+1}/{iterations}")
+        progress((i + 1) / iterations, desc=f"Processing {i + 1}/{iterations}")
 
     return "\n".join(results)
+
 
 demo = gr.Interface(
     fn=long_running_task,
     inputs=gr.Slider(1, 20, value=10, step=1, label="Number of Iterations"),
     outputs=gr.Textbox(label="Results", lines=10),
-    title="Progress Bar Demo"
+    title="Progress Bar Demo",
 )
 
 demo.queue().launch()  # Queue required for progress bars
@@ -1917,18 +1895,11 @@ demo.queue().launch()  # Queue required for progress bars
 import gradio as gr
 from gradio.components import Component
 
+
 class CustomSlider(Component):
     """Custom slider with special features"""
 
-    def __init__(
-        self,
-        minimum=0,
-        maximum=100,
-        step=1,
-        value=None,
-        label=None,
-        **kwargs
-    ):
+    def __init__(self, minimum=0, maximum=100, step=1, value=None, label=None, **kwargs):
         self.minimum = minimum
         self.maximum = maximum
         self.step = step
@@ -1946,11 +1917,12 @@ class CustomSlider(Component):
     def example_inputs(self):
         return [self.minimum, (self.minimum + self.maximum) / 2, self.maximum]
 
+
 # Usage
 demo = gr.Interface(
     fn=lambda x: x * 2,
     inputs=CustomSlider(minimum=0, maximum=100, label="Custom Slider"),
-    outputs=gr.Number()
+    outputs=gr.Number(),
 )
 ```
 

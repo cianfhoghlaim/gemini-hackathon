@@ -21,6 +21,7 @@ The 2 `#REPLACE-*` markers a workshop participant fills in are inside
   - **REPLACE-1** (in `search_syllabus_node`) — wire the `VectorTarget.find_nearest()`:
     ```python
     from cocoindex_flows._shared._vector_target import get_vector_target
+
     v = get_vector_target()
     matches = await v.find_nearest("biep_lc_mathematics_en_chunks", query_vector, k=3)
     ```
@@ -31,6 +32,7 @@ The 2 `#REPLACE-*` markers a workshop participant fills in are inside
     ```python
     from baml_client import b
     from gemini_hackathon_assets_fibo.models import EducationAssetRequest
+
     request_dict = b.ExtractEducationAssetRequest(
         user_question=question,
         matched_outcomes=matched,

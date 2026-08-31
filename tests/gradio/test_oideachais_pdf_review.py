@@ -15,8 +15,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 
 def test_build_app_returns_non_none_blocks() -> None:
     """`oideachais_pdf_review.build_app()` returns a non-None `gr.Blocks`."""
@@ -65,10 +63,12 @@ def test_gpu_handler_decorator_is_callable() -> None:
 
     decorator = _app._gpu_handler_decorator()
     assert callable(decorator)
+
     # Applying the decorator to a function should return a function.
     @decorator
     def dummy() -> str:
         return "ok"
+
     assert dummy() == "ok"
 
 
@@ -112,5 +112,6 @@ def test_save_to_firestore_stub_writes_event() -> None:
     assert len(lines) >= 1
     # The last line is valid JSON containing the subject.
     import json as _json
+
     last_event = _json.loads(lines[-1])
     assert last_event["extraction_summary"]["subject"] == "mathematics"

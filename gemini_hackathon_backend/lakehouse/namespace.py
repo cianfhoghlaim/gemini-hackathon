@@ -39,8 +39,8 @@ logger = logging.getLogger(__name__)
 
 #: The 3 Lance namespace backends we support.
 SUPPORTED_BACKENDS: tuple[str, ...] = (
-    "dir",     # local filesystem (dev)
-    "rest",    # Lakekeeper OR BigLake Iceberg REST (prod)
+    "dir",  # local filesystem (dev)
+    "rest",  # Lakekeeper OR BigLake Iceberg REST (prod)
     "dynamodb",
     "glue",
     "unity",
@@ -107,8 +107,7 @@ def build_lance_properties(
             props["namespace"] = namespace
         return props
     raise ValueError(
-        f"build_lance_properties: unsupported backend {backend!r}. "
-        f"Supported: {SUPPORTED_BACKENDS}"
+        f"build_lance_properties: unsupported backend {backend!r}. Supported: {SUPPORTED_BACKENDS}"
     )
 
 
@@ -152,6 +151,7 @@ def connect_lance_namespace(
         namespace=namespace,
     )
     import lance_namespace  # type: ignore[import-not-found]
+
     namespace_instance = lance_namespace.connect(backend, properties)
     logger.info(
         "lance_namespace.connected",

@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import logging
-import time
 from typing import Any, Protocol
 
-from . import CompositorResult, build_prompt_from_concept
+from . import CompositorResult
 
 logger = logging.getLogger(__name__)
 
@@ -22,12 +21,14 @@ class AssetCompositor(Protocol):
     def render(
         self,
         *,
-        concept: Any, # CurriculumConcept
+        concept: Any,  # CurriculumConcept
         seed: int | None = None,
     ) -> CompositorResult: ...
 
 
-def _make_stub_result(backend: str, model_key: str, *, seed: int, duration_ms: int) -> CompositorResult:
+def _make_stub_result(
+    backend: str, model_key: str, *, seed: int, duration_ms: int
+) -> CompositorResult:
     """Build a stub result when a compositor is unavailable.
 
     Returns a 1×1 PNG (the same minimal PNG used elsewhere in the repo)
@@ -38,6 +39,7 @@ def _make_stub_result(backend: str, model_key: str, *, seed: int, duration_ms: i
         "890000000d49444154789c6300010000000500015c6df8b50000000049454e44ae426082"
     )
     import base64
+
     return CompositorResult(
         backend=backend,
         model_key=model_key,

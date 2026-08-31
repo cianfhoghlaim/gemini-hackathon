@@ -39,13 +39,11 @@ Usage:
 
 from __future__ import annotations
 
-import json
 import logging
 import re
 from typing import Any, TypeVar
 
 from pydantic import BaseModel, ValidationError
-
 
 _log = logging.getLogger("baml_pydantic_bridge")
 
@@ -106,9 +104,7 @@ def extract_via_llm(
     try:
         from .baml_client import chat_complete_json
 
-        parsed, _model = chat_complete_json(
-            full_messages, temperature=temperature
-        )
+        parsed, _model = chat_complete_json(full_messages, temperature=temperature)
     except Exception as e:
         _log.warning("LLM extraction failed: %s", e)
         return None
@@ -129,7 +125,7 @@ def fallback_regex(model_cls: type[T], text: str) -> T | None:
     """
     schema = mirror_baml_schema(model_cls)
     candidates: dict[str, Any] = {}
-    for field_name, field_info in schema.get("properties", {}).items():
+    for field_name, _field_info in schema.get("properties", {}).items():
         # Try field-name-keyed extraction first.
         for pat in (
             rf"{re.escape(field_name)}\s*[:=]\s*[\"']?([^\"'\n,]+)",
@@ -137,7 +133,7 @@ def fallback_regex(model_cls: type[T], text: str) -> T | None:
         ):
             m = re.search(pat, text, re.IGNORECASE)
             if m:
-                candidates[field_name] = m.group(1).strip().strip('"\' ')
+                candidates[field_name] = m.group(1).strip().strip("\"' ")
                 break
     try:
         return model_cls.model_validate(candidates)
@@ -160,9 +156,9 @@ def extract_with_fallback(
 
 
 __all__ = [
+    "extract_via_llm",
+    "extract_with_fallback",
+    "fallback_regex",
     "mirror_baml_schema",
     "pydantic_to_baml_prompt_hint",
-    "extract_via_llm",
-    "fallback_regex",
-    "extract_with_fallback",
 ]

@@ -43,12 +43,7 @@ from gemini_hackathon_assets_fibo.schemas import (
     VisualRequirement,
 )
 
-
 __all__ = [
-    # assets
-    "build_asset_request_for_fibo_config",
-    "generate_fibo_config_for_concept",
-    "record_generated_asset",
     # cache
     "AssetCache",
     # models
@@ -56,16 +51,20 @@ __all__ = [
     "AssetResponse",
     "BatchAssetRequest",
     "BatchAssetResponse",
+    # schemas
+    "CurriculumConcept",
     "EducationAssetType",
+    "FiboConfig",
+    "GeneratedAsset",
     "GenerationModel",
+    "LearningOutcome",
     "LiteLLMConfig",
     "Rarity",
     "SubjectStyle",
-    # schemas
-    "CurriculumConcept",
-    "FiboConfig",
-    "GeneratedAsset",
-    "LearningOutcome",
     "SyllabusPage",
     "VisualRequirement",
+    # assets
+    "build_asset_request_for_fibo_config",
+    "generate_fibo_config_for_concept",
+    "record_generated_asset",
 ]

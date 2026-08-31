@@ -29,7 +29,7 @@ from math import sqrt
 
 from cocoindex_flows._shared._vector_target import VectorRow, get_vector_target
 
-from gemini_hackathon.ledger.types import MasteryRecord  # noqa: F401 — re-exported for callers
+from gemini_hackathon.ledger.types import MasteryRecord
 
 # The canonical per-learner mastery-vector shape: 5 NCCA Key Competencies
 # x 8 NCCA LC subjects x 4 levels (H/O/H1/O1) x 2 languages (en/ga) = 320
@@ -91,7 +91,14 @@ class FirestoreMasteryVectors:
         if self.available:
             try:
                 await self._target.upsert_batch(
-                    [VectorRow(id=learner_id, table_name=MASTERY_VECTOR_TABLE, vector=vector, payload={})]
+                    [
+                        VectorRow(
+                            id=learner_id,
+                            table_name=MASTERY_VECTOR_TABLE,
+                            vector=vector,
+                            payload={},
+                        )
+                    ]
                 )
             except Exception:
                 pass  # in-memory copy above is the source of truth on failure
@@ -125,14 +132,13 @@ class FirestoreMasteryVectors:
                 pass  # fall through to the in-memory scan below
 
         def cosine(a: list[float], b: list[float]) -> float:
-            dot = sum(x * y for x, y in zip(a, b))
+            dot = sum(x * y for x, y in zip(a, b, strict=False))
             na = sqrt(sum(x * x for x in a))
             nb = sqrt(sum(x * x for x in b))
             return dot / (na * nb) if na and nb else 0.0
 
         scored = [
-            (learner_id, cosine(query_vector, vec))
-            for learner_id, vec in self._in_memory.items()
+            (learner_id, cosine(query_vector, vec)) for learner_id, vec in self._in_memory.items()
         ]
         return sorted(scored, key=lambda t: t[1], reverse=True)[:top_k]
 

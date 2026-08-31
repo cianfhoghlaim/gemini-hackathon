@@ -18,7 +18,6 @@ from gemini_hackathon_assets_fibo.processors.texture_processor import (
     save_image,
 )
 
-
 __all__ = [
     "PIL_AVAILABLE",
     "ResizeMode",

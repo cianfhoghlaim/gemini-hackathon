@@ -24,7 +24,7 @@ This agent is the wholesale port of the Cianfhoghlaim
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import structlog
@@ -267,9 +267,7 @@ class MarkingGraderWorkflow:
             total_awarded = sum(b.awarded_marks for b in breakdown)
             total_available = sum(b.max_marks for b in breakdown)
             overall_pct = (
-                round(100.0 * total_awarded / total_available, 2)
-                if total_available
-                else 0.0
+                round(100.0 * total_awarded / total_available, 2) if total_available else 0.0
             )
             grade = _grade_for(overall_pct, grading_scale)
             palette = load_palette(identity.source_palette_key)
@@ -321,10 +319,8 @@ class MarkingGraderWorkflow:
         # note in the system prompt).
         metadata = trace.metadata.get("marking_payload") or {}
         try:
-            request = _request_from_metadata(
-                sanitised_input.text, metadata, identity
-            )
-        except Exception as e:  # noqa: BLE001
+            request = _request_from_metadata(sanitised_input.text, metadata, identity)
+        except Exception as e:
             logger.warning(
                 "marking.payload_parse_failed",
                 error=f"{type(e).__name__}: {e}",
@@ -363,7 +359,7 @@ class MarkingGraderWorkflow:
             "the shape:\n"
             "{\n"
             '  "breakdown": [\n'
-            '    {\n'
+            "    {\n"
             '      "question_id": "Q1",\n'
             '      "awarded_marks": <float>,\n'
             '      "max_marks": <int>,\n'
@@ -413,16 +409,12 @@ def _render_answers(answers: Sequence[StudentAnswer]) -> str:
         return "(no student answers provided)"
     blocks: list[str] = []
     for a in answers:
-        attachments = (
-            f" (attachments: {', '.join(a.attachments)})" if a.attachments else ""
-        )
+        attachments = f" (attachments: {', '.join(a.attachments)})" if a.attachments else ""
         blocks.append(f"### {a.question_id}{attachments}\n{a.answer_text}")
     return "\n\n".join(blocks)
 
 
-def _parse_breakdown(
-    content: str, request: MarkingRequest
-) -> list[MarkingBreakdown]:
+def _parse_breakdown(content: str, request: MarkingRequest) -> list[MarkingBreakdown]:
     """Best-effort parse of the LLM JSON response."""
     import json as _json
 
@@ -431,7 +423,7 @@ def _parse_breakdown(
         if cleaned.startswith("```"):
             cleaned = cleaned.strip("`").split("\n", 1)[-1].rsplit("```", 1)[0]
         payload = _json.loads(cleaned)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         logger.warning(
             "marking.llm_json_parse_failed",
             error=f"{type(e).__name__}: {e}",
@@ -513,9 +505,7 @@ def _request_from_metadata(
             "marking_scheme": [
                 {"question_id": "Q1", "prompt": "...", "max_marks": 10, "rubric": "..."}
             ],
-            "student_answers": [
-                {"question_id": "Q1", "answer_text": "..."}
-            ],
+            "student_answers": [{"question_id": "Q1", "answer_text": "..."}],
         }
     """
     scheme_payload = metadata.get("marking_scheme", [])

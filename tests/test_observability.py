@@ -10,14 +10,13 @@ Covers:
 from __future__ import annotations
 
 import structlog
-from types import SimpleNamespace
 
 
 def test_trace_agent_emits_opened_and_closed_events():
     from gemini_hackathon.observability import trace_agent
-    with structlog.testing.capture_logs() as logs:
-        with trace_agent(agent="smoke"):
-            pass
+
+    with structlog.testing.capture_logs() as logs, trace_agent(agent="smoke"):
+        pass
     events = [e["event"] for e in logs]
     assert "agent.trace_opened" in events
     assert "agent.trace_closed" in events
@@ -25,26 +24,30 @@ def test_trace_agent_emits_opened_and_closed_events():
 
 def test_trace_agent_records_duration():
     from gemini_hackathon.observability import trace_agent
-    with structlog.testing.capture_logs() as logs:
-        with trace_agent(agent="smoke"):
-            pass
-    closed = [e for e in logs if e["event"] == "agent.trace_closed"][0]
+
+    with structlog.testing.capture_logs() as logs, trace_agent(agent="smoke"):
+        pass
+    closed = next(e for e in logs if e["event"] == "agent.trace_closed")
     assert closed["total_latency_ms"] >= 0
     assert closed["agent"] == "smoke"
 
 
 def test_try_init_langfuse_no_keys_returns_none():
     """Without LANGFUSE_PUBLIC_KEY, the wrapper returns None and logs a skip."""
-    from gemini_hackathon.observability import try_init_langfuse
     import os
+
+    from gemini_hackathon.observability import try_init_langfuse
+
     os.environ.pop("LANGFUSE_PUBLIC_KEY", None)
     assert try_init_langfuse() is None
 
 
 def test_try_init_mlflow_no_uri_returns_none():
     """Without MLFLOW_TRACKING_URI, the wrapper returns None and logs a skip."""
-    from gemini_hackathon.observability import try_init_mlflow
     import os
+
+    from gemini_hackathon.observability import try_init_mlflow
+
     os.environ.pop("MLFLOW_TRACKING_URI", None)
     assert try_init_mlflow() is None
 
@@ -54,9 +57,11 @@ def test_log_asset_generated_tolerates_missing_provenance_keys():
     raise KeyError. The contract is that observability never blocks the
     the asset pipeline."""
     from gemini_hackathon.observability import log_asset_generated
+
     class Stub:
         duration_ms = 50
         provenance = {}  # missing every key
+
     with structlog.testing.capture_logs() as logs:
         log_asset_generated(Stub())
     assert any(e["event"] == "asset.generated" for e in logs)
@@ -65,8 +70,8 @@ def test_log_asset_generated_tolerates_missing_provenance_keys():
 def test_log_asset_generated_with_real_router_result_round_trips():
     """A real AssetResult from ImageGenRouter flows through observability
     without losing any of the canonical provenance keys."""
-    from gemini_hackathon.assets.image_gen import ImageGenRouter
     from gemini_hackathon.assets.control_record import AssetControlRecord
+    from gemini_hackathon.assets.image_gen import ImageGenRouter
 
     rec = AssetControlRecord.from_syllabus_and_palette(
         source_pdf_path="/tmp/x.pdf",
@@ -78,9 +83,10 @@ def test_log_asset_generated_with_real_router_result_round_trips():
     assert "control_record_hash" in result.provenance  # guard
 
     from gemini_hackathon.observability import log_asset_generated
+
     with structlog.testing.capture_logs() as logs:
         log_asset_generated(result)
-    asset_event = [e for e in logs if e["event"] == "asset.generated"][0]
+    asset_event = next(e for e in logs if e["event"] == "asset.generated")
     assert asset_event["backend"] == result.backend.value
     assert asset_event["model_key"] == result.model_key
     assert asset_event["control_record_hash"] == result.provenance["control_record_hash"]

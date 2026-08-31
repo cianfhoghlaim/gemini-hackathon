@@ -10,13 +10,11 @@ account). We assert:
 
 from __future__ import annotations
 
-import re
 import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
-
 
 REPO = Path(__file__).resolve().parent.parent
 
@@ -24,7 +22,7 @@ REPO = Path(__file__).resolve().parent.parent
 def test_cloudbuild_yaml_has_required_steps():
     text = (REPO / "cloudbuild.yaml").read_text()
     for required in [
-        "name: \"gcr.io/cloud-builders/docker:latest\"",
+        'name: "gcr.io/cloud-builders/docker:latest"',
         "docker push",
         "gcloud",
         "gcloud",
@@ -50,7 +48,10 @@ def test_deploy_script_rejects_missing_env_vars():
     env = {"PATH": "/usr/bin:/bin"}  # intentionally omit GCP_PROJECT et al.
     result = subprocess.run(
         ["bash", str(REPO / "cloud" / "scripts" / "deploy-cloud-run.sh")],
-        env=env, capture_output=True, text=True, timeout=10,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=10,
     )
     assert result.returncode != 0
     assert "GCP_PROJECT" in result.stderr or "GCP_PROJECT" in result.stdout
@@ -72,7 +73,10 @@ def test_deploy_script_accepts_minimal_env():
     }
     result = subprocess.run(
         ["bash", str(REPO / "cloud" / "scripts" / "deploy-cloud-run.sh")],
-        env=env, capture_output=True, text=True, timeout=10,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=10,
     )
     # The script should get past the env gate (the first line) and then
     # fail on the first gcloud call (no creds in this env). Either way

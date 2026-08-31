@@ -19,12 +19,11 @@ structlog → Cloud Logging (via GCP_PROJECT_ID).
 
 from __future__ import annotations
 
-import logging
 import os
 import time
 import uuid
 from collections.abc import Iterator
-from contextlib import asynccontextmanager, contextmanager
+from contextlib import asynccontextmanager, contextmanager, suppress
 from typing import Any
 
 import structlog
@@ -74,14 +73,13 @@ def try_init_openinference_langfuse() -> Any:
     is not installed.
     """
     if not os.environ.get("LANGFUSE_PUBLIC_KEY"):
-        logger.info(
-            "observability.openinference_skipped reason='LANGFUSE_PUBLIC_KEY unset'"
-        )
+        logger.info("observability.openinference_skipped reason='LANGFUSE_PUBLIC_KEY unset'")
         return None
     try:
         from openinference.instrumentation.google_adk import (  # type: ignore[import-not-found]
             GoogleADKInstrumentor,
         )
+
         instrumentor = GoogleADKInstrumentor()
         instrumentor.instrument()
         logger.info("observability.openinference_initialised")
@@ -92,7 +90,7 @@ def try_init_openinference_langfuse() -> Any:
             f"{type(exc).__name__}: {exc}",
         )
         return None
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning(
             "observability.openinference_unavailable reason=%s",
             f"{type(exc).__name__}: {exc}",
@@ -139,23 +137,13 @@ def try_init_adk_otel() -> Any:
     # the values are visible to downstream code even when
     # ``opentelemetry`` isn't importable (the dev path).
     os.environ.setdefault("OTEL_SERVICE_NAME", "gemini-hackathon-adk")
-    os.environ.setdefault(
-        "OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED", "true"
-    )
-    os.environ.setdefault(
-        "OTEL_SEMCONV_STABILITY_OPT_IN", "gen_ai_latest_experimental"
-    )
+    os.environ.setdefault("OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED", "true")
+    os.environ.setdefault("OTEL_SEMCONV_STABILITY_OPT_IN", "gen_ai_latest_experimental")
     # Per the Stackdriver doc: must be EVENT_ONLY (not 'true' which is
     # invalid; not NO_CONTENT which misses the prompt/response content).
-    os.environ.setdefault(
-        "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "EVENT_ONLY"
-    )
-    os.environ.setdefault(
-        "ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS", "false"
-    )
-    os.environ.setdefault(
-        "GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY", "true"
-    )
+    os.environ.setdefault("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", "EVENT_ONLY")
+    os.environ.setdefault("ADK_CAPTURE_MESSAGE_CONTENT_IN_SPANS", "false")
+    os.environ.setdefault("GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY", "true")
     # Standard OTel resource attributes (7th var — not in the Stackdriver
     # doc's 6-var set but needed by the Resource API; setdefault'd here
     # so the existing observability tests + downstream exporters pick it
@@ -168,9 +156,7 @@ def try_init_adk_otel() -> Any:
     )
 
     if not project_id:
-        logger.info(
-            "observability.adk_otel_skipped reason='GCP_PROJECT_ID unset'"
-        )
+        logger.info("observability.adk_otel_skipped reason='GCP_PROJECT_ID unset'")
         return None
 
     try:
@@ -200,9 +186,7 @@ def try_init_adk_otel() -> Any:
                     "service.name": os.environ["OTEL_SERVICE_NAME"],
                     "service.namespace": "gemini-hackathon",
                     "service.version": os.environ.get("COMMIT_SHA", "dev"),
-                    "deployment.environment": os.environ.get(
-                        "DEPLOYMENT_ENV", "hackathon"
-                    ),
+                    "deployment.environment": os.environ.get("DEPLOYMENT_ENV", "hackathon"),
                 }
             )
         )
@@ -226,7 +210,7 @@ def try_init_adk_otel() -> Any:
             f"{type(exc).__name__}: {exc}",
         )
         return None
-    except Exception as exc:  # noqa: BLE001 — observability is opt-in
+    except Exception as exc:
         logger.warning(
             "observability.adk_otel_unavailable reason=%s",
             f"{type(exc).__name__}: {exc}",
@@ -235,7 +219,7 @@ def try_init_adk_otel() -> Any:
 
 
 def try_init_cloud_logging() -> Any:  # type: ignore[no-redef]
-        return None
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -276,9 +260,7 @@ def init_backend_observability() -> dict[str, Any]:
     _MLFLOW = try_init_mlflow()
     # Avoid double-logging when the OTel pipeline is already streaming
     # every span to Cloud Logging via OTLP.
-    _CLOUD_LOGGING_CLIENT = (
-        None if _ADK_OTEL_HOOKS else try_init_cloud_logging()
-    )
+    _CLOUD_LOGGING_CLIENT = None if _ADK_OTEL_HOOKS else try_init_cloud_logging()
     return {
         "adk_otel": _ADK_OTEL_HOOKS is not None,
         "openinference": _OPENINFERENCE_INSTRUMENTOR is not None,
@@ -350,9 +332,7 @@ def trace_agui_run(
             )
             handle["langfuse_trace_id"] = getattr(lf_trace, "id", trace_id)
         except Exception as e:
-            logger.warning(
-                "trace_agui_run.langfuse_failed reason=%s", type(e).__name__
-            )
+            logger.warning("trace_agui_run.langfuse_failed reason=%s", type(e).__name__)
 
     logger.info(
         "ag_ui.trace_opened",
@@ -409,9 +389,7 @@ def record_generation(
             metadata=metadata or {},
         )
     except Exception as e:
-        logger.warning(
-            "record_generation.langfuse_failed reason=%s", type(e).__name__
-        )
+        logger.warning("record_generation.langfuse_failed reason=%s", type(e).__name__)
 
 
 def log_mlflow_metric(name: str, value: float, *, step: int | None = None) -> None:
@@ -435,12 +413,8 @@ async def lifespan_observability(app):  # type: ignore[no-untyped-def]
     finally:
         lf = get_langfuse()
         if lf is not None:
-            try:
+            with suppress(Exception):
                 lf.flush()
-            except Exception:
-                pass
-            try:
+            with suppress(Exception):
                 lf.shutdown()
-            except Exception:
-                pass
         logger.info("observability.shutdown")

@@ -17,23 +17,20 @@ from __future__ import annotations
 
 import logging
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
+from ..syllabus.baml_extractor import BAMLSyllabusExtractor
 from ..syllabus.per_topic_schema import (
-    ASSET_REQUEST_BY_SUBJECT,
     SUBJECT_SPECIALITIES,
-    build_curriculum_concepts,
     CurriculumConcept,
 )
-from ..syllabus.baml_extractor import BAMLSyllabusExtractor
-from .backends import CompositorResult, build_prompt_from_concept
 from .backends.diffusiongemma_compositor import DiffusionGemmaCompositor
 from .backends.fibo_compositor import FIBOCompositor
 from .backends.flux_schnell_compositor import FLUX2DevCompositor, FLUXSchnellCompositor
 from .backends.gemini_flash_image_compositor import GeminiFlashImageCompositor
 from .backends.imagen3_compositor import Imagen3Compositor, Imagen4Compositor
-from .rubric import AssetRubric, compute_palette_fidelity, compute_ssim
+from .rubric import compute_palette_fidelity, compute_ssim
 
 logger = logging.getLogger(__name__)
 
@@ -51,19 +48,49 @@ ALL_COMPOSITORS: list = [
 
 # The 8 NCCA LC subjects + the topic count per subject
 ALL_SUBJECTS: tuple[str, ...] = (
-    "mathematics", "english", "gaeilge", "chemistry",
-    "geography", "physics", "biology", "computer_science",
+    "mathematics",
+    "english",
+    "gaeilge",
+    "chemistry",
+    "geography",
+    "physics",
+    "biology",
+    "computer_science",
 )
 
 # The 5 topics per subject (top-5 from the NCCA LC syllabus)
 TOP_5_TOPICS_PER_SUBJECT: dict[str, tuple[str, ...]] = {
-    "mathematics":     ("Calculus", "Algebra", "Statistics & Probability", "Functions", "Geometry"),
-    "english":         ("Comparative Study", "Composition", "Reading Comprehension", "Prescribed Texts", "Poetry"),
-    "gaeilge":         ("Litríocht Bhéil agus Chultúrtha", "Filíocht agus Scéal", "Aural", "Composition", "Comprehension"),
-    "chemistry":       ("Atomic Structure", "Chemical Bonding", "Stoichiometry", "Organic Chemistry", "Equilibria"),
-    "geography":       ("Physical Geography", "Regional Geography", "Human Environment", "Topographical Skills", "Fieldwork"),
-    "physics":         ("Mechanics", "Waves", "Light", "Electricity & Magnetism", "Modern Physics"),
-    "biology":         ("The Study of Life", "The Cell", "The Organism", "Genetics", "Ecology"),
+    "mathematics": ("Calculus", "Algebra", "Statistics & Probability", "Functions", "Geometry"),
+    "english": (
+        "Comparative Study",
+        "Composition",
+        "Reading Comprehension",
+        "Prescribed Texts",
+        "Poetry",
+    ),
+    "gaeilge": (
+        "Litríocht Bhéil agus Chultúrtha",
+        "Filíocht agus Scéal",
+        "Aural",
+        "Composition",
+        "Comprehension",
+    ),
+    "chemistry": (
+        "Atomic Structure",
+        "Chemical Bonding",
+        "Stoichiometry",
+        "Organic Chemistry",
+        "Equilibria",
+    ),
+    "geography": (
+        "Physical Geography",
+        "Regional Geography",
+        "Human Environment",
+        "Topographical Skills",
+        "Fieldwork",
+    ),
+    "physics": ("Mechanics", "Waves", "Light", "Electricity & Magnetism", "Modern Physics"),
+    "biology": ("The Study of Life", "The Cell", "The Organism", "Genetics", "Ecology"),
     "computer_science": ("Algorithms", "Data Structures", "Networks", "Programming", "Systems"),
 }
 
@@ -93,7 +120,9 @@ class AssetComparisonRow:
             "topic": self.topic,
             "backend": self.backend,
             "model_key": self.model_key,
-            "image_b64": self.image_b64[:1000] + "..." if len(self.image_b64) > 1000 else self.image_b64,  # truncate for storage
+            "image_b64": self.image_b64[:1000] + "..."
+            if len(self.image_b64) > 1000
+            else self.image_b64,  # truncate for storage
             "ssim_vs_reference": self.ssim_vs_reference,
             "palette_fidelity": self.palette_fidelity,
             "judge_score": self.judge_score,
@@ -121,7 +150,7 @@ def run_asset_comparison(
 
     started = time.monotonic()
     results: list[AssetComparisonRow] = []
-    baml_extractor = BAMLSyllabusExtractor()  # for the reference syllabus
+    BAMLSyllabusExtractor()  # for the reference syllabus
 
     for subject in subjects:
         topics = topics_per_subject.get(subject, ())
@@ -138,7 +167,9 @@ def run_asset_comparison(
     total_ms = int((time.monotonic() - started) * 1000)
     logger.info(
         "run_asset_comparison: %d cells in %d ms (%d subjects × %d topics × %d backends)",
-        len(results), total_ms, len(subjects),
+        len(results),
+        total_ms,
+        len(subjects),
         sum(len(topics_per_subject.get(s, ())) for s in subjects),
         len(compositors),
     )
@@ -152,7 +183,10 @@ def run_asset_comparison(
 def _run_one_cell(*, compositor: Any, concept: CurriculumConcept) -> AssetComparisonRow:
     """Run one (subject, topic, backend) cell."""
     import datetime
-    result = compositor.render(concept=concept, seed=hash((concept.subject, concept.topic, compositor.backend)) % (1 << 31))
+
+    result = compositor.render(
+        concept=concept, seed=hash((concept.subject, concept.topic, compositor.backend)) % (1 << 31)
+    )
 
     palette_anchor = concept.palette_primary
     ssim = compute_ssim(image_b64=result.image_b64, reference_b64=None)  # placeholder
@@ -162,6 +196,7 @@ def _run_one_cell(*, compositor: Any, concept: CurriculumConcept) -> AssetCompar
     if result.success and not result.metadata.get("stub"):
         try:
             from ..syllabus.rubric import llm_judge_score
+
             judge_score, judge_rationale = llm_judge_score(
                 topic_titles=[concept.topic],
             )
@@ -173,7 +208,9 @@ def _run_one_cell(*, compositor: Any, concept: CurriculumConcept) -> AssetCompar
         topic=concept.topic,
         backend=compositor.backend,
         model_key=compositor.model_key,
-        image_b64=result.image_b64 if isinstance(result.image_b64, str) else result.image_b64.decode("utf-8", errors="replace"),
+        image_b64=result.image_b64
+        if isinstance(result.image_b64, str)
+        else result.image_b64.decode("utf-8", errors="replace"),
         ssim_vs_reference=ssim,
         palette_fidelity=palette_fid,
         judge_score=judge_score,
@@ -182,13 +219,14 @@ def _run_one_cell(*, compositor: Any, concept: CurriculumConcept) -> AssetCompar
         latency_ms=result.duration_ms,
         seed=result.seed,
         palette_anchor_hex=palette_anchor,
-        captured_at=datetime.datetime.now(tz=datetime.timezone.utc).isoformat(),
+        captured_at=datetime.datetime.now(tz=datetime.UTC).isoformat(),
     )
 
 
 def _make_synthetic_concept(*, subject: str, topic: str) -> CurriculumConcept:
     """Build a CurriculumConcept for asset generation (no PDF needed)."""
     from ..syllabus.per_topic_schema import NCCA_KEY_COMPETENCIES
+
     speciality = SUBJECT_SPECIALITIES.get(subject, {})
     return CurriculumConcept(
         subject=subject,
@@ -204,7 +242,12 @@ def _make_synthetic_concept(*, subject: str, topic: str) -> CurriculumConcept:
         palette_primary="#CC4500",
         palette_accent="#1d70b8",
         typography_stack=["Arial", "Helvetica", "sans-serif"],
-        descriptor_vocabulary=["Exceptional", "Above expectations", "In line with expectations", "Yet to meet expectations"],
+        descriptor_vocabulary=[
+            "Exceptional",
+            "Above expectations",
+            "In line with expectations",
+            "Yet to meet expectations",
+        ],
         ncca_citation=("SC-L1-L2-Programme-Statement.pdf", (abs(hash(topic)) % 30) + 1),
     )
 
@@ -213,6 +256,7 @@ def _persist(rows: list[dict[str, Any]]) -> int:
     """Persist the comparison rows to DuckDB + JSONL."""
     import json
     from pathlib import Path
+
     target = Path("./data/gemini_hackathon/cert/per_topic_assets.jsonl")
     target.parent.mkdir(parents=True, exist_ok=True)
     with target.open("w", encoding="utf-8") as fp:
@@ -223,6 +267,7 @@ def _persist(rows: list[dict[str, Any]]) -> int:
     # Also try DuckDB
     try:
         import duckdb
+
         db_path = "./data/gemini_hackathon.duckdb"
         Path(db_path).parent.mkdir(parents=True, exist_ok=True)
         conn = duckdb.connect(database=db_path, read_only=False)
@@ -246,9 +291,20 @@ def _persist(rows: list[dict[str, Any]]) -> int:
         for r in rows:
             conn.execute(
                 "INSERT INTO gemini_hackathon.per_topic_assets (subject, topic, backend, model_key, ssim_vs_reference, palette_fidelity, judge_score, judge_rationale, cost_usd, latency_ms, seed, palette_anchor_hex) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [r["subject"], r["topic"], r["backend"], r["model_key"],
-                 r["ssim_vs_reference"], r["palette_fidelity"], r["judge_score"], r["judge_rationale"],
-                 r["cost_usd"], r["latency_ms"], r["seed"], r["palette_anchor_hex"]],
+                [
+                    r["subject"],
+                    r["topic"],
+                    r["backend"],
+                    r["model_key"],
+                    r["ssim_vs_reference"],
+                    r["palette_fidelity"],
+                    r["judge_score"],
+                    r["judge_rationale"],
+                    r["cost_usd"],
+                    r["latency_ms"],
+                    r["seed"],
+                    r["palette_anchor_hex"],
+                ],
             )
         conn.close()
         logger.info("run_asset_comparison: persisted %d rows to DuckDB", len(rows))

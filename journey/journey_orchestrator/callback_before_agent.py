@@ -28,6 +28,7 @@ Or wired into every level's `Agent` directly via the ADK 2 constructor:
         before_agent_callback=hydrate_participant_state,
     )
 """
+
 from __future__ import annotations
 
 import logging
@@ -69,12 +70,12 @@ def _read_state_from_context(ctx: Any) -> dict[str, Any]:
                 state = getattr(ctx, attr)
                 if state is not None:
                     break
-            except Exception:  # noqa: BLE001 — best-effort access
+            except Exception:
                 pass
     if state is None and hasattr(ctx, "to_dict"):
         try:
             return dict(ctx.to_dict() or {})
-        except Exception:  # noqa: BLE001
+        except Exception:
             pass
     return dict(state or {})
 
@@ -98,7 +99,12 @@ def _fetch_participant_doc(learner_id: str, event_code: str) -> dict[str, Any] |
 
     database = os.environ.get("JOURNEY_FIRESTORE_DATABASE", "(default)")
     client = firestore.Client(project=project_id, database=database)
-    doc_ref = client.collection("journeys").document(event_code).collection("participants").document(learner_id)
+    doc_ref = (
+        client.collection("journeys")
+        .document(event_code)
+        .collection("participants")
+        .document(learner_id)
+    )
     snap = doc_ref.get()
     if not snap.exists:
         return None
@@ -137,8 +143,12 @@ def hydrate_participant_state(ctx: Any) -> dict[str, Any]:
         subject = doc.get("active_subject") or raw_state.get("subject") or "mathematics"
         display_name = doc.get("display_name", "")
     else:
-        subnation = raw_state.get("subnation") or os.environ.get("JOURNEY_DEFAULT_SUBNATION", "ireland")
-        subject = raw_state.get("subject") or os.environ.get("JOURNEY_DEFAULT_SUBJECT", "mathematics")
+        subnation = raw_state.get("subnation") or os.environ.get(
+            "JOURNEY_DEFAULT_SUBNATION", "ireland"
+        )
+        subject = raw_state.get("subject") or os.environ.get(
+            "JOURNEY_DEFAULT_SUBJECT", "mathematics"
+        )
         display_name = raw_state.get("display_name", "")
 
     # Whitelist the 4 keys every downstream level's `instruction="..."`
@@ -149,7 +159,7 @@ def hydrate_participant_state(ctx: Any) -> dict[str, Any]:
         "subnation": subnation,
         "subject": subject,
         "event_code": event_code,
-        "journey_event_code": event_code,   # alias for older templates
+        "journey_event_code": event_code,  # alias for older templates
         "display_name": display_name,
     }
 
@@ -167,12 +177,15 @@ def hydrate_participant_state(ctx: Any) -> dict[str, Any]:
                     for k, v in hydrated.items():
                         target[k] = v
                 break
-            except Exception:  # noqa: BLE001
+            except Exception:
                 logger.debug("ctx.%s not assignable on this ADK 2 version", attr)
 
     logger.debug(
         "hydrate_participant_state: learner_id=%s subnation=%s subject=%s event_code=%s",
-        learner_id, subnation, subject, event_code,
+        learner_id,
+        subnation,
+        subject,
+        event_code,
     )
     return hydrated
 

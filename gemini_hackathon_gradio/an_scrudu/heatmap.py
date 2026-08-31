@@ -15,7 +15,6 @@ from __future__ import annotations
 
 from gemini_hackathon_gradio.an_scrudu.extraction import MarkingSchemeExtraction
 
-
 # Heatmap color scale: Aistear (low) -> Scoil Sinsearach (high).
 # The 5-stage palette (theme.EDUCATION_PALETTE) interpolated.
 _HEAT_STOPS: list[tuple[float, str]] = [

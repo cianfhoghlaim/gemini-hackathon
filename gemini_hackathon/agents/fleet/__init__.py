@@ -33,22 +33,22 @@ from .fleet_agui import AGUIEvent, AGUIEventType, FleetAGUIBridge
 from .fleet_gateway import (
     AGENT_NAMES,
     AGENT_PERMISSIONS,
+    KEYWORD_TO_AGENT,
     AgentInvocation,
     AgentResponse,
     FleetGateway,
-    KEYWORD_TO_AGENT,
     agent_for_query,
     is_administrative_query,
     list_known_keywords,
 )
 from .fleet_identity import (
+    PERMISSIONS,
+    ROLES,
     AuthenticationError,
     AuthorisationError,
     FleetIdentity,
     IdentityContext,
     IdentityError,
-    PERMISSIONS,
-    ROLES,
     make_token,
     roles_with_permission,
 )
@@ -67,13 +67,13 @@ from .fleet_memory import (
     namespace_for_agent,
 )
 from .fleet_model_armor import (
-    ArmorError,
-    CompletionTooLongError,
     INJECTION_PATTERNS,
     JAILBREAK_PATTERNS,
+    PII_PATTERNS,
+    ArmorError,
+    CompletionTooLongError,
     JailbreakError,
     ModelArmor,
-    PII_PATTERNS,
     PromptInjectionError,
     PromptTooLongError,
     SanitisedCompletion,
@@ -97,17 +97,34 @@ from .fleet_observability import (
 # (2026-08-25-lift-model-registry-to-t1-v1).
 # ─────────────────────────────────────────────────────────────────────
 try:
-    from cianfhoghlaim.fleet import (  # noqa: F401
+    from cianfhoghlaim.fleet import (
         AGUIEvent as _TIER1_AGUIEvent,
+    )
+    from cianfhoghlaim.fleet import (
         AGUIEventType as _TIER1_AGUIEventType,
+    )
+    from cianfhoghlaim.fleet import (
         FleetAGUIBridge as _TIER1_FleetAGUIBridge,
+    )
+    from cianfhoghlaim.fleet import (
         FleetGateway as _TIER1_FleetGateway,
+    )
+    from cianfhoghlaim.fleet import (
         FleetIdentity as _TIER1_FleetIdentity,
+    )
+    from cianfhoghlaim.fleet import (
         FleetMemory as _TIER1_FleetMemory,
-        ModelArmor as _TIER1_ModelArmor,
-        Observability as _TIER1_Observability,
+    )
+    from cianfhoghlaim.fleet import (
         MCPCurriculumServer as _TIER1_MCPCurriculumServer,
     )
+    from cianfhoghlaim.fleet import (
+        ModelArmor as _TIER1_ModelArmor,
+    )
+    from cianfhoghlaim.fleet import (
+        Observability as _TIER1_Observability,
+    )
+
     # Replace the wholesale-copied symbols with the lifted TIER 1
     AGUIEvent = _TIER1_AGUIEvent
     AGUIEventType = _TIER1_AGUIEventType
@@ -129,13 +146,22 @@ except ImportError:
 # Mirrors the 4 prior TIER 1 lift shims.
 # ─────────────────────────────────────────────────────────────────────
 try:
-    from cianfhoghlaim.observability import (  # noqa: F401
-        Observability as _TIER1_OBS_Observability,
-        TraceContext as _TIER1_OBS_TraceContext,
+    from cianfhoghlaim.observability import (
         InvocationRecord as _TIER1_OBS_InvocationRecord,
+    )
+    from cianfhoghlaim.observability import (
+        Observability as _TIER1_OBS_Observability,
+    )
+    from cianfhoghlaim.observability import (
+        TraceContext as _TIER1_OBS_TraceContext,
+    )
+    from cianfhoghlaim.observability import (
         configure_structlog as _TIER1_OBS_configure_structlog,
+    )
+    from cianfhoghlaim.observability import (
         hash_prompt as _TIER1_OBS_hash_prompt,
     )
+
     # The wholesale observability symbols are REPLACED with the lifted
     # TIER 1 symbols. The wholesale observability.py at
     # gemini_hackathon/gemini_hackathon/observability.py is the
@@ -158,11 +184,16 @@ except ImportError:
 # so the lift is layered: fleet first, then agui-bridge.
 # ─────────────────────────────────────────────────────────────────────
 try:
-    from cianfhoghlaim.agui_bridge import (  # noqa: F401
+    from cianfhoghlaim.agui_bridge import (
         AGUIEvent as _TIER1_AGUI_AGUIEvent,
+    )
+    from cianfhoghlaim.agui_bridge import (
         AGUIEventType as _TIER1_AGUI_AGUIEventType,
+    )
+    from cianfhoghlaim.agui_bridge import (
         FleetAGUIBridge as _TIER1_AGUI_FleetAGUIBridge,
     )
+
     AGUIEvent = _TIER1_AGUI_AGUIEvent
     AGUIEventType = _TIER1_AGUI_AGUIEventType
     FleetAGUIBridge = _TIER1_AGUI_FleetAGUIBridge
@@ -174,59 +205,59 @@ __all__ = [
     # Gateway
     "AGENT_NAMES",
     "AGENT_PERMISSIONS",
+    "INJECTION_PATTERNS",
+    "JAILBREAK_PATTERNS",
+    "KEYWORD_TO_AGENT",
+    "PERMISSIONS",
+    "PII_PATTERNS",
+    "ROLES",
+    "_AGUI_BRIDGE_TIER_1_LIFT_ACTIVE",
+    # TIER 1 lift markers (exposed for downstream consumers + tests)
+    "_FLEET_TIER_1_LIFT_ACTIVE",
+    "_OBSERVABILITY_TIER_1_LIFT_ACTIVE",
+    # AG-UI bridge
+    "AGUIEvent",
+    "AGUIEventType",
+    # MCP curriculum
+    "ActiveSource",
     "AgentInvocation",
     "AgentResponse",
-    "FleetGateway",
-    "KEYWORD_TO_AGENT",
-    "agent_for_query",
-    "is_administrative_query",
-    "list_known_keywords",
+    # ModelArmor
+    "ArmorError",
     # Identity
     "AuthenticationError",
     "AuthorisationError",
-    "FleetIdentity",
-    "IdentityContext",
-    "IdentityError",
-    "PERMISSIONS",
-    "ROLES",
-    "make_token",
-    "roles_with_permission",
-    # ModelArmor
-    "ArmorError",
     "CompletionTooLongError",
-    "INJECTION_PATTERNS",
-    "JAILBREAK_PATTERNS",
-    "JailbreakError",
-    "ModelArmor",
-    "PII_PATTERNS",
-    "PromptInjectionError",
-    "PromptTooLongError",
-    "SanitisedCompletion",
-    "SanitisedPrompt",
-    # Observability
-    "InvocationRecord",
-    "Observability",
-    "TraceContext",
-    "configure_structlog",
-    "hash_prompt",
+    "EquivalentTopicHit",
+    "FleetAGUIBridge",
+    "FleetGateway",
+    "FleetIdentity",
     # Memory
     "FleetMemory",
+    "IdentityContext",
+    "IdentityError",
+    # Observability
+    "InvocationRecord",
+    "JailbreakError",
+    "MCPCurriculumServer",
     "MemoryEntry",
     "MemoryHit",
     "MemoryNotFoundError",
     "MemoryQuery",
-    "namespace_for_agent",
-    # AG-UI bridge
-    "AGUIEvent",
-    "AGUIEventType",
-    "FleetAGUIBridge",
-    # MCP curriculum
-    "ActiveSource",
-    "EquivalentTopicHit",
-    "MCPCurriculumServer",
+    "ModelArmor",
+    "Observability",
+    "PromptInjectionError",
+    "PromptTooLongError",
+    "SanitisedCompletion",
+    "SanitisedPrompt",
     "TopicLookup",
-    # TIER 1 lift markers (exposed for downstream consumers + tests)
-    "_FLEET_TIER_1_LIFT_ACTIVE",
-    "_AGUI_BRIDGE_TIER_1_LIFT_ACTIVE",
-    "_OBSERVABILITY_TIER_1_LIFT_ACTIVE",
+    "TraceContext",
+    "agent_for_query",
+    "configure_structlog",
+    "hash_prompt",
+    "is_administrative_query",
+    "list_known_keywords",
+    "make_token",
+    "namespace_for_agent",
+    "roles_with_permission",
 ]

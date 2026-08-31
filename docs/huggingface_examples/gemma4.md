@@ -105,7 +105,7 @@ To be specific, this is a correct fragment that prepares inputs for the chat tem
 
 ```python
 image_url = "https://huggingface.co/datasets/huggingface/documentation-images/resolve/0052a70beed5bf71b92610a43a52df6d286cd5f3/diffusers/rabbit.jpg"
-audio_url = "instructions.m4a"      # A recording of "describe this image"
+audio_url = "instructions.m4a"  # A recording of "describe this image"
 messages = [
     {
         "role": "user",
@@ -113,7 +113,7 @@ messages = [
             {"type": "image", "image": image_url},
             {"type": "text", "text": "Answer in French."},
             {"type": "audio", "audio": audio_url},
-        ]
+        ],
     }
 ]
 # Cette image montre un personnage anthropomorphe ressemblant à un lapin, vêtu d'un manteau bleu et d'un pantalon beige, se tenant sur un chemin de terre dans un paysage rural idyllique ...
@@ -209,7 +209,10 @@ messages = [
     {
         "role": "user",
         "content": [
-            {"type": "video", "url": "https://huggingface.co/datasets/merve/vlm_test_images/resolve/main/concert.mp4"},
+            {
+                "type": "video",
+                "url": "https://huggingface.co/datasets/merve/vlm_test_images/resolve/main/concert.mp4",
+            },
             {"type": "text", "text": "What is happening in the video? What is the song about?"},
         ],
     },
@@ -220,7 +223,7 @@ inputs = processor.apply_chat_template(
     return_dict=True,
     return_tensors="pt",
     add_generation_prompt=True,
-    load_audio_from_video=True, # disable this for larger models
+    load_audio_from_video=True,  # disable this for larger models
 ).to(model.device)
 output = model.generate(**inputs, max_new_tokens=200)
 input_len = inputs.input_ids.shape[-1]
@@ -253,7 +256,10 @@ messages = [
     {
         "role": "user",
         "content": [
-            {"type": "image", "url": "https://huggingface.co/datasets/merve/vlm_test_images/resolve/main/bird.png"},
+            {
+                "type": "image",
+                "url": "https://huggingface.co/datasets/merve/vlm_test_images/resolve/main/bird.png",
+            },
             {"type": "text", "text": "Write single detailed caption for this image."},
         ],
     },
@@ -294,7 +300,10 @@ messages = [
     {
         "role": "user",
         "content": [
-            {"type": "audio", "url": "https://huggingface.co/datasets/hf-internal-testing/dummy-audio-samples/resolve/main/obama_first_45_secs.mp3"},
+            {
+                "type": "audio",
+                "url": "https://huggingface.co/datasets/hf-internal-testing/dummy-audio-samples/resolve/main/obama_first_45_secs.mp3",
+            },
             {"type": "text", "text": "Can you describe this audio in detail?"},
         ],
     },
@@ -334,7 +343,10 @@ messages = [
     {
         "role": "user",
         "content": [
-            {"type": "audio", "url": "https://huggingface.co/datasets/hf-internal-testing/dummy-audio-samples/resolve/main/obama_first_45_secs.mp3"},
+            {
+                "type": "audio",
+                "url": "https://huggingface.co/datasets/hf-internal-testing/dummy-audio-samples/resolve/main/obama_first_45_secs.mp3",
+            },
             {"type": "text", "text": "Transcribe the audio?"},
         ],
     },
@@ -372,7 +384,8 @@ We test the model by asking to get the weather in the place shown in the image.
 <summary>Inference code</summary>
 
 ```py
-import re 
+import re
+
 WEATHER_TOOL = {
     "type": "function",
     "function": {
@@ -389,11 +402,19 @@ WEATHER_TOOL = {
 }
 tools = [WEATHER_TOOL]
 messages = [
-    {"role": "user", "content": [
-          {"type": "text", "text": "What is the city in this image? Check the weather there right now."},
-
-        {"type": "image", "image": "https://huggingface.co/datasets/merve/vlm_test_images/resolve/main/thailand.jpg"},
-    ]},
+    {
+        "role": "user",
+        "content": [
+            {
+                "type": "text",
+                "text": "What is the city in this image? Check the weather there right now.",
+            },
+            {
+                "type": "image",
+                "image": "https://huggingface.co/datasets/merve/vlm_test_images/resolve/main/thailand.jpg",
+            },
+        ],
+    },
 ]
 inputs = processor.apply_chat_template(
     messages,
@@ -437,6 +458,7 @@ The easiest way to infer with the small Gemma 4 models is through the `any-to-an
 
 ```py
 from transformers import pipeline
+
 pipe = pipeline("any-to-any", model="google/gemma-4-e2b-it")
 ```
 
@@ -485,6 +507,7 @@ Going a level lower, you can load Gemma 4 using the `AutoModelForMultimodalLM` c
 
 ```python
 from transformers import AutoModelForMultimodalLM, AutoProcessor
+
 model = AutoModelForMultimodalLM.from_pretrained("google/gemma-4-E2B-it", device_map="auto")
 processor = AutoProcessor.from_pretrained("google/gemma-4-E2B-it")
 messages = [
@@ -500,11 +523,7 @@ messages = [
     }
 ]
 inputs = processor.apply_chat_template(
-    messages,
-    tokenize=True,
-    add_generation_prompt=True,
-    return_dict=True,
-    return_tensors="pt"
+    messages, tokenize=True, add_generation_prompt=True, return_dict=True, return_tensors="pt"
 ).to(model.device)
 
 generated_ids = model.generate(**inputs, max_new_tokens=128)

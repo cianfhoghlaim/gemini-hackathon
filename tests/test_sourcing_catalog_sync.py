@@ -10,6 +10,7 @@ catalog changes, this test must be updated too.
 Skipped when `dlt` isn't importable (the canonical source module fails to
 import, exactly the case this duplication was created for).
 """
+
 from __future__ import annotations
 
 import pytest
@@ -18,10 +19,14 @@ import pytest
 def test_catalog_urls_in_sync():
     """The inlined `KNOWN_OFFICIAL_URLS` must equal the canonical one."""
     try:
-        import dlt  # noqa: F401 — required for the canonical source module
-        from gemini_hackathon.dlt_pipelines.official_doc_fetcher import KNOWN_OFFICIAL_URLS as canonical
+        import dlt
+        from gemini_hackathon.dlt_pipelines.official_doc_fetcher import (
+            KNOWN_OFFICIAL_URLS as canonical,
+        )
     except ImportError:
-        pytest.skip("dlt not importable; canonical catalog unreachable (this is exactly why we duplicated)")
+        pytest.skip(
+            "dlt not importable; canonical catalog unreachable (this is exactly why we duplicated)"
+        )
 
     from gemini_hackathon.journey.sourcing.pipeline import KNOWN_OFFICIAL_URLS as inlined
 

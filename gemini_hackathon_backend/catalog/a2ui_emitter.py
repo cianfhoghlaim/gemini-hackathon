@@ -17,6 +17,7 @@ tools import them and append their output to
 `_flush_a2ui_surfaces(tool_context)` reads that buffer and yields the
 events in the order they were recorded.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -76,7 +77,9 @@ def make_a2ui_envelope(
     return {"operations": ops}
 
 
-def wrap_a2ui_in_raw_event(surface_id: str, components: list[dict], data: dict | None = None) -> dict[str, Any]:
+def wrap_a2ui_in_raw_event(
+    surface_id: str, components: list[dict], data: dict | None = None
+) -> dict[str, Any]:
     """Wrap an A2UI envelope in the AG-UI `Raw` event shape for the CopilotKit runtime.
 
     The AG-UI protocol (per CopilotKit's a2ui middleware) ships A2UI

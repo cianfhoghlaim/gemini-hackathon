@@ -115,7 +115,10 @@ def load_secrets() -> dict[str, str]:
         LOGGER.info("ADK_LOCAL_SECRETS=1 → reading secrets from %s", _DOTENV_PATH)
         return _load_from_dotenv()
 
-    LOGGER.info("Loading secrets from GSM (project=%s)", os.environ.get("GCP_PROJECT", "agentic-hackathon-august-26"))
+    LOGGER.info(
+        "Loading secrets from GSM (project=%s)",
+        os.environ.get("GCP_PROJECT", "agentic-hackathon-august-26"),
+    )
     return _load_from_gsm()
 
 

@@ -60,8 +60,7 @@ except ImportError:
     AssetExecutionContext = None  # type: ignore[assignment]
     asset = None  # type: ignore[assignment]
     logger.warning(
-        "uk_ncce_learning_graphs: dagster not installed; "
-        "running as a plain Python module only."
+        "uk_ncce_learning_graphs: dagster not installed; running as a plain Python module only."
     )
 
 
@@ -236,7 +235,8 @@ def _build_pdf_asset_payload(
 def _baml_available() -> bool:
     """True when the generated baml_client package is importable."""
     try:
-        from baml_client import baml_client as _bc  # type: ignore[import-not-found]  # noqa: F401
+        from baml_client import baml_client as _bc  # type: ignore[import-not-found]
+
         return True
     except ImportError:
         return False
@@ -270,7 +270,9 @@ def _build_per_subject_payload(
 # ---------------------------------------------------------------------------
 
 
-def _make_pdf_asset(basename: str, slug: str, kind: str, subject: str | None, year_level: int | None) -> Any:
+def _make_pdf_asset(
+    basename: str, slug: str, kind: str, subject: str | None, year_level: int | None
+) -> Any:
     """Build one Dagster asset for a single NCCE PDF."""
     if asset is None:
         return None
@@ -366,7 +368,8 @@ for _name, _asset_obj in _ALL_ASSETS.items():
     globals()[_name] = _asset_obj
 
 
-__all__ = list(_ALL_ASSETS.keys()) + [
+__all__ = [  # noqa: PLE0604
+    *list(_ALL_ASSETS.keys()),
     "LEARNING_GRAPHS_ROOT",
     "PDF_ARTEFACTS",
     "PER_SUBJECT_ARTEFACTS",

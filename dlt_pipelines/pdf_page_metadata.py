@@ -35,7 +35,6 @@ from pathlib import Path
 from typing import Any
 
 import dlt
-
 from dlt_pipelines._shared import (
     DUCKDB_PATH,
     get_duckdb_destination,
@@ -155,7 +154,7 @@ def _extract_pdf_metadata(
     }
 
     try:
-        from pypdf import PdfReader  # noqa: PLC0415 — pypdf is an optional dependency
+        from pypdf import PdfReader
     except ImportError:
         logger.warning("_extract_pdf_metadata: pypdf not installed — fields will be empty")
         return metadata
@@ -203,7 +202,7 @@ def _resolve_upstream_local_rows(
     (NOT via MotherDuck — this runs on a workstation).
     """
     try:
-        import duckdb  # noqa: PLC0415 — duckdb is an optional dependency
+        import duckdb
     except ImportError:
         logger.error(
             "_resolve_upstream_local_rows: duckdb not installed; install with `uv add duckdb`"

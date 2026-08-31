@@ -27,8 +27,16 @@ def test_subnations_constant_has_six_active():
 
 def test_subnations_have_required_keys():
     """Every SUBNATIONS entry carries the canonical key set."""
-    required = {"name", "iso_code", "awarding_bodies", "phase", "official_url",
-                "uk_naric_recognised", "stage_default", "themes_key"}
+    required = {
+        "name",
+        "iso_code",
+        "awarding_bodies",
+        "phase",
+        "official_url",
+        "uk_naric_recognised",
+        "stage_default",
+        "themes_key",
+    }
     for s in SUBNATIONS:
         missing = required - set(s.keys())
         assert not missing, f"{s['name']!r} is missing keys: {missing}"

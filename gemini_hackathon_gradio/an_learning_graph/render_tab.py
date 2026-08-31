@@ -20,8 +20,10 @@ import pathlib
 from typing import Any
 
 try:
-    import gradio as gr
     import plotly.graph_objects as go
+
+    import gradio as gr
+
     PLOTLY_AVAILABLE = True
 except ImportError:
     gr = None  # type: ignore[assignment]
@@ -49,6 +51,7 @@ YEAR_LEVELS: tuple[int, ...] = (6, 7, 8, 9, 10, 11)
 def _default_render_backend() -> str:
     """Return the active renderer backend (env-overridable)."""
     import os
+
     return os.environ.get("RENDERER_BACKEND", "plotly").lower()
 
 
@@ -91,9 +94,7 @@ def _render_graph_json(graph: dict[str, Any]) -> Any | None:
             text=text,
             texttemplate="%{text}",
             hovertemplate=(
-                "<b>%{y} × %{x}</b><br>"
-                "Skill: %{text}<br>"
-                "Confidence: %{z}<extra></extra>"
+                "<b>%{y} × %{x}</b><br>Skill: %{text}<br>Confidence: %{z}<extra></extra>"
             ),
             colorscale="Greens",
             showscale=True,
@@ -102,7 +103,7 @@ def _render_graph_json(graph: dict[str, Any]) -> Any | None:
     )
     fig.update_layout(
         title=f"{graph.get('jurisdiction', 'Unknown')} / {graph.get('subject', 'Unknown')} / "
-              f"Year {graph.get('year_level', '?')}",
+        f"Year {graph.get('year_level', '?')}",
         xaxis_title="Lesson column",
         yaxis_title="Skill row",
         height=520,
@@ -117,10 +118,20 @@ def _render_graph_json(graph: dict[str, Any]) -> Any | None:
             tgt_cell = next((c for c in cells if c.get("id") == edge.get("target_cell_id")), None)
             if src_cell is None or tgt_cell is None:
                 continue
-            src_col = next((ci for ci, c in enumerate(columns) if c.get("id") == src_cell.get("column_id")), None)
-            src_row = next((ri for ri, r in enumerate(rows) if r.get("id") == src_cell.get("row_id")), None)
-            tgt_col = next((ci for ci, c in enumerate(columns) if c.get("id") == tgt_cell.get("column_id")), None)
-            tgt_row = next((ri for ri, r in enumerate(rows) if r.get("id") == tgt_cell.get("row_id")), None)
+            src_col = next(
+                (ci for ci, c in enumerate(columns) if c.get("id") == src_cell.get("column_id")),
+                None,
+            )
+            src_row = next(
+                (ri for ri, r in enumerate(rows) if r.get("id") == src_cell.get("row_id")), None
+            )
+            tgt_col = next(
+                (ci for ci, c in enumerate(columns) if c.get("id") == tgt_cell.get("column_id")),
+                None,
+            )
+            tgt_row = next(
+                (ri for ri, r in enumerate(rows) if r.get("id") == tgt_cell.get("row_id")), None
+            )
             if None in (src_col, src_row, tgt_col, tgt_row):
                 continue
             fig.add_annotation(

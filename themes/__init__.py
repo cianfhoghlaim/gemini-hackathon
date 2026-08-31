@@ -18,21 +18,36 @@ from __future__ import annotations
 
 from ._official_guidelines import (
     get_font_stack as _get_font_stack,
+)
+from ._official_guidelines import (
     get_primary_color as _get_primary_color,
+)
+from ._official_guidelines import (
     load_guidelines,
 )
 
-
 # Public registry — every key is a jurisdiction the gemini-hackathon supports.
 PER_SUBNATION_AUTHORITY: dict[str, dict[str, str]] = {
-    "ireland":           {"primary": _get_primary_color("ireland"),          "font_stack": _get_font_stack("ireland")},
-    "england":           {"primary": _get_primary_color("england"),          "font_stack": _get_font_stack("england")},
-    "scotland":          {"primary": _get_primary_color("scotland"),         "font_stack": _get_font_stack("scotland")},
-    "wales":             {"primary": _get_primary_color("wales"),            "font_stack": _get_font_stack("wales")},
-    "northern_ireland":  {"primary": _get_primary_color("northern_ireland"), "font_stack": _get_font_stack("northern_ireland")},
-    "isle_of_man":       {"primary": _get_primary_color("isle_of_man"),      "font_stack": _get_font_stack("isle_of_man")},
-    "jersey":            {"primary": _get_primary_color("jersey"),           "font_stack": _get_font_stack("jersey")},
-    "guernsey":          {"primary": _get_primary_color("guernsey"),         "font_stack": _get_font_stack("guernsey")},
+    "ireland": {"primary": _get_primary_color("ireland"), "font_stack": _get_font_stack("ireland")},
+    "england": {"primary": _get_primary_color("england"), "font_stack": _get_font_stack("england")},
+    "scotland": {
+        "primary": _get_primary_color("scotland"),
+        "font_stack": _get_font_stack("scotland"),
+    },
+    "wales": {"primary": _get_primary_color("wales"), "font_stack": _get_font_stack("wales")},
+    "northern_ireland": {
+        "primary": _get_primary_color("northern_ireland"),
+        "font_stack": _get_font_stack("northern_ireland"),
+    },
+    "isle_of_man": {
+        "primary": _get_primary_color("isle_of_man"),
+        "font_stack": _get_font_stack("isle_of_man"),
+    },
+    "jersey": {"primary": _get_primary_color("jersey"), "font_stack": _get_font_stack("jersey")},
+    "guernsey": {
+        "primary": _get_primary_color("guernsey"),
+        "font_stack": _get_font_stack("guernsey"),
+    },
 }
 
 

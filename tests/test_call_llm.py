@@ -14,7 +14,6 @@ import pytest
 
 from gemini_hackathon import call_llm as cl
 
-
 # ---------------------------------------------------------------------------
 # Env isolation
 #
@@ -199,15 +198,19 @@ def test_dev_profile_matches_hackathon_tier_chain(monkeypatch):
     # `default` + `local_fallback` + `local_fallback_old` +
     # `dev_encoder_decoder`.
     assert aliases == [
-        "vertex_ai/gemini-3.5-flash",            # Tier 1: default (dev)
-        "openai/unsloth/gemma-3-27b-it",         # Tier 6: local_fallback
-        "openai/unsloth/gemma-2-9b",             # Tier 7: local_fallback_old
-        "openai/unsloth/t5gemma-2-4b",           # Tier 8: dev_encoder_decoder
+        "vertex_ai/gemini-3.5-flash",  # Tier 1: default (dev)
+        "openai/unsloth/gemma-3-27b-it",  # Tier 6: local_fallback
+        "openai/unsloth/gemma-2-9b",  # Tier 7: local_fallback_old
+        "openai/unsloth/t5gemma-2-4b",  # Tier 8: dev_encoder_decoder
     ]
     assert len(model_list) == 4
     # The fallbacks list mirrors the tier_index used to build each slot.
-    assert fallbacks == [{"model": "tier-1"}, {"model": "tier-6"},
-                         {"model": "tier-7"}, {"model": "tier-8"}]
+    assert fallbacks == [
+        {"model": "tier-1"},
+        {"model": "tier-6"},
+        {"model": "tier-7"},
+        {"model": "tier-8"},
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -434,7 +437,7 @@ def test_public_tier_table_inherits_containment(monkeypatch):
 
 def test_public_roster_entries_are_immutable():
     entry = cl.public_model_roster()[0]
-    with pytest.raises(Exception):
+    with pytest.raises((AttributeError, TypeError)):
         entry.key = "mutated"  # type: ignore[misc]
 
 
@@ -443,26 +446,32 @@ def test_public_roster_entries_are_immutable():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("bad", [
-    "@cf/meta/llama-3.1-8b-instruct",
-    "@cf/mistralai/mistral-7b-instruct-v0.1",
-    "qwen3-coder-32b-instruct",
-    "openai/qwen3-coder-anything",
-])
+@pytest.mark.parametrize(
+    "bad",
+    [
+        "@cf/meta/llama-3.1-8b-instruct",
+        "@cf/mistralai/mistral-7b-instruct-v0.1",
+        "qwen3-coder-32b-instruct",
+        "openai/qwen3-coder-anything",
+    ],
+)
 def test_excluded_models_rejected(bad):
     with pytest.raises(cl.ModelExcludedError):
         cl._assert_model_allowed(bad)
 
 
-@pytest.mark.parametrize("good", [
-    "gemini-3.5-flash",
-    "gemma-4-26b-a4b",
-    "minimax-m3",
-    "vertex_ai/gemini-3.5-flash",
-    "gemini/gemini-3.5-flash",
-    "openai/unsloth/gemma-4-26b-a4b",
-    "openai/qwen3-vl-8b",
-])
+@pytest.mark.parametrize(
+    "good",
+    [
+        "gemini-3.5-flash",
+        "gemma-4-26b-a4b",
+        "minimax-m3",
+        "vertex_ai/gemini-3.5-flash",
+        "gemini/gemini-3.5-flash",
+        "openai/unsloth/gemma-4-26b-a4b",
+        "openai/qwen3-vl-8b",
+    ],
+)
 def test_allowed_models_accepted(good):
     cl._assert_model_allowed(good)
 
@@ -663,11 +672,13 @@ def test_falls_through_to_tier2_when_tier1_fails(fake_router, monkeypatch):
     monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "some-project")
     monkeypatch.setenv("GEMINI_API_KEY", "sk-aistudio-not-a-real-key")
     monkeypatch.setenv("UNSLOTH_API_KEY", "sk-not-a-real-key")
-    router = fake_router({
-        "tier-1": RuntimeError("vertex is down"),
-        "tier-2": RuntimeError("aistudio is down"),
-        "tier-3": _fake_completion_response("from gemma"),
-    })
+    router = fake_router(
+        {
+            "tier-1": RuntimeError("vertex is down"),
+            "tier-2": RuntimeError("aistudio is down"),
+            "tier-3": _fake_completion_response("from gemma"),
+        }
+    )
     response = cl.call_llm([{"role": "user", "content": "hi"}])
     assert response.tier == 3
     assert response.content == "from gemma"
@@ -690,10 +701,12 @@ def test_all_tiers_failing_raises_llm_call_error(fake_router, monkeypatch):
     monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "some-project")
     monkeypatch.setenv("GEMINI_API_KEY", "sk-aistudio-not-a-real-key")
     monkeypatch.setenv("UNSLOTH_API_KEY", "sk-not-a-real-key")
-    fake_router({
-        f"tier-{i}": RuntimeError(f"tier {i} is down")
-        for i in range(1, 5)  # only the 4 hackathon-reachable tiers
-    })
+    fake_router(
+        {
+            f"tier-{i}": RuntimeError(f"tier {i} is down")
+            for i in range(1, 5)  # only the 4 hackathon-reachable tiers
+        }
+    )
     with pytest.raises(cl.LLMCallError) as exc:
         cl.call_llm([{"role": "user", "content": "hi"}])
     assert len(exc.value.attempts) == 6
@@ -708,10 +721,12 @@ def test_dev_profile_falls_through_after_default(fake_router, monkeypatch):
     monkeypatch.setenv("MODEL_PROFILE", "dev")
     monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "some-project")
     monkeypatch.setenv("UNSLOTH_API_KEY", "sk-not-a-real-key")
-    router = fake_router({
-        "tier-1": RuntimeError("down"),
-        "tier-6": _fake_completion_response("from gemma-3"),
-    })
+    router = fake_router(
+        {
+            "tier-1": RuntimeError("down"),
+            "tier-6": _fake_completion_response("from gemma-3"),
+        }
+    )
     response = cl.call_llm([{"role": "user", "content": "hi"}])
     assert response.tier == 6
     assert response.model == "openai/unsloth/gemma-3-27b-it"
@@ -725,11 +740,13 @@ def test_hackathon_profile_reaches_the_tier3_fallback(fake_router, monkeypatch):
     monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "some-project")
     monkeypatch.setenv("GEMINI_API_KEY", "sk-aistudio-not-a-real-key")
     monkeypatch.setenv("UNSLOTH_API_KEY", "sk-not-a-real-key")
-    router = fake_router({
-        "tier-1": RuntimeError("down"),
-        "tier-2": RuntimeError("down"),
-        "tier-3": _fake_completion_response("from gemma"),
-    })
+    router = fake_router(
+        {
+            "tier-1": RuntimeError("down"),
+            "tier-2": RuntimeError("down"),
+            "tier-3": _fake_completion_response("from gemma"),
+        }
+    )
     response = cl.call_llm([{"role": "user", "content": "hi"}])
     assert response.tier == 3
     assert response.model == "openai/unsloth/gemma-4-26b-a4b"
@@ -787,10 +804,12 @@ def test_call_llm_makes_no_network_call_when_mocked(fake_router, monkeypatch):
 
 
 def test_normalise_messages_validates():
-    out = cl.normalise_messages([
-        {"role": "system", "content": "You are helpful."},
-        {"role": "user", "content": "Hello."},
-    ])
+    out = cl.normalise_messages(
+        [
+            {"role": "system", "content": "You are helpful."},
+            {"role": "user", "content": "Hello."},
+        ]
+    )
     assert len(out) == 2
     assert out[0]["role"] == "system"
 

@@ -33,15 +33,16 @@ from typing import Any
 
 try:
     import gradio as gr
+
     GRADIO_AVAILABLE = True
 except ImportError:
     gr = None  # type: ignore[assignment]
     GRADIO_AVAILABLE = False
 
-from .render_tab import build_render_tab
 from .equivalencies_tab import build_equivalencies_tab
 from .generate_tab import build_generate_tab
 from .pedagogy_tab import build_pedagogy_tab
+from .render_tab import build_render_tab
 from .theme import STUDIO_THEME_CSS, apply_learning_graph_theme
 
 logger = logging.getLogger(__name__)
@@ -58,9 +59,7 @@ __all__ = [
 def build_app() -> Any:
     """Build the canonical ``an_learning_graph`` Gradio app."""
     if not GRADIO_AVAILABLE:
-        logger.warning(
-            "an_learning_graph: gradio not installed; build_app() returns None."
-        )
+        logger.warning("an_learning_graph: gradio not installed; build_app() returns None.")
         return None
 
     theme = apply_learning_graph_theme()
@@ -108,4 +107,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

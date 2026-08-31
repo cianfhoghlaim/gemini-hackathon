@@ -24,9 +24,7 @@ def test_init_returns_5_keys(monkeypatch: pytest.MonkeyPatch) -> None:
     state = observability.init_backend_observability()
 
     assert isinstance(state, dict)
-    assert set(state.keys()) == {
-        "adk_otel", "openinference", "langfuse", "mlflow", "cloud_logging"
-    }
+    assert set(state.keys()) == {"adk_otel", "openinference", "langfuse", "mlflow", "cloud_logging"}
 
 
 def test_otlp_env_vars_setdefault_when_gcp_project_set(
@@ -46,13 +44,8 @@ def test_otlp_env_vars_setdefault_when_gcp_project_set(
     observability.init_backend_observability()
 
     assert os.environ.get("OTEL_SERVICE_NAME") == "gemini-hackathon-adk"
-    assert "service.namespace=gemini-hackathon" in os.environ.get(
-        "OTEL_RESOURCE_ATTRIBUTES", ""
-    )
-    assert (
-        os.environ.get("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT")
-        == "EVENT_ONLY"
-    )
+    assert "service.namespace=gemini-hackathon" in os.environ.get("OTEL_RESOURCE_ATTRIBUTES", "")
+    assert os.environ.get("OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT") == "EVENT_ONLY"
 
 
 def test_cloud_logging_skipped_when_adk_otel_active(
@@ -146,6 +139,10 @@ def test_state_dict_keys_match_init_backend_signature() -> None:
     importlib.reload(observability)
     state = observability.init_backend_observability()
     expected_keys = {
-        "adk_otel", "openinference", "langfuse", "mlflow", "cloud_logging",
+        "adk_otel",
+        "openinference",
+        "langfuse",
+        "mlflow",
+        "cloud_logging",
     }
     assert set(state.keys()) == expected_keys

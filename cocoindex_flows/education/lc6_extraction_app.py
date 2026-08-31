@@ -27,14 +27,13 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import importlib.util as _iu
 import json
 import logging
 import pathlib
 import sqlite3
 import sys
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
@@ -60,6 +59,7 @@ SQLITE_PATH: pathlib.Path = pathlib.Path(
 # ---------------------------------------------------------------------------
 # BAML client wrapper — graceful degradation when baml_client is missing
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ExtractionRow:
@@ -110,32 +110,24 @@ def _baml_extract_all(md_text: str, *, subject_slug: str, language: str) -> dict
     try:
         from baml_client import b  # type: ignore[import-not-found]
         from baml_client.types import (  # type: ignore[import-not-found]
-            LCSyllabusDocument,
+            LCCrossLinguisticConcept,
             LCExamPaper,
             LCMarkingScheme,
-            LCCrossLinguisticConcept,
             LCSyllabusDiagram,
+            LCSyllabusDocument,
         )
     except ImportError:
         return _baml_extract_stub(md_text, subject_slug=subject_slug, language=language)
 
     async def _run_all() -> dict[str, Any]:
         return await asyncio.gather(
-            b.ExtractCurriculumSyllabus(
-                pdf_text=md_text, subject=subject_slug, language=language
-            ),
-            b.ExtractExamPaperLayout(
-                pdf_text=md_text, subject=subject_slug, language=language
-            ),
+            b.ExtractCurriculumSyllabus(pdf_text=md_text, subject=subject_slug, language=language),
+            b.ExtractExamPaperLayout(pdf_text=md_text, subject=subject_slug, language=language),
             b.ExtractMarkingSchemeGuideline(
                 pdf_text=md_text, subject=subject_slug, language=language
             ),
-            b.ExtractCrossLinguisticConcept(
-                pdf_text_en=md_text, subject=subject_slug
-            ),
-            b.ExtractSyllabusDiagram(
-                pdf_text=md_text, subject=subject_slug
-            ),
+            b.ExtractCrossLinguisticConcept(pdf_text_en=md_text, subject=subject_slug),
+            b.ExtractSyllabusDiagram(pdf_text=md_text, subject=subject_slug),
             return_exceptions=True,
         )
 
@@ -149,12 +141,12 @@ def _baml_extract_all(md_text: str, *, subject_slug: str, language: str) -> dict
             if hasattr(value, "model_dump_json"):
                 return value.model_dump_json()
             return json.dumps(value, default=str)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("lc6_extraction.serialize_failed reason=%s", exc)
             return None
 
     keys = ("syllabus", "exam_paper", "marking", "concepts", "diagrams")
-    return dict(zip(keys, (_safe_json(r) for r in results)))
+    return dict(zip(keys, (_safe_json(r) for r in results), strict=False))
 
 
 def _baml_extract_stub(md_text: str, *, subject_slug: str, language: str) -> dict[str, str | None]:
@@ -173,20 +165,20 @@ def _baml_extract_stub(md_text: str, *, subject_slug: str, language: str) -> dic
     }
     return {
         "syllabus": json.dumps(
-            {**common_meta, "stub": True, "module_topics": [], "cross_curricular": [], "assessment_objectives": []}
+            {
+                **common_meta,
+                "stub": True,
+                "module_topics": [],
+                "cross_curricular": [],
+                "assessment_objectives": [],
+            }
         ),
         "exam_paper": json.dumps(
             {**common_meta, "stub": True, "sections": [], "total_marks": None}
         ),
-        "marking": json.dumps(
-            {**common_meta, "stub": True, "criteria": []}
-        ),
-        "concepts": json.dumps(
-            {**common_meta, "stub": True, "concepts": []}
-        ),
-        "diagrams": json.dumps(
-            {**common_meta, "stub": True, "diagrams": []}
-        ),
+        "marking": json.dumps({**common_meta, "stub": True, "criteria": []}),
+        "concepts": json.dumps({**common_meta, "stub": True, "concepts": []}),
+        "diagrams": json.dumps({**common_meta, "stub": True, "diagrams": []}),
     }
 
 
@@ -225,9 +217,7 @@ def _ensure_sqlite_table(path: pathlib.Path) -> None:
     """
     path.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(str(path)) as conn:
-        existing = {
-            row[1] for row in conn.execute("PRAGMA table_info(extracted_syllabi)")
-        }
+        existing = {row[1] for row in conn.execute("PRAGMA table_info(extracted_syllabi)")}
         if existing and not _REQUIRED_COLUMNS.issubset(existing):
             missing = ", ".join(sorted(_REQUIRED_COLUMNS - existing))
             raise RuntimeError(
@@ -278,9 +268,16 @@ def _upsert_sqlite_row(path: pathlib.Path, row: ExtractionRow) -> None:
                 fetched_at = excluded.fetched_at
             """,
             (
-                row.subnation, row.stage, row.subject_slug, row.language,
-                row.source_pdf, row.syllabus_json, row.exam_paper_json,
-                row.marking_json, row.concepts_json, row.diagrams_json,
+                row.subnation,
+                row.stage,
+                row.subject_slug,
+                row.language,
+                row.source_pdf,
+                row.syllabus_json,
+                row.exam_paper_json,
+                row.marking_json,
+                row.concepts_json,
+                row.diagrams_json,
                 row.fetched_at,
             ),
         )
@@ -290,6 +287,7 @@ def _upsert_sqlite_row(path: pathlib.Path, row: ExtractionRow) -> None:
 # ---------------------------------------------------------------------------
 # The run() function — the canonical dev path (no CocoIndex dependency)
 # ---------------------------------------------------------------------------
+
 
 def _process_one(
     md_path: pathlib.Path,
@@ -307,9 +305,7 @@ def _process_one(
     )
     # Caller's subject_slug/language may differ from the path-derived ones;
     # honour the caller's args (per-app invocation pins subject + language).
-    results = _baml_extract_all(
-        text, subject_slug=subject_slug, language=language
-    )
+    results = _baml_extract_all(text, subject_slug=subject_slug, language=language)
     row = ExtractionRow(
         subnation=subnation,
         stage=stage,
@@ -361,19 +357,18 @@ def run(
                 language=language,
             )
             stats["extracted"] += 1
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning(
                 "lc6_extraction_app.process_failed path=%s reason=%s",
-                md_path, exc,
+                md_path,
+                exc,
             )
             stats["failed"] += 1
     return stats
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Run the LC6 BAML extraction over all .md files."
-    )
+    parser = argparse.ArgumentParser(description="Run the LC6 BAML extraction over all .md files.")
     # Phase 1: `--subject` is now optional for the `make cocoindex-update`
     # bulk-run target. The default "*" matches every subject; the per-row
     # `subject_slug` is still derived from the path layout by the App.
@@ -399,9 +394,7 @@ def main() -> int:
         sqlite_path=args.sqlite,
     )
     elapsed_ms = int((time.monotonic() - started) * 1000)
-    logger.info(
-        "lc6_extraction_app.summary stats=%s elapsed_ms=%d", stats, elapsed_ms
-    )
+    logger.info("lc6_extraction_app.summary stats=%s elapsed_ms=%d", stats, elapsed_ms)
     return 0 if stats["failed"] == 0 else 1
 
 
@@ -410,9 +403,9 @@ if __name__ == "__main__":  # pragma: no cover
 
 
 __all__ = [
-    "ExtractionRow",
     "MD_ROOT",
     "SQLITE_PATH",
+    "ExtractionRow",
     "main",
     "run",
 ]

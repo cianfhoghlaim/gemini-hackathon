@@ -129,42 +129,42 @@ except ImportError:
     _THEMING_TIER_1_LIFT_ACTIVE = False
 
 __all__ = [
-    # theming
-    "Palette",
-    "load_palette",
-    "list_all_palettes",
-    "extract_source_palette_from_pdf",
-    "JURISDICTIONS",
     "BOARDS",
-    "SAFEGUARDING_BODIES",
-    "SAFEGUARDING_SOURCES",
     "CANONICAL_TO_FILE",
+    "JURISDICTIONS",
     # models
     "MODEL_REGISTRY",
-    "ModelRegistry",
-    "ModelRegistryEntry",
-    "ModelFamily",
-    "ModelRole",
-    "ModelProfile",
-    "model_for",
+    "SAFEGUARDING_BODIES",
+    "SAFEGUARDING_SOURCES",
     # TIER 1 lift markers (exposed for downstream consumers + tests)
     "_MODEL_REGISTRY_TIER_1_LIFT_ACTIVE",
     "_THEMING_TIER_1_LIFT_ACTIVE",
+    "BoardCode",
+    "BoardMeta",
+    "JurisdictionCode",
     # Phase 3 sources (jurisdiction/board/subject registry)
     "JurisdictionMeta",
-    "BoardMeta",
+    "ModelFamily",
+    "ModelProfile",
+    "ModelRegistry",
+    "ModelRegistryEntry",
+    "ModelRole",
+    # theming
+    "Palette",
     "Subject",
-    "JurisdictionCode",
-    "BoardCode",
-    "sources_JURISDICTIONS",
+    "extract_source_palette_from_pdf",
+    "list_all_palettes",
+    "load_palette",
+    "model_for",
     "sources_BOARDS",
+    "sources_JURISDICTIONS",
     "sources_SUBJECTS",
-    "sources_list_jurisdictions",
-    "sources_list_boards",
-    "sources_get_jurisdiction_meta",
     "sources_get_board_meta",
-    "sources_subjects_for",
+    "sources_get_jurisdiction_meta",
+    "sources_list_boards",
+    "sources_list_jurisdictions",
     "sources_public_roster",
+    "sources_subjects_for",
 ]
 
 
@@ -229,21 +229,21 @@ BoardCode = _Sources_BoardCode
 
 
 __all__ += [
+    "BoardCode",
+    "BoardMeta",
+    "JurisdictionCode",
     # Phase 3 sources (jurisdiction/board/subject registry)
     "JurisdictionMeta",
-    "BoardMeta",
     "Subject",
-    "JurisdictionCode",
-    "BoardCode",
-    "sources_JURISDICTIONS",
     "sources_BOARDS",
+    "sources_JURISDICTIONS",
     "sources_SUBJECTS",
-    "sources_list_jurisdictions",
-    "sources_list_boards",
-    "sources_get_jurisdiction_meta",
     "sources_get_board_meta",
-    "sources_subjects_for",
+    "sources_get_jurisdiction_meta",
+    "sources_list_boards",
+    "sources_list_jurisdictions",
     "sources_public_roster",
+    "sources_subjects_for",
 ]
 
 

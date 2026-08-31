@@ -19,25 +19,21 @@ Design choices:
   - **No silent failures** — every write returns a URI it can verify; the
     caller decides whether a failure is fatal.
 """
+
 from __future__ import annotations
 
 import hashlib
 import logging
 import os
-import shutil
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 #: The default local cache root (offline dev). Overridable via
 #: `JOURNEY_LOCAL_CACHE_DIR`. The directory is created lazily.
-_LOCAL_CACHE_ROOT: Path = Path(
-    os.environ.get("JOURNEY_LOCAL_CACHE_DIR", "./data/sourced_cache")
-)
+_LOCAL_CACHE_ROOT: Path = Path(os.environ.get("JOURNEY_LOCAL_CACHE_DIR", "./data/sourced_cache"))
 
 
 @dataclass(frozen=True)
@@ -47,7 +43,7 @@ class StoredBytes:
     sha256: str
     byte_size: int
     local_cache_uri: str  # file://... (dev) or "" (prod)
-    gcs_uri: str         # gs://... (prod) or file://... (dev)
+    gcs_uri: str  # gs://... (prod) or file://... (dev)
 
 
 def compute_sha256(content: bytes) -> str:
@@ -91,7 +87,7 @@ def write_bytes(
     gcs_uri = local_cache_uri  # default: dev — both URIs point at the local file
     if _should_use_gcs():
         try:
-            from google.cloud import storage  # noqa: PLC0415
+            from google.cloud import storage
 
             project_id = os.environ.get("GCP_PROJECT_ID", "")
             bucket_name = os.environ.get("JOURNEY_GCS_RAW_BUCKET", f"{project_id}-biep-raw")
@@ -130,7 +126,7 @@ def read_bytes(
         return local_path.read_bytes()
     if _should_use_gcs():
         try:
-            from google.cloud import storage  # noqa: PLC0415
+            from google.cloud import storage
 
             project_id = os.environ.get("GCP_PROJECT_ID", "")
             bucket_name = os.environ.get("JOURNEY_GCS_RAW_BUCKET", f"{project_id}-biep-raw")
@@ -156,15 +152,16 @@ def _should_use_gcs() -> bool:
     if not os.environ.get("GCP_PROJECT_ID", ""):
         return False
     try:
-        import google.cloud.storage  # noqa: F401,PLC0415
+        import google.cloud.storage
+
         return True
     except ImportError:
         return False
 
 
 __all__ = [
-    "StoredBytes",
     "_LOCAL_CACHE_ROOT",
+    "StoredBytes",
     "compute_sha256",
     "read_bytes",
     "write_bytes",

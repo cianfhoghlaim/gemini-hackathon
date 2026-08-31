@@ -26,6 +26,7 @@ Design notes:
     the ADK Runner pauses, and `run_async` resumes on the next user
     confirmation.
 """
+
 from __future__ import annotations
 
 import logging
@@ -38,6 +39,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class JourneyOutcome:
     """The full result of running all 6 levels."""
+
     learner_id: str
     subnation: str
     subject: str
@@ -162,9 +164,12 @@ async def request_human_confirmation(ctx: Any) -> dict[str, Any]:
     that field) so the message is consistent whether the ADK
     `RequestInput` import succeeded or fell back to the offline stub.
     """
-    canonical_message = "Mastery ledger updated across 4 backends. Continue to Level 5 (asset generation)?"
+    canonical_message = (
+        "Mastery ledger updated across 4 backends. Continue to Level 5 (asset generation)?"
+    )
     try:
         from google.adk.events.request_input import RequestInput
+
         return RequestInput(message=canonical_message)
     except Exception:
         # Offline / no ADK: structured stub with the same message field
@@ -189,7 +194,9 @@ async def run_full_journey(ctx: Any | None = None) -> JourneyOutcome:
     subject = state.get("subject", "mathematics")
 
     outcome = JourneyOutcome(
-        learner_id=learner_id, subnation=subnation, subject=subject,
+        learner_id=learner_id,
+        subnation=subnation,
+        subject=subject,
     )
 
     levels = [
@@ -221,7 +228,7 @@ async def run_full_journey(ctx: Any | None = None) -> JourneyOutcome:
                 result_dict = dict(result)
             setattr(outcome, name, result_dict)
             logger.info("journey: %s OK", name)
-            for c in (result_dict.get("ncca_policy_citations") or []):
+            for c in result_dict.get("ncca_policy_citations") or []:
                 if c and c not in outcome.ncca_policy_citations:
                     outcome.ncca_policy_citations.append(c)
             if name == "level_5":

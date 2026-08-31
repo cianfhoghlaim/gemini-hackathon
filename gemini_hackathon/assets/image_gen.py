@@ -33,7 +33,7 @@ from .control_record import AssetControlRecord
 logger = logging.getLogger(__name__)
 
 
-class ImageGenBackend(str, enum.Enum):
+class ImageGenBackend(enum.StrEnum):
     COMFYUI = "comfyui"
     INVOKEAI = "invokeai"
     UNSLOTH_STUDIO = "unsloth_studio"
@@ -239,7 +239,7 @@ class _LiteLLMImageBackend:
     def is_available(self) -> bool:
         # Only check that litellm itself is importable.
         try:
-            import litellm  # noqa: F401
+            import litellm
         except ImportError:
             return False
         # Don't ping the model endpoint on every probe (costs money); the

@@ -52,10 +52,13 @@ and the CLI's `--roster` output must read from here and nowhere else.
 
 ```python
 from gemini_hackathon.model_registry import (
-    MODEL_REGISTRY, model_for, public_model_roster,
+    MODEL_REGISTRY,
+    model_for,
+    public_model_roster,
 )
-entries = public_model_roster()              # always hackathon profile
-gemini   = model_for("text_llm", "default")    # respects MODEL_PROFILE
+
+entries = public_model_roster()  # always hackathon profile
+gemini = model_for("text_llm", "default")  # respects MODEL_PROFILE
 ```
 
 ---

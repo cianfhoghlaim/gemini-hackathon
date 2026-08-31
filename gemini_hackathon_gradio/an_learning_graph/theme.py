@@ -15,13 +15,14 @@ right-rail accents align with the 4 new learning-graph stages:
 
 from __future__ import annotations
 
+from typing import Any
+
 try:
     import gradio as gr
 except ImportError:
     gr = None  # type: ignore[assignment]
 
 from .._common.theme import EDUCATION_PALETTE, GRADIO_CSS
-
 
 # ---------------------------------------------------------------------------
 # Theme function
@@ -45,17 +46,24 @@ def apply_learning_graph_theme() -> Any:
         )
     theme = gr.themes.Soft(
         primary_hue=gr.themes.Color(
-            c50="#e6f4ea", c100="#cce8d3", c200="#a6d3ad",
-            c300="#80be87", c400="#5aa961", c500="#3d8e47",
-            c600="#2f7138", c700="#21542a", c800="#13381b",
-            c900="#081c0e", c950="#040e07",
+            c50="#e6f4ea",
+            c100="#cce8d3",
+            c200="#a6d3ad",
+            c300="#80be87",
+            c400="#5aa961",
+            c500="#3d8e47",
+            c600="#2f7138",
+            c700="#21542a",
+            c800="#13381b",
+            c900="#081c0e",
+            c950="#040e07",
         ),
         secondary_hue="orange",
         neutral_hue="slate",  # the Hades Shadow-First dark neutral
     )
     try:
         theme = theme.set(
-            body_background_fill=EDUCATION_PALETTE["hades_base"] if "hades_base" in EDUCATION_PALETTE else "#1d1d2f",
+            body_background_fill=EDUCATION_PALETTE.get("hades_base", "#1d1d2f"),
             body_text_color="#d8d4cc",
             block_background_fill="#1a1d2e",
             block_border_color="#a67c52",
@@ -73,7 +81,9 @@ def apply_learning_graph_theme() -> Any:
 # CSS
 # ---------------------------------------------------------------------------
 
-STUDIO_THEME_CSS: str = GRADIO_CSS + """
+STUDIO_THEME_CSS: str = (
+    GRADIO_CSS
+    + """
 /* Learning-graph studio extensions on top of the 5-stage palette */
 
 /* Year-level accent strip (the right rail of the Render tab) */
@@ -98,5 +108,6 @@ STUDIO_THEME_CSS: str = GRADIO_CSS + """
     margin-left: 0.4em;
 }
 """
+)
 
 __all__ = ["STUDIO_THEME_CSS", "apply_learning_graph_theme"]

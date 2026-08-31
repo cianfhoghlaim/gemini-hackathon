@@ -20,11 +20,11 @@ The REPL uses the ADK 2 `Runner.run_async()` per
 fallback that prints the tool result + a recommended next-step — no
 LLM in the loop, but the workshop host still gets the same answer.
 """
+
 from __future__ import annotations
 
 import argparse
 import asyncio
-import json
 import logging
 import sys
 from typing import Any
@@ -36,10 +36,15 @@ logger = logging.getLogger(__name__)
 def _print_status_table(counts: dict[str, Any]) -> None:
     print("\n=== Sourcing pipeline status ===")
     rows = [
-        "catalog_rows_total", "sourced_ok", "sourced_fail",
-        "excluded", "normalised",
-        "baml_extracted", "ocr_consensus_done",
-        "mastery_done", "asset_done",
+        "catalog_rows_total",
+        "sourced_ok",
+        "sourced_fail",
+        "excluded",
+        "normalised",
+        "baml_extracted",
+        "ocr_consensus_done",
+        "mastery_done",
+        "asset_done",
         "ready",
     ]
     for k in rows:
@@ -64,16 +69,22 @@ def _recommend_next_steps_one_shot(counts: dict[str, Any]) -> dict[str, Any]:
     rec: dict[str, Any] = {"recommendation": None, "reasons": []}
     if counts.get("sourced_ok", 0) == 0:
         rec["recommendation"] = "sourced"
-        rec["reasons"].append("No docs sourced yet — run `python -m gemini_hackathon.journey.sourcing.pipeline --step=sourced`")
+        rec["reasons"].append(
+            "No docs sourced yet — run `python -m gemini_hackathon.journey.sourcing.pipeline --step=sourced`"
+        )
     elif (counts.get("normalised") or 0) < (counts.get("sourced_ok") or 0):
         rec["recommendation"] = "normalised"
         rec["reasons"].append(f"{counts['normalised']}/{counts['sourced_ok']} docs normalised")
     elif (counts.get("baml_extracted") or 0) < (counts.get("normalised") or 0):
         rec["recommendation"] = "extract-baml"
-        rec["reasons"].append(f"{counts['baml_extracted']}/{counts['normalised']} docs BAML-extracted")
+        rec["reasons"].append(
+            f"{counts['baml_extracted']}/{counts['normalised']} docs BAML-extracted"
+        )
     else:
         rec["recommendation"] = "journey:level_1"
-        rec["reasons"].append("All docs sourced + normalised + BAML-extracted — ready for the Journey orchestrator")
+        rec["reasons"].append(
+            "All docs sourced + normalised + BAML-extracted — ready for the Journey orchestrator"
+        )
     return rec
 
 
@@ -88,7 +99,9 @@ def _exclude_one_shot(spec: str) -> int:
     print(f"excluded: {result.get('excluded')}  reason={result.get('reason')}")
     print("\nNext candidates (top 10 non-excluded):")
     for c in result.get("next_candidates", []):
-        print(f"  {c.get('sha256', '?')[:16]}...  {c.get('jurisdiction', '?'):<14}  {c.get('subject_slug', '?'):<22}  {c.get('document_type', '?')}")
+        print(
+            f"  {c.get('sha256', '?')[:16]}...  {c.get('jurisdiction', '?'):<14}  {c.get('subject_slug', '?'):<22}  {c.get('document_type', '?')}"
+        )
     return 0
 
 
@@ -101,12 +114,16 @@ def _list_services_one_shot() -> int:
     services = list_cloud_run_services()
     print("\n=== Cloud Run services ===")
     for svc in services:
-        print(f"  {svc.get('metadata', {}).get('name', svc.get('name', '?')):<35}  {svc.get('metadata', {}).get('region', svc.get('region', '?'))}")
+        print(
+            f"  {svc.get('metadata', {}).get('name', svc.get('name', '?')):<35}  {svc.get('metadata', {}).get('region', svc.get('region', '?'))}"
+        )
 
     jobs = list_scheduled_jobs()
     print("\n=== Cloud Scheduler jobs ===")
     for j in jobs:
-        print(f"  {j.get('name', '?'):<30}  {j.get('schedule', '?')}  {j.get('lastRun', j.get('last_run', '?'))}")
+        print(
+            f"  {j.get('name', '?'):<30}  {j.get('schedule', '?')}  {j.get('lastRun', j.get('last_run', '?'))}"
+        )
 
     return 0
 
@@ -122,7 +139,9 @@ async def _repl_turn(runner, user_id: str, session_id: str, content: Any) -> str
     message = gtypes.Content(role="user", parts=[gtypes.Part(text=content)])
     final_text = "(no response)"
     async for event in runner.run_async(
-        user_id=user_id, session_id=session_id, new_message=message,
+        user_id=user_id,
+        session_id=session_id,
+        new_message=message,
     ):
         msg = getattr(event, "message", None)
         if msg and getattr(msg, "parts", None):
@@ -137,7 +156,9 @@ def _interactive_repl() -> int:
 
     agent = build_copilot_agent()
     if agent is None:
-        print("Interactive REPL requires `google-adk` — falling back to one-shot tool-call surface.")
+        print(
+            "Interactive REPL requires `google-adk` — falling back to one-shot tool-call surface."
+        )
         return _status_one_shot()
 
     runner = build_runner(agent)
@@ -162,7 +183,7 @@ def _interactive_repl() -> int:
             _status_one_shot()
             continue
         if query.startswith("exclude "):
-            _exclude_one_shot(query[len("exclude "):].strip())
+            _exclude_one_shot(query[len("exclude ") :].strip())
             continue
         try:
             response = asyncio.run(_repl_turn(runner, user_id, session_id, query))
@@ -174,12 +195,26 @@ def _interactive_repl() -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--status", action="store_true", help="Print the 9-row status table + recommendation")
-    parser.add_argument("--list-services", action="store_true", help="List Cloud Run services + Scheduler jobs")
-    parser.add_argument("--exclude", type=str, default=None, metavar="sha256[:reason]",
-                        help="Mark one document excluded (one-shot)")
-    parser.add_argument("--trigger", type=str, default=None, metavar="step",
-                        help="Trigger one sourcing step (one-shot, delegates to the pipeline CLI)")
+    parser.add_argument(
+        "--status", action="store_true", help="Print the 9-row status table + recommendation"
+    )
+    parser.add_argument(
+        "--list-services", action="store_true", help="List Cloud Run services + Scheduler jobs"
+    )
+    parser.add_argument(
+        "--exclude",
+        type=str,
+        default=None,
+        metavar="sha256[:reason]",
+        help="Mark one document excluded (one-shot)",
+    )
+    parser.add_argument(
+        "--trigger",
+        type=str,
+        default=None,
+        metavar="step",
+        help="Trigger one sourcing step (one-shot, delegates to the pipeline CLI)",
+    )
     args = parser.parse_args(argv)
 
     if args.status:
@@ -190,6 +225,7 @@ def main(argv: list[str] | None = None) -> int:
         return _exclude_one_shot(args.exclude)
     if args.trigger:
         from gemini_hackathon.journey.sourcing_copilot.tools import trigger_step
+
         return trigger_step(args.trigger).get("ok", False) is False
 
     # Default: interactive REPL (or one-shot status if REPL fails).

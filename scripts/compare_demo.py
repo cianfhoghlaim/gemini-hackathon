@@ -11,6 +11,7 @@ Usage:
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import sys
@@ -36,12 +37,21 @@ def main() -> int:
     from gemini_hackathon import compare as compare_mod
     from gemini_hackathon.call_llm import LLMResponse, TierAttempt
 
-    good_json = json.dumps({
-        "source_key": "demo", "source_name": "Demo", "jurisdiction": "Ireland",
-        "level": "LC", "primary": "#00733B", "secondary": "#0E2D5C",
-        "accent": "#F7B81C", "background": "#FFFFFF", "text": "#1A1A1A",
-        "heading_font": "Merriweather", "body_font": "Inter",
-    })
+    good_json = json.dumps(
+        {
+            "source_key": "demo",
+            "source_name": "Demo",
+            "jurisdiction": "Ireland",
+            "level": "LC",
+            "primary": "#00733B",
+            "secondary": "#0E2D5C",
+            "accent": "#F7B81C",
+            "background": "#FFFFFF",
+            "text": "#1A1A1A",
+            "heading_font": "Merriweather",
+            "body_font": "Inter",
+        }
+    )
 
     def stub_call_llm(messages, **kwargs):
         return LLMResponse(
@@ -52,12 +62,20 @@ def main() -> int:
             family="text_llm",
             role="default",
             latency_ms=10,
-            tokens_in=128, tokens_out=64, cost_usd=0.0001,
-            attempts=[TierAttempt(
-                tier=1, family="text_llm", role="default",
-                model="gemini-3.5-flash", backend="vertex",
-                latency_ms=10, succeeded=True,
-            )],
+            tokens_in=128,
+            tokens_out=64,
+            cost_usd=0.0001,
+            attempts=[
+                TierAttempt(
+                    tier=1,
+                    family="text_llm",
+                    role="default",
+                    model="gemini-3.5-flash",
+                    backend="vertex",
+                    latency_ms=10,
+                    succeeded=True,
+                )
+            ],
         )
 
     original_call_llm = call_llm_mod.call_llm
@@ -74,6 +92,7 @@ def main() -> int:
             print(json.dumps(result, indent=2, default=str))
 
             import duckdb
+
             con = duckdb.connect(duckdb_path, read_only=True)
             print("\n=== DuckDB state ===")
             for row in con.execute("""
@@ -81,17 +100,17 @@ def main() -> int:
                 FROM model_comparisons
                 ORDER BY ragas_score DESC
             """).fetchall():
-                print(f"  {row[0]:30s}  score={row[1]:.2f}  latency={row[2]}ms  in={row[3]}  out={row[4]}")
+                print(
+                    f"  {row[0]:30s}  score={row[1]:.2f}  latency={row[2]}ms  in={row[3]}  out={row[4]}"
+                )
             con.close()
             print(f"\nDuckDB file: {duckdb_path}")
     finally:
         call_llm_mod.call_llm = original_call_llm
         # Only unlink the temp PDF, not the canonical sample.
-        if pdf.startswith('/var/folders/') or pdf.startswith('/tmp/'):
-            try:
+        if pdf.startswith("/var/folders/") or pdf.startswith("/tmp/"):
+            with contextlib.suppress(OSError):
                 os.unlink(pdf)
-            except OSError:
-                pass
 
     return 0
 

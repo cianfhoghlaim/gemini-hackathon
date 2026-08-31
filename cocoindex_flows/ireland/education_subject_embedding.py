@@ -8,10 +8,10 @@ to consistent LanceDB tables matching the canonical
 `cianfhoghlaim.education.<jurisdiction>.<stage>[.<board>].<subject>`
 namespace.
 """
+
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +29,7 @@ def consume_voted_ducklake_to_lance(
     import duckdb  # type: ignore[import-not-found]
     import lance  # type: ignore[import-not-found]
 
-    canonical_table = (
-        f"cianfhoghlaim.education.{jurisdiction}.{stage}.{subject_slug}"
-    )
+    canonical_table = f"cianfhoghlaim.education.{jurisdiction}.{stage}.{subject_slug}"
     lance_table = lance_table_name or canonical_table.replace(".", "_")
 
     rows_read = 0
@@ -45,7 +43,7 @@ def consume_voted_ducklake_to_lance(
 
         # Write to LanceDB
         db = lance.connect("http://localhost:8081")
-        tbl = db.create_table(
+        db.create_table(
             lance_table,
             [{"text": r[0]} for r in rows] if rows else [{"text": ""}],
             mode="overwrite",
@@ -54,7 +52,9 @@ def consume_voted_ducklake_to_lance(
 
         logger.info(
             "consume_voted_ducklake_to_lance: read %d rows from %s → wrote to %s",
-            rows_read, canonical_table, lance_table,
+            rows_read,
+            canonical_table,
+            lance_table,
         )
         return {"rows_read": rows_read, "rows_written": rows_written, "lance_table": lance_table}
 

@@ -19,7 +19,6 @@ Reference: cianfhoghlaim/cocoindex_flows/biep_parity/ireland_lc_factory.py:1-170
 from __future__ import annotations
 
 import logging
-from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Any
 
@@ -27,8 +26,9 @@ logger = logging.getLogger(__name__)
 
 # CocoIndex is optional — degrade gracefully if not installed.
 try:
-    import cocoindex as coco  # type: ignore[import-not-found]
     from cocoindex.connectors import lancedb as coco_lancedb  # type: ignore[import-not-found]
+
+    import cocoindex as coco  # type: ignore[import-not-found]
 
     COCOINDEX_AVAILABLE = True
 except ImportError:
@@ -39,14 +39,22 @@ except ImportError:
 
 # The 8 NCCA LC subjects × 2 languages = 16 CocoIndex Apps for the gemini-hackathon
 LC_SUBJECT_APPS: tuple[str, ...] = (
-    "lc_mathematics_en", "lc_mathematics_ga",
-    "lc_english_en", "lc_english_ga",
-    "lc_gaeilge_en", "lc_gaeilge_ga",
-    "lc_chemistry_en", "lc_chemistry_ga",
-    "lc_physics_en", "lc_physics_ga",
-    "lc_biology_en", "lc_biology_ga",
-    "lc_geography_en", "lc_geography_ga",
-    "lc_computer_science_en", "lc_computer_science_ga",
+    "lc_mathematics_en",
+    "lc_mathematics_ga",
+    "lc_english_en",
+    "lc_english_ga",
+    "lc_gaeilge_en",
+    "lc_gaeilge_ga",
+    "lc_chemistry_en",
+    "lc_chemistry_ga",
+    "lc_physics_en",
+    "lc_physics_ga",
+    "lc_biology_en",
+    "lc_biology_ga",
+    "lc_geography_en",
+    "lc_geography_ga",
+    "lc_computer_science_en",
+    "lc_computer_science_ga",
 )
 
 
@@ -63,7 +71,16 @@ class LCAppConfig:
 def build_lc_app_configs() -> list[LCAppConfig]:
     """Build the 16 LC CocoIndex App configs (8 subjects × 2 langs)."""
     configs: list[LCAppConfig] = []
-    for subject in ("mathematics", "english", "gaeilge", "chemistry", "physics", "biology", "geography", "computer_science"):
+    for subject in (
+        "mathematics",
+        "english",
+        "gaeilge",
+        "chemistry",
+        "physics",
+        "biology",
+        "geography",
+        "computer_science",
+    ):
         for lang in ("en", "ga"):
             configs.append(
                 LCAppConfig(
@@ -81,7 +98,7 @@ if COCOINDEX_AVAILABLE and hasattr(coco, "app"):
     # The slim shim was originally written for the v0.x decorator pattern — gracefully
     # skip app construction when the API doesn't match. The 16 per-LC CocoIndex Apps
     # will be re-introduced in Phase 5 (post NCCE PDF lift) using the modern pattern.
-    from .._shared._lifespan import LANCE_DB, EMBEDDER, shared_lifespan_ctx
+    from .._shared._lifespan import shared_lifespan_ctx
 
     @coco.app(
         config=coco.AppConfig(
@@ -99,8 +116,9 @@ if COCOINDEX_AVAILABLE and hasattr(coco, "app"):
             language: str,
         ) -> Any:
             """Index chunks for one (subject, language) pair."""
-            config = next(
-                cfg for cfg in build_lc_app_configs()
+            next(
+                cfg
+                for cfg in build_lc_app_configs()
                 if cfg.subject_slug == subject_slug and cfg.language == language
             )
             # The actual App structure would be lifted here from

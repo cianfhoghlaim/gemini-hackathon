@@ -41,7 +41,8 @@ EXTRACTOR_CHOICES: tuple[str, ...] = (
 
 def _baml_available() -> bool:
     try:
-        from baml_client import b as _b  # type: ignore[import-not-found]  # noqa: F401
+        from baml_client import b as _b  # type: ignore[import-not-found]
+
         return True
     except ImportError:
         return False
@@ -51,9 +52,10 @@ def _extract_pdf_text(file_path: str) -> str:
     """Read a PDF via the canonical Phase 2b pypdfium2 extractor."""
     try:
         from cocoindex_flows.pdf._shared import extract_markdown
+
         p = pathlib.Path(file_path)
         return extract_markdown(p.read_bytes())
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning("generate_tab: extract_markdown failed for %s: %s", file_path, exc)
         return ""
 
@@ -121,6 +123,7 @@ def _on_generate(
     # Real BAML path
     try:
         from baml_client import b as _b
+
         if extractor == "ExtractCSLearningGraph":
             result = _b.ExtractCSLearningGraph(pdf_text=pdf_text, year_level=year_level)
         elif extractor == "ExtractMathsLearningGraph":
@@ -129,7 +132,9 @@ def _on_generate(
             result = _b.ExtractEnglishLearningGraph(pdf_text=pdf_text, year_level=year_level)
         elif extractor == "ExtractGaeilgeLearningGraph":
             result = _b.ExtractGaeilgeLearningGraph(
-                pdf_text=pdf_text, year_level=year_level, language="EN",
+                pdf_text=pdf_text,
+                year_level=year_level,
+                language="EN",
             )
         elif extractor == "ExtractChemistryLearningGraph":
             result = _b.ExtractChemistryLearningGraph(pdf_text=pdf_text, year_level=year_level)
@@ -156,7 +161,7 @@ def _on_generate(
             preview_md,
             f"**Saved to** `{out}`.",
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning("generate_tab: BAML extract failed: %s", exc)
         return (
             f"**BAML extraction failed:** `{exc}`\n\n"

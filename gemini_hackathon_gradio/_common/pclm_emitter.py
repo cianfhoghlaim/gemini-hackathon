@@ -31,7 +31,6 @@ import io
 from typing import Protocol
 from xml.etree import ElementTree as ET
 
-
 PCLM_NS = "https://oideachais.ie/pclm/1.0"
 
 

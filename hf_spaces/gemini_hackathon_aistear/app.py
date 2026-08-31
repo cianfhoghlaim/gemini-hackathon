@@ -23,7 +23,9 @@ def build_app():
         theme=gr.themes.Soft(primary_hue="orange", secondary_hue="amber"),
     ) as demo:
         gr.Markdown("# Aistear — Early Years (0-6)")
-        gr.Markdown("Aistear framework for ages 0-6 — play-based learning, 4 themes (wellbeing / identity / communicating / exploring).")
+        gr.Markdown(
+            "Aistear framework for ages 0-6 — play-based learning, 4 themes (wellbeing / identity / communicating / exploring)."
+        )
         # The actual implementation lives in
         # `gemini_hackathon_gradio/editorial_studio/app.py`
         # (the canonical editorial canvas). This Space re-exports
@@ -32,6 +34,7 @@ def build_app():
         # full gemini_hackathon_gradio package at startup.
         try:
             from gemini_hackathon_gradio import build_editorial_studio_app
+
             editor = build_editorial_studio_app()
             gr.Markdown("## Editorial Studio preview")
             gr.Markdown(editor.__doc__ or "Editorial Studio (preview).")

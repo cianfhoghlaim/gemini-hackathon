@@ -13,19 +13,19 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Protocol
 
 logger = logging.getLogger(__name__)
 
 
-class ExtractionMethod(str, Enum):
+class ExtractionMethod(StrEnum):
     """The 4 extraction methods compared in Phase 5."""
 
-    BAML = "baml"                        # BAML ExtractCurriculumSyllabus (Phase 1.2 + Phase 4)
-    VLM_GEMINI_FLASH = "vlm_gemini_flash"   # Gemini 3.5 Flash multimodal (online, primary)
-    VLM_GEMMA4_E4B = "vlm_gemma4_e4b"        # google/gemma-4-E4B-it (local, llama-swap)
-    VLM_PALIGEMMA2 = "vlm_paligemma2"        # google/paligemma2-3b-mix-448 (OCR specialist)
+    BAML = "baml"  # BAML ExtractCurriculumSyllabus (Phase 1.2 + Phase 4)
+    VLM_GEMINI_FLASH = "vlm_gemini_flash"  # Gemini 3.5 Flash multimodal (online, primary)
+    VLM_GEMMA4_E4B = "vlm_gemma4_e4b"  # google/gemma-4-E4B-it (local, llama-swap)
+    VLM_PALIGEMMA2 = "vlm_paligemma2"  # google/paligemma2-3b-mix-448 (OCR specialist)
 
 
 class SyllabusExtractionError(Exception):
@@ -37,7 +37,7 @@ class ExtractedSyllabus:
     """The unified extraction result (any of the 4 methods can produce this)."""
 
     subject: str
-    language: str # "EN" | "GA" | "EN_AND_GA"
+    language: str  # "EN" | "GA" | "EN_AND_GA"
     module_topics: list[dict[str, Any]] = field(default_factory=list)
     total_learning_outcomes: int = 0
     cross_curricular: list[str] = field(default_factory=list)
@@ -85,6 +85,6 @@ class SyllabusExtractor(Protocol):
 __all__ = [
     "ExtractedSyllabus",
     "ExtractionMethod",
-    "SyllabusExtractor",
     "SyllabusExtractionError",
+    "SyllabusExtractor",
 ]

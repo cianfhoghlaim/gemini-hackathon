@@ -15,17 +15,16 @@ Covers:
 from __future__ import annotations
 
 import json
-import os
 import sys
 import warnings
+
 warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"google\.adk.*")
 warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"typing_extensions.*")
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
-
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -38,6 +37,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 def test_adk_available_returns_true():
     """Skip if google-adk isn't installed in this venv."""
     from gemini_hackathon.agents.adk_gemini_agent import is_adk_available
+
     if not is_adk_available():
         pytest.skip("google-adk not installed")
     assert is_adk_available() is True
@@ -46,7 +46,10 @@ def test_adk_available_returns_true():
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_build_adk_agent_returns_real_llmagent_and_runner():
     from gemini_hackathon.agents.adk_gemini_agent import build_adk_agent
-    if not __import__("gemini_hackathon.agents.adk_gemini_agent", fromlist=["is_adk_available"]).is_adk_available():
+
+    if not __import__(
+        "gemini_hackathon.agents.adk_gemini_agent", fromlist=["is_adk_available"]
+    ).is_adk_available():
         pytest.skip("google-adk not installed")
     # Updated 2026-08-31 (Phase 6): pass wrap_in_app=False so the returned
     # object is the raw LlmAgent (not the ADK 2.7+ App wrapper, which has
@@ -61,21 +64,29 @@ def test_build_adk_agent_returns_real_llmagent_and_runner():
     # 5 tools registered
     assert len(agent.tools) == 5
     tool_names = [t.name if hasattr(t, "name") else t.__name__ for t in agent.tools]
-    for expected in ("lookup_outcome", "retrieve_resources",
-                     "find_similar_resources", "retrieve_safeguarding",
-                     "mark_answer"):
+    for expected in (
+        "lookup_outcome",
+        "retrieve_resources",
+        "find_similar_resources",
+        "retrieve_safeguarding",
+        "mark_answer",
+    ):
         assert any(expected in n for n in tool_names), f"missing {expected} in {tool_names}"
 
 
 def test_system_prompt_composes_every_session_field():
     from gemini_hackathon.agents.adk_gemini_agent import render_system_prompt
+
     p = render_system_prompt(
-        subnation="ireland", subnation_flag="🇮🇪",
-        awarding_body="NCCA", role="student",
+        subnation="ireland",
+        subnation_flag="🇮🇪",
+        awarding_body="NCCA",
+        role="student",
         cycle="leaving_cycle",
         subjects=["Mathematics", "English"],
         safeguarding_policy="DEIS + Well-Being Policy Statement",
-        palette_primary="#00733B", palette_heading="Merriweather",
+        palette_primary="#00733B",
+        palette_heading="Merriweather",
     )
     # Every session field is present in the composed prompt.
     assert "ireland" in p
@@ -157,10 +168,18 @@ def _start_backend(port: int):
     import time as _time
 
     proc = subprocess.Popen(
-        [sys.executable, "-m", "gemini_hackathon.backend",
-         "--host", "127.0.0.1", "--port", str(port)],
+        [
+            sys.executable,
+            "-m",
+            "gemini_hackathon.backend",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            str(port),
+        ],
         cwd=str(REPO_ROOT),
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
     base = f"http://127.0.0.1:{port}"
     for _ in range(60):
@@ -175,8 +194,10 @@ def _start_backend(port: int):
 
 def _post(url: str, body: dict, timeout: float = 10.0):
     import urllib.request
+
     req = urllib.request.Request(
-        url, method="POST",
+        url,
+        method="POST",
         data=json.dumps(body).encode(),
         headers={"Content-Type": "application/json"},
     )
@@ -188,6 +209,7 @@ def test_agents_chat_returns_supported_event_types_in_stub():
     """Without ADK (or with empty message) the endpoint returns the AG-UI
     supported_event_types list so the client can render a stub event."""
     import socket
+
     sock = socket.socket()
     sock.bind(("127.0.0.1", 0))
     port = sock.getsockname()[1]
@@ -221,25 +243,30 @@ def test_agents_chat_runs_real_agent_when_adk_available():
     the endpoint runs the real agent and surfaces its outcome.
     """
     from gemini_hackathon.agents.adk_gemini_agent import is_adk_available
+
     if not is_adk_available():
         pytest.skip("google-adk not installed")
 
     import socket
+
     sock = socket.socket()
     sock.bind(("127.0.0.1", 0))
     port = sock.getsockname()[1]
     sock.close()
     proc, base = _start_backend(port)
     try:
-        status, body = _post(f"{base}/api/agents/chat", {
-            "message": "What does the syllabus say about kinematics?",
-            "subnation": "ireland",
-            "subnation_flag": "🇮🇪",
-            "awarding_body": "NCCA",
-            "role": "student",
-            "cycle": "leaving_cycle",
-            "subjects": ["Mathematics"],
-        })
+        status, body = _post(
+            f"{base}/api/agents/chat",
+            {
+                "message": "What does the syllabus say about kinematics?",
+                "subnation": "ireland",
+                "subnation_flag": "🇮🇪",
+                "awarding_body": "NCCA",
+                "role": "student",
+                "cycle": "leaving_cycle",
+                "subjects": ["Mathematics"],
+            },
+        )
         assert status == 200
         # Updated 2026-08-31 (Phase 6): the run_agent_turn status enum is
         # now 'ok' / 'error' / 'blocked' (was 'ok' / 'agent_error' / 'stub').

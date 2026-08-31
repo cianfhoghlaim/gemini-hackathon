@@ -12,6 +12,7 @@ Usage:
         --max-participants 500 \\
         --admin-email your-name@google.com
 """
+
 from __future__ import annotations
 
 import argparse
@@ -26,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 def _now_iso() -> str:
-    return _dt.datetime.now(tz=_dt.timezone.utc).isoformat(timespec="seconds")
+    return _dt.datetime.now(tz=_dt.UTC).isoformat(timespec="seconds")
 
 
 def _build_event_doc(
@@ -60,6 +61,7 @@ def _get_firestore_client():
         return None
     try:
         from google.cloud import firestore
+
         database = os.environ.get("JOURNEY_FIRESTORE_DATABASE", "(default)")
         return firestore.Client(project=project_id, database=database)
     except ImportError:
@@ -78,7 +80,16 @@ def main() -> int:
     parser.add_argument("--admin-email", default=os.environ.get("JOURNEY_ADMIN_EMAIL", ""))
     parser.add_argument(
         "--default-subnation",
-        choices=("ireland", "england", "northern_ireland", "scotland", "wales", "jersey", "guernsey", "isle_of_man"),
+        choices=(
+            "ireland",
+            "england",
+            "northern_ireland",
+            "scotland",
+            "wales",
+            "jersey",
+            "guernsey",
+            "isle_of_man",
+        ),
         default=os.environ.get("JOURNEY_DEFAULT_SUBNATION", "ireland"),
     )
     parser.add_argument(
@@ -108,6 +119,7 @@ def main() -> int:
 
     if args.dry_run:
         import json as _json
+
         print(_json.dumps(doc, indent=2))
         return 0
 
@@ -118,6 +130,7 @@ def main() -> int:
             "running in offline-stub mode (no Firestore write)."
         )
         import json as _json
+
         print(_json.dumps({"offline_stub": True, "would_write": doc}, indent=2))
         return 0
 
