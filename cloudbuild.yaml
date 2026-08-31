@@ -19,6 +19,8 @@ steps:
       - "-c"
       - |
         set -euo pipefail
+        # Enable BuildKit for --mount=type=cache syntax (uv's cache mount)
+        export DOCKER_BUILDKIT=1
         docker build \
           --build-arg BUILDKIT_INLINE_CACHE=1 \
           -t "$_IMAGE_URL" \
