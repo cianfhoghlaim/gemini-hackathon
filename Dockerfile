@@ -89,4 +89,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 
 # tini reaps zombies and forwards signals to the child process.
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["python", "-m", "gemini_hackathon.cli"]
+# Cloud Run injects PORT (default 8080). Bind to 0.0.0.0 so the
+# Cloud Run proxy can reach us; backend.py reads --port + --host.
+CMD ["python", "-m", "gemini_hackathon.backend", "--host", "0.0.0.0", "--port", "8080"]
