@@ -60,7 +60,7 @@ setup: ## full bootstrap — uv install + sync + .env + baml + verify
 # ============================================================================
 # Quality gates — the CI suite (mirrors .github/workflows/ci.yml)
 # ============================================================================
-.PHONY: lint format typecheck test test-cov verify
+.PHONY: lint format typecheck test test-cov journey-test verify
 lint: ## ruff check + ruff format --check
 	$(RUFF) check .
 	$(RUFF) format --check .
@@ -79,6 +79,15 @@ test: ## pytest tests/ -v
 test-cov: ## pytest + coverage report
 	$(BAML) generate
 	$(PYTEST) tests/ -v --cov=gemini_hackathon --cov-report=term-missing --cov-report=xml
+
+journey-test: ## Run the sourcing pipeline tests with the Firestore emulator auto-started
+	@echo "Starting Firestore emulator on :8080..."
+	@gcloud beta emulators firestore start --host-port=localhost:8080 &> /tmp/firestore-emulator.log &
+	@EMULATOR_PID=$$!
+	@trap "kill $$EMULATOR_PID 2>/dev/null || true" EXIT
+	@sleep 5
+	@FIRESTORE_EMULATOR_HOST=localhost:8080 \
+	  uv run pytest tests/test_sourcing_pipeline.py -v
 
 verify: ## the 8-tick verify gate (calls scripts/verify.sh)
 	./scripts/verify.sh

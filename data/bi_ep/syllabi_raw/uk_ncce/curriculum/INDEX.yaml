@@ -56,6 +56,15 @@ documents:
       at commit time).
     certificate_relevance: ks3 + ks4 (Years 7-11) Computing
     deferred: true
+    last_attempt_date: 2026-08-31
+    last_attempt_outcome: |
+      Tried 4 URLs from the canonical NCCE / TeachComputing / gov.uk
+      stack on 2026-08-31; all 4 returned HTML 404 or auth-walled pages,
+      not a valid PDF (none started with the `%PDF-` magic bytes). The
+      placeholder remains in place; the equivalent cell-level
+      equivalencies + the curriculum_journey_full learning graph will
+      be derivable from the 4 already-downloaded PDFs (the 3 learning
+      graphs + the pedagogy principles), per the Phase 7 plan.
 
 provenance:
   source_repo: cianfhoghlaim
