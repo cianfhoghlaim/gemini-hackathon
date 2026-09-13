@@ -67,6 +67,7 @@ export default function App(): React.ReactNode {
                   <Link to="/safeguarding" className="hover:text-[var(--color-accent)]">Safeguarding</Link>
                   <Link to="/find-resources" className="hover:text-[var(--color-accent)]">Find resources</Link>
                   <Link to="/agents" className="hover:text-[var(--color-accent)]">Agent</Link>
+                  <Link to="/compare-models" className="hover:text-[var(--color-accent)]">Demo</Link>
                   <Link to="/archipelago" className="hover:text-[var(--color-accent)]">Archipelago</Link>
                 </nav>
               </header>

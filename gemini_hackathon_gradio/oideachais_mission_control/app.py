@@ -71,7 +71,7 @@ def _stage_documents(jurisdiction: str, level_filter: tuple[str, ...]) -> list[l
         params: list = [f"%{level}%" for level in level_filter]
         sql = (
             "SELECT source_id, jurisdiction, level, subject, language, file_size_bytes "
-            "FROM raw.official_documents WHERE jurisdiction = ? "
+            "FROM raw.official_documents_in_scope WHERE jurisdiction = ? "
             f"AND ({like_clauses}) "
             "ORDER BY level, subject LIMIT 100"
         )

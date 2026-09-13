@@ -201,7 +201,7 @@ down: ## docker compose down -v (nuclear: wipes the duckdb volume)
 cloudbuild: ## gcloud builds submit --config=cloudbuild.yaml (the prod deploy)
 	@test -n "$(GCLOUD)" || { echo "ERROR: gcloud not on PATH. Install: https://cloud.google.com/sdk/docs/install"; exit 1; }
 	@test -n "$(GCP_PROJECT)" || { echo "ERROR: GCP_PROJECT not set. Run: gcloud config set project <PROJECT_ID>"; exit 1; }
-	$(GCLOUD) builds submit --config=cloudbuild.yaml --project=$(GCP_PROJECT) --substitutions=_IMAGE_URL=$(REGION)-dockerp.pkg.dev/$(GCP_PROJECT)/gemini-hackathon/backend:$(shell git rev-parse --short HEAD),_REGION=$(REGION),_SERVICE_NAME=gemini-hackathon-adk-dev
+	$(GCLOUD) builds submit --config=cloudbuild.yaml --project=$(GCP_PROJECT) --substitutions=_IMAGE_URL=$(REGION)-docker.pkg.dev/$(GCP_PROJECT)/gemini-hackathon/backend:$(shell git rev-parse --short HEAD),_REGION=$(REGION)
 
 firebase-deploy: ## firebase deploy --only functions,firestore:rules,firestore:indexes,hosting (the Firebase surface)
 	@test -n "$(FIREBASE)" || { echo "ERROR: firebase not on PATH. Install: npm install -g firebase-tools"; exit 1; }

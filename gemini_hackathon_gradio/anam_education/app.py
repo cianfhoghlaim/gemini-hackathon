@@ -98,7 +98,7 @@ def _load_skill_progression(limit: int = 50) -> list[list]:
         with duckdb.connect(str(_DUCKDB_PATH), read_only=True) as con:
             rows = con.execute(
                 "SELECT source_id, jurisdiction, level, subject, language, file_size_bytes "
-                "FROM raw.official_documents ORDER BY jurisdiction, level LIMIT ?",
+                "FROM raw.official_documents_in_scope ORDER BY jurisdiction, level LIMIT ?",
                 (limit,),
             ).fetchall()
         return [list(r) for r in rows]
