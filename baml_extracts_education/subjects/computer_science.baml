@@ -67,9 +67,27 @@ function ExtractComputerScienceSyllabus(
     - pseudocode_required: true if the LO requires pseudocode
     - code: full NCCA LO code (e.g. 'LC-CS-LO-005')
 
-    {{ ctx.output_format }}
+    {{ ctx.output_format(render_null_as="-1") }}
 
     SYLLABUS TEXT:
     {{ pdf_text }}
   "#
+
+  catch_all (err) {
+    ComputerScienceSyllabus {
+      subject LCSubjectSlug.COMPUTER_SCIENCE,
+      language "",
+      stage LCEducationStage.LC_OL,
+      source_pdf "",
+      source_pages -1,
+      module_topics [],
+      total_learning_outcomes 0,
+      cross_curricular [],
+      assessment_objectives [],
+      prescribed_texts null,
+      formulas null,
+      lineage null,
+      strand_topics [],
+    }
+  }
 }

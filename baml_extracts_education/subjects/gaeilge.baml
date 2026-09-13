@@ -68,11 +68,31 @@ function ExtractGaeilgeSyllabus(
     - aural_required: true if the LO has an aural/listening component (25% of LC Gaeilge)
     - code: full NCCA LO code (e.g. 'LC-GAEL-LO-014')
 
-    {{ ctx.output_format }}
+    {{ ctx.output_format(render_null_as="-1") }}
 
     SYLLABUS TEXT (Irish):
     {{ pdf_text_ga }}
 
     {{ pdf_text_en ? format("SYLLABUS TEXT (English): {{}}", pdf_text_en) : "" }}
   "#
+
+  catch_all (err) {
+    GaeilgeSyllabus {
+      subject LCSubjectSlug.GAEILGE,
+      language "",
+      stage LCEducationStage.LC_OL,
+      source_pdf "",
+      source_pages -1,
+      module_topics [],
+      total_learning_outcomes 0,
+      cross_curricular [],
+      assessment_objectives [],
+      prescribed_texts [],
+      formulas null,
+      lineage null,
+      prescribed_texts_ga [],
+      prescribed_texts_en [],
+      aural_topics [],
+    }
+  }
 }

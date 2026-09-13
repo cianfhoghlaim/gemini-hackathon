@@ -51,9 +51,28 @@ function ExtractEnglishSyllabus(
     - comparative_mode: true if the LO requires comparative analysis (prescribed + unseen)
     - code: full NCCA LO code (e.g. 'LC-ENGL-LO-007')
 
-    {{ ctx.output_format }}
+    {{ ctx.output_format(render_null_as="-1") }}
 
     SYLLABUS TEXT:
     {{ pdf_text }}
   "#
+
+  catch_all (err) {
+    EnglishSyllabus {
+      subject LCSubjectSlug.ENGLISH,
+      language "",
+      stage LCEducationStage.LC_OL,
+      source_pdf "",
+      source_pages -1,
+      module_topics [],
+      total_learning_outcomes 0,
+      cross_curricular [],
+      assessment_objectives [],
+      prescribed_texts [],
+      formulas null,
+      lineage null,
+      prescribed_texts_en [],
+      comparative_study [],
+    }
+  }
 }

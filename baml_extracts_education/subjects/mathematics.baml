@@ -55,9 +55,27 @@ function ExtractMathsSyllabus(
     - formula_refs: list of NCCA formula references (e.g. ['a^2 + b^2 = c^2'])
     - code: full NCCA LO code (e.g. 'LC-MATH-LO-023')
 
-    {{ ctx.output_format }}
+    {{ ctx.output_format(render_null_as="-1") }}
 
     SYLLABUS TEXT:
     {{ pdf_text }}
   "#
+
+  catch_all (err) {
+    MathsSyllabus {
+      subject LCSubjectSlug.MATHEMATICS,
+      language "",
+      stage LCEducationStage.LC_OL,
+      source_pdf "",
+      source_pages -1,
+      module_topics [],
+      total_learning_outcomes 0,
+      cross_curricular [],
+      assessment_objectives [],
+      prescribed_texts null,
+      formulas [],
+      lineage null,
+      strand_5_topics [],
+    }
+  }
 }

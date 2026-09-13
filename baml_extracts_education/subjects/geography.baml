@@ -62,9 +62,27 @@ function ExtractGeographySyllabus(
     - has_graphic_organiser: true if the LO requires a GIS / map / chart artefact
     - code: full NCCA LO code (e.g. 'LC-GEOG-LO-012')
 
-    {{ ctx.output_format }}
+    {{ ctx.output_format(render_null_as="-1") }}
 
     SYLLABUS TEXT:
     {{ pdf_text }}
   "#
+
+  catch_all (err) {
+    GeographySyllabus {
+      subject LCSubjectSlug.GEOGRAPHY,
+      language "",
+      stage LCEducationStage.LC_OL,
+      source_pdf "",
+      source_pages -1,
+      module_topics [],
+      total_learning_outcomes 0,
+      cross_curricular [],
+      assessment_objectives [],
+      prescribed_texts null,
+      formulas null,
+      lineage null,
+      unit_3_topics [],
+    }
+  }
 }

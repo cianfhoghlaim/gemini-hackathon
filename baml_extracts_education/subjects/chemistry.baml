@@ -68,9 +68,27 @@ function ExtractChemistrySyllabus(
     - practical_duration_minutes: typical practical duration (often 30-90 min)
     - code: full NCCA LO code (e.g. 'LC-CHEM-LO-018')
 
-    {{ ctx.output_format }}
+    {{ ctx.output_format(render_null_as="-1") }}
 
     SYLLABUS TEXT:
     {{ pdf_text }}
   "#
+
+  catch_all (err) {
+    ChemistrySyllabus {
+      subject LCSubjectSlug.CHEMISTRY,
+      language "",
+      stage LCEducationStage.LC_OL,
+      source_pdf "",
+      source_pages -1,
+      module_topics [],
+      total_learning_outcomes 0,
+      cross_curricular [],
+      assessment_objectives [],
+      prescribed_texts null,
+      formulas null,
+      lineage null,
+      strand_8_topics [],
+    }
+  }
 }
