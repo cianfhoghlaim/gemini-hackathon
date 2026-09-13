@@ -223,3 +223,7 @@ web/convex/_generated/
 
 # Misc
 .DS_Store
+
+# MLflow tracking DB (do NOT commit — runtime cache)
+notebooks/mlflow.db
+notebooks/*.db
