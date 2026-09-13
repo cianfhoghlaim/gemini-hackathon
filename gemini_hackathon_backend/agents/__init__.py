@@ -2,11 +2,11 @@
 
 from .gemini_deep_research import deep_research, stream_interactions
 from .memory import build_memory_service
-from .ncca_panel import ncca_panel_agent
+from .ncca_panel import build_ncca_panel_agent
 
 __all__ = [
     "deep_research",
     "stream_interactions",
     "build_memory_service",
-    "ncca_panel_agent",
+    "build_ncca_panel_agent",
 ]
