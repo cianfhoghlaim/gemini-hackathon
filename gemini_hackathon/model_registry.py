@@ -425,6 +425,197 @@ def _text_llm_entries() -> dict[str, ModelRegistryEntry]:
             ),
             capabilities=("chat", "long_context"),
         ),
+        # ── M3 Chokepoint aliases (NEW 2026-09-13 — lifted from cianfhoghlaim
+        #    `meaisinfhoghlaim/models/model_registry.py` lines for the 9
+        #    canonical M3 chokepoint aliases: kimi-k2.6, glm-5.1,
+        #    minimax-m2.5, mimo-v2.5, deepseek-v4-flash, minimax-m3,
+        #    deepseek-v4-pro, kimi-k2.7-code, kimi-k3). The hackathon profile
+        #    exposes them so docs/UI/submission can reference them, while the
+        #    default Tier 1+2 call_llm path still routes through
+        #    ``gemini-3.5-flash`` (Vertex) → ``gemma-4-26b-a4b`` (Unsloth).
+        # ── M3 Chokepoint primary: minimax-m3 (canonical plan alias) ─────
+        "minimax-m3": ModelRegistryEntry(
+            key="minimax-m3",
+            family="text_llm",
+            role="m3_primary",
+            display_name="minimax M3 (canonical plan alias, M3 chokepoint)",
+            unsloth_id=None,
+            mlx_id=None,
+            upstream_id="minimax-m3",
+            backend="minimax",
+            available=True,
+            litellm_alias="minimax-m3",
+            profile="hackathon",
+            env_var="MINIMAX_BASE_URL",
+            notes=(
+                "Canonical plan alias per the centralized-model-registry "
+                "spec. Primary for harness comparisons + cross-provider "
+                "routing on the dev profile. Hackathon profile exposes it "
+                "for the comparison harness + agent-training surfaces."
+            ),
+            capabilities=("chat", "function_calling"),
+        ),
+        # ── M3 Chokepoint: kimi-k2.6 (long-context comparison) ──────────
+        "kimi-k2.6": ModelRegistryEntry(
+            key="kimi-k2.6",
+            family="text_llm",
+            role="m3_kimi",
+            display_name="Kimi K2.6 (M3 chokepoint, long-context)",
+            unsloth_id="unsloth/kimi-k2.6-GGUF",
+            mlx_id=None,
+            upstream_id="moonshotai/Kimi-K2.6",
+            backend="unsloth_studio",
+            available=True,
+            litellm_alias="openai/unsloth/kimi-k2.6",
+            profile="hackathon",
+            env_var="UNSLOTH_BASE_URL",
+            notes=(
+                "Long-context M3 chokepoint. Useful for full-LC-syllabus "
+                "context windows (256K+ tokens)."
+            ),
+            capabilities=("chat", "long_context"),
+        ),
+        # ── M3 Chokepoint: glm-5.1 (Z.ai, multi-language) ───────────────
+        "glm-5.1": ModelRegistryEntry(
+            key="glm-5.1",
+            family="text_llm",
+            role="m3_glm",
+            display_name="GLM 5.1 (M3 chokepoint, Z.ai)",
+            unsloth_id="unsloth/glm-5.1-GGUF",
+            mlx_id=None,
+            upstream_id="THUDM/glm-5.1",
+            backend="unsloth_studio",
+            available=True,
+            litellm_alias="openai/unsloth/glm-5.1",
+            profile="hackathon",
+            env_var="UNSLOTH_BASE_URL",
+            notes=(
+                "Z.ai GLM 5.1 M3 chokepoint. Multilingual; works well with "
+                "the BIEP Gaeilge + Mandarin-language syllabi."
+            ),
+            capabilities=("chat", "function_calling"),
+        ),
+        # ── M3 Chokepoint: minimax-m2.5 (local Unsloth) ─────────────────
+        "minimax-m2.5": ModelRegistryEntry(
+            key="minimax-m2.5",
+            family="text_llm",
+            role="m3_local",
+            display_name="minimax M2.5 (M3 chokepoint, Unsloth Studio local)",
+            unsloth_id="unsloth/minimax-m2.5-GGUF",
+            mlx_id=None,
+            upstream_id="MiniMax/M2.5",
+            backend="unsloth_studio",
+            available=True,
+            litellm_alias="openai/unsloth/minimax-m2.5",
+            profile="hackathon",
+            env_var="UNSLOTH_BASE_URL",
+            notes=(
+                "minimax M2.5 M3 chokepoint. Served via Unsloth Studio for "
+                "offline / local-first text generation."
+            ),
+            capabilities=("chat",),
+        ),
+        # ── M3 Chokepoint: mimo-v2.5 (multimodal reasoning) ──────────────
+        "mimo-v2.5": ModelRegistryEntry(
+            key="mimo-v2.5",
+            family="text_llm",
+            role="m3_mimo",
+            display_name="MiMo v2.5 (M3 chokepoint, multimodal reasoning)",
+            unsloth_id="unsloth/mimo-v2.5-GGUF",
+            mlx_id=None,
+            upstream_id="XiaomiMiMo/mimo-v2.5",
+            backend="unsloth_studio",
+            available=True,
+            litellm_alias="openai/unsloth/mimo-v2.5",
+            profile="hackathon",
+            env_var="UNSLOTH_BASE_URL",
+            notes=(
+                "MiMo v2.5 M3 chokepoint. Reasoning + multimodal pre-training; "
+                "useful for the NCCE learning-graph reasoning path."
+            ),
+            capabilities=("chat", "reasoning"),
+        ),
+        # ── M3 Chokepoint: deepseek-v4-flash (fast tier) ────────────────
+        "deepseek-v4-flash": ModelRegistryEntry(
+            key="deepseek-v4-flash",
+            family="text_llm",
+            role="m3_flash",
+            display_name="DeepSeek V4 Flash (M3 chokepoint, fast tier)",
+            unsloth_id="unsloth/deepseek-v4-flash-GGUF",
+            mlx_id=None,
+            upstream_id="deepseek-ai/DeepSeek-V4-Flash",
+            backend="unsloth_studio",
+            available=True,
+            litellm_alias="openai/unsloth/deepseek-v4-flash",
+            profile="hackathon",
+            env_var="UNSLOTH_BASE_URL",
+            notes=(
+                "DeepSeek V4 Flash M3 chokepoint. Fast inference tier for "
+                "low-latency BAML extraction calls."
+            ),
+            capabilities=("chat",),
+        ),
+        # ── M3 Chokepoint: deepseek-v4-pro (Unsloth reasoning) ──────────
+        "deepseek-v4-pro": ModelRegistryEntry(
+            key="deepseek-v4-pro",
+            family="text_llm",
+            role="m3_reasoning",
+            display_name="DeepSeek V4 Pro (M3 chokepoint, Unsloth Studio reasoning)",
+            unsloth_id="unsloth/deepseek-v4-pro-GGUF",
+            mlx_id=None,
+            upstream_id="deepseek-ai/DeepSeek-V4-Pro",
+            backend="unsloth_studio",
+            available=True,
+            litellm_alias="openai/unsloth/deepseek-v4-pro",
+            profile="hackathon",
+            env_var="UNSLOTH_BASE_URL",
+            notes=(
+                "DeepSeek V4 Pro M3 chokepoint. Strong reasoning tier for "
+                "the pedagogy-overlay + equivalency-graph chains."
+            ),
+            capabilities=("chat", "reasoning", "long_context"),
+        ),
+        # ── M3 Chokepoint: kimi-k2.7-code (Unsloth coding) ──────────────
+        "kimi-k2.7-code": ModelRegistryEntry(
+            key="kimi-k2.7-code",
+            family="text_llm",
+            role="m3_coding",
+            display_name="Kimi K2.7 Code (M3 chokepoint, Unsloth Studio coding)",
+            unsloth_id="unsloth/kimi-k2.7-code-GGUF",
+            mlx_id=None,
+            upstream_id="moonshotai/Kimi-K2.7-Code",
+            backend="unsloth_studio",
+            available=True,
+            litellm_alias="openai/unsloth/kimi-k2.7-code",
+            profile="hackathon",
+            env_var="UNSLOTH_BASE_URL",
+            notes=(
+                "Kimi K2.7 Code M3 chokepoint. Strong at code generation; "
+                "useful for the ADK pipeline_orchestrator + the BAML test "
+                "harness regeneration."
+            ),
+            capabilities=("chat", "code"),
+        ),
+        # ── M3 Chokepoint: kimi-k3 (Unsloth Studio Kimi K3) ─────────────
+        "kimi-k3": ModelRegistryEntry(
+            key="kimi-k3",
+            family="text_llm",
+            role="m3_kimi_k3",
+            display_name="Kimi K3 (M3 chokepoint, Unsloth Studio)",
+            unsloth_id="unsloth/kimi-k3-GGUF",
+            mlx_id=None,
+            upstream_id="moonshotai/Kimi-K3",
+            backend="unsloth_studio",
+            available=True,
+            litellm_alias="openai/unsloth/kimi-k3",
+            profile="hackathon",
+            env_var="UNSLOTH_BASE_URL",
+            notes=(
+                "Kimi K3 M3 chokepoint. Newest Kimi; matches kimi-k2.7-code "
+                "with broader capabilities."
+            ),
+            capabilities=("chat", "long_context"),
+        ),
     }
 
 
@@ -960,30 +1151,15 @@ def _translation_entries() -> dict[str, ModelRegistryEntry]:
 
 
 def _text_llm_dev_tombstones() -> dict[str, ModelRegistryEntry]:
-    """Dev-profile text_llm tombstones — NOT exposed in the hackathon profile."""
+    """Dev-profile text_llm tombstones — NOT exposed in the hackathon profile.
+
+    Note: the 3 M3-chokepoint keys that previously lived here
+    (minimax-m3, deepseek-v4-flash, kimi-k2.6) have been promoted to
+    live `profile="hackathon"` entries in `_text_llm_entries()` per the
+    2026-09-13 M3-chokepoint lift. Only entries that remain dev-only
+    live here.
+    """
     return {
-        "minimax-m3": ModelRegistryEntry(
-            key="minimax-m3",
-            family="text_llm",
-            role="dev_primary",
-            display_name="minimax M3 (dev profile primary) — TOMBSTONE",
-            unsloth_id=None,
-            mlx_id=None,
-            upstream_id="minimax-m3",
-            backend="minimax",
-            available=False,
-            litellm_alias="minimax-m3",
-            profile="dev",
-            env_var="MINIMAX_BASE_URL",
-            notes=(
-                "Dev-profile Tier 1 tombstone. Lifted from the deleted "
-                "gemini_hackathon/models/__init__.py; lives here so old "
-                "callers that hardcoded minimax-m3 get a registry hit "
-                "(with available=False) instead of an unknown-key error. "
-                "NOT exposed in the public hackathon profile roster."
-            ),
-            capabilities=("chat", "function_calling"),
-        ),
         "qwen3.8-27b": ModelRegistryEntry(
             key="qwen3.8-27b",
             family="text_llm",
@@ -999,38 +1175,6 @@ def _text_llm_dev_tombstones() -> dict[str, ModelRegistryEntry]:
             env_var="UNSLOTH_BASE_URL",
             notes="Dev-profile tombstone; dev-only Qwen flagship for harness comparisons.",
             capabilities=("chat",),
-        ),
-        "deepseek-v4-flash": ModelRegistryEntry(
-            key="deepseek-v4-flash",
-            family="text_llm",
-            role="dev_fast",
-            display_name="DeepSeek V4 Flash (Unsloth Studio) — TOMBSTONE",
-            unsloth_id="unsloth/deepseek-v4-flash-GGUF",
-            mlx_id=None,
-            upstream_id="deepseek-ai/DeepSeek-V4-Flash",
-            backend="unsloth_studio",
-            available=False,
-            litellm_alias="openai/unsloth/deepseek-v4-flash",
-            profile="dev",
-            env_var="UNSLOTH_BASE_URL",
-            notes="Dev-profile tombstone; dev-only fast tier for harness comparisons.",
-            capabilities=("chat",),
-        ),
-        "kimi-k2.6": ModelRegistryEntry(
-            key="kimi-k2.6",
-            family="text_llm",
-            role="dev_alt",
-            display_name="Kimi K2.6 (Unsloth Studio) — TOMBSTONE",
-            unsloth_id="unsloth/kimi-k2.6-GGUF",
-            mlx_id=None,
-            upstream_id="moonshotai/Kimi-K2.6",
-            backend="unsloth_studio",
-            available=False,
-            litellm_alias="openai/unsloth/kimi-k2.6",
-            profile="dev",
-            env_var="UNSLOTH_BASE_URL",
-            notes="Dev-profile tombstone; dev-only long-context comparison.",
-            capabilities=("chat", "long_context"),
         ),
     }
 
