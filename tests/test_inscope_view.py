@@ -7,12 +7,12 @@ Per `openspec/changes/2026-08-31-submission-scope-realignment-v1/specs/in-scope-
 
 These tests are the guardrail for the SUBMISSION_SCOPE.md promises.
 """
+
 from __future__ import annotations
 
 import pathlib
 
 import duckdb
-
 
 REPO = pathlib.Path("/Users/cianmacandeisigh/dev/gemini_hackathon")
 DB_PATH = REPO / "gemini_hackathon.duckdb"
@@ -26,7 +26,7 @@ def test_inscope_view_exists() -> None:
     ).fetchall()
     con.close()
     assert len(rows) == 1, (
-        f"raw.official_documents_in_scope view missing — run scripts/migrate_deferred_rows.py"
+        "raw.official_documents_in_scope view missing — run scripts/migrate_deferred_rows.py"
     )
 
 

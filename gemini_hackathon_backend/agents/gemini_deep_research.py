@@ -15,7 +15,6 @@ from __future__ import annotations
 import os
 from typing import Any, AsyncIterator
 
-
 GOOGLE_API_KEY_ENV = "GOOGLE_API_KEY"
 DEFAULT_DEEP_RESEARCH_MODEL = "gemini-2.5-pro-deep-research"
 
@@ -77,22 +76,26 @@ async def deep_research(query: str, *, max_sources: int = 10) -> dict[str, Any]:
         async for event in response:
             kind = getattr(event, "kind", None)
             if kind == "interaction":
-                interactions.append({
-                    "interaction_id": getattr(event, "interaction_id", None),
-                    "action": getattr(event, "action", None),
-                    "target": getattr(event, "target", None),
-                    "rationale": getattr(event, "rationale", None),
-                })
+                interactions.append(
+                    {
+                        "interaction_id": getattr(event, "interaction_id", None),
+                        "action": getattr(event, "action", None),
+                        "target": getattr(event, "target", None),
+                        "rationale": getattr(event, "rationale", None),
+                    }
+                )
             elif kind == "url_visited":
                 urls_visited += 1
             elif kind == "content_chunk":
                 synthesized_chunks.append(getattr(event, "text", ""))
             elif kind == "citation":
-                citations.append({
-                    "url": getattr(event, "url", None),
-                    "title": getattr(event, "title", None),
-                    "claim": getattr(event, "claim", None),
-                })
+                citations.append(
+                    {
+                        "url": getattr(event, "url", None),
+                        "title": getattr(event, "title", None),
+                        "claim": getattr(event, "claim", None),
+                    }
+                )
             elif kind == "key_finding":
                 key_findings.append(getattr(event, "text", ""))
             elif kind == "error":

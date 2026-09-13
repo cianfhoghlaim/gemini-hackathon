@@ -17,6 +17,7 @@ end-to-end Docling → → BAML → → embedding chain over the 97 in-scope PDF
 Run the processor first:
   uv run python scripts/process_inscope_pdfs.py --all
 """
+
 import marimo
 
 __generated_with = "0.10.0"
@@ -26,6 +27,7 @@ app = marimo.App(width="medium")
 @app.cell
 def _intro() -> None:
     import marimo as mo
+
     mo.md(
         """
         # Notebook 20 — Full Pipeline Walkthrough
@@ -54,10 +56,14 @@ def _intro() -> None:
 
 @app.cell
 def _connect(mo) -> None:
-    import sqlite3, pathlib
+    import pathlib
+    import sqlite3
+
     db_path = pathlib.Path("data/bi_ep/extracted_syllabi.sqlite")
     if not db_path.exists():
-        mo.md(f"**No SQLite DB at `{db_path}`. Run `make baml` + `scripts/process_inscope_pdfs.py --all` first.**")
+        mo.md(
+            f"**No SQLite DB at `{db_path}`. Run `make baml` + `scripts/process_inscope_pdfs.py --all` first.**"
+        )
         return None, None
     con = sqlite3.connect(str(db_path))
     rows = con.execute(
@@ -73,12 +79,13 @@ def _connect(mo) -> None:
 def _table(mo, rows, cols) -> None:
     if not rows:
         return
-    mo.ui.table([dict(zip(cols, r)) for r in rows[:30]], selection=None)
+    mo.ui.table([dict(zip(cols, r, strict=True)) for r in rows[:30]], selection=None)
 
 
 @app.cell
 def _scatter(mo, rows) -> None:
     import plotly.graph_objects as go
+
     if not rows:
         return
     by_subject: dict[str, list[float]] = {}

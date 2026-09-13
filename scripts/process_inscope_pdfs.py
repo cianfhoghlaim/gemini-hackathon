@@ -19,6 +19,7 @@ Usage:
   uv run python scripts/process_inscope_pdfs.py --all
   uv run python scripts/process_inscope_pdfs.py --subject mathematics
 """
+
 from __future__ import annotations
 
 import argparse
@@ -40,20 +41,20 @@ MD_ROOT = REPO / "data/bi_ep/syllabi_md"
 LANCEDB_PATH = REPO / "data/lancedb/gemini_hackathon.lance"
 
 BAML_DISPATCH: dict[tuple[str, str], str] = {
-    ("Ireland", "mathematics"):       "ExtractMathsSyllabus",
-    ("Ireland", "english"):           "ExtractEnglishSyllabus",
-    ("Ireland", "gaeilge"):           "ExtractGaeilgeSyllabus",
-    ("Ireland", "chemistry"):         "ExtractChemistrySyllabus",
-    ("Ireland", "geography"):         "ExtractGeographySyllabus",
-    ("Ireland", "computer_science"):  "ExtractComputerScienceSyllabus",
-    ("Ireland", "biology"):           "ExtractBiologySyllabus",
-    ("Ireland", "physics"):           "ExtractPhysicsSyllabus",
+    ("Ireland", "mathematics"): "ExtractMathsSyllabus",
+    ("Ireland", "english"): "ExtractEnglishSyllabus",
+    ("Ireland", "gaeilge"): "ExtractGaeilgeSyllabus",
+    ("Ireland", "chemistry"): "ExtractChemistrySyllabus",
+    ("Ireland", "geography"): "ExtractGeographySyllabus",
+    ("Ireland", "computer_science"): "ExtractComputerScienceSyllabus",
+    ("Ireland", "biology"): "ExtractBiologySyllabus",
+    ("Ireland", "physics"): "ExtractPhysicsSyllabus",
     ("Ireland", "applied_mathematics"): "ExtractMathsSyllabus",
-    ("Ireland", "history"):           "ExtractCircular",
-    ("Ireland", "french"):            "ExtractCircular",
-    ("Ireland", "business"):          "ExtractCircular",
-    ("Ireland", "technology"):        "ExtractCircular",
-    ("Ireland", "ukrainian"):         "ExtractCircular",
+    ("Ireland", "history"): "ExtractCircular",
+    ("Ireland", "french"): "ExtractCircular",
+    ("Ireland", "business"): "ExtractCircular",
+    ("Ireland", "technology"): "ExtractCircular",
+    ("Ireland", "ukrainian"): "ExtractCircular",
     ("United Kingdom (NCCE)", "computer_science"): "ExtractCSLearningGraph",
 }
 
@@ -62,6 +63,7 @@ def _pdf_text(pdf_path: pathlib.Path) -> str:
     """Read the embedded text layer via pypdfium2; return "" if none."""
     try:
         from pypdfium2 import PdfDocument
+
         doc = PdfDocument(str(pdf_path))
         return "\n".join((page.get_textpage().get_text_range() or "") for page in doc)
     except Exception:
@@ -72,6 +74,7 @@ def _docling_convert(pdf_path: pathlib.Path, out_path: pathlib.Path) -> bool:
     """Convert PDF → Markdown via Docling; return True on success."""
     try:
         from docling.document_converter import DocumentConverter
+
         converter = DocumentConverter()
         result = converter.convert(str(pdf_path))
         out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -87,6 +90,7 @@ def _baml_extract(pdf_text: str, jurisdiction: str, subject: str) -> dict[str, A
     func_name = BAML_DISPATCH.get((jurisdiction, subject))
     try:
         from baml_client.sync_client import b  # type: ignore
+
         if func_name and hasattr(b, func_name):
             result = getattr(b, func_name)(pdf_text=pdf_text[:8000], subject=subject)
             return result.model_dump() if hasattr(result, "model_dump") else dict(result)
@@ -133,9 +137,15 @@ def _write_sqlite(rows: list[dict[str, Any]]) -> None:
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
-                    r["pdf_path"], r["jurisdiction"], r["subject"], r["sha256"],
-                    r["baml_function"], r["markdown_path"], r["extracted_json"],
-                    r["processing_ms"], r["extracted_at"],
+                    r["pdf_path"],
+                    r["jurisdiction"],
+                    r["subject"],
+                    r["sha256"],
+                    r["baml_function"],
+                    r["markdown_path"],
+                    r["extracted_json"],
+                    r["processing_ms"],
+                    r["extracted_at"],
                 ),
             )
         con.commit()
@@ -153,8 +163,9 @@ def process_all(subject_filter: str | None = None) -> None:
     rows = con.execute(query).fetchall()
     con.close()
 
-    log.info("processing %d PDFs%s", len(rows),
-             f" (subject={subject_filter})" if subject_filter else "")
+    log.info(
+        "processing %d PDFs%s", len(rows), f" (subject={subject_filter})" if subject_filter else ""
+    )
     out_rows: list[dict[str, Any]] = []
 
     for i, (pdf_path, jurisdiction, subject, language, sha256) in enumerate(rows):
@@ -177,17 +188,19 @@ def process_all(subject_filter: str | None = None) -> None:
 
         elapsed_ms = (time.time() - t0) * 1000
         func_name = BAML_DISPATCH.get((jurisdiction, subject)) or "ExtractCircular"
-        out_rows.append({
-            "pdf_path": str(pdf),
-            "jurisdiction": jurisdiction,
-            "subject": subject or "",
-            "sha256": sha256 or "",
-            "baml_function": func_name,
-            "markdown_path": str(md_path) if md_path and md_path.exists() else "",
-            "extracted_json": json.dumps(extraction),
-            "processing_ms": elapsed_ms,
-            "extracted_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        })
+        out_rows.append(
+            {
+                "pdf_path": str(pdf),
+                "jurisdiction": jurisdiction,
+                "subject": subject or "",
+                "sha256": sha256 or "",
+                "baml_function": func_name,
+                "markdown_path": str(md_path) if md_path and md_path.exists() else "",
+                "extracted_json": json.dumps(extraction),
+                "processing_ms": elapsed_ms,
+                "extracted_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            }
+        )
         if (i + 1) % 10 == 0 or i == len(rows) - 1:
             log.info("[%d/%d] %s in %.0fms", i + 1, len(rows), pdf.name, elapsed_ms)
 

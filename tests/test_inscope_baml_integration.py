@@ -10,10 +10,10 @@ Per `openspec/changes/2026-08-31-submission-scope-realignment-v1/specs/in-scope-
 If `baml_client` import fails (no codegen), the stub fallback must produce
 non-empty dicts with `_stub: True`.
 """
+
 from __future__ import annotations
 
 from typing import Any
-
 
 SAMPLE_TEXT = (
     "Sample PDF text for unit testing the BAML extraction chain. "
@@ -26,10 +26,11 @@ def _call_baml_or_stub(func_name: str, **kwargs: Any) -> dict[str, Any]:
     """Try to call the BAML function; fall back to a stub dict if the client is missing."""
     try:
         from baml_client.sync_client import b  # type: ignore
+
         if hasattr(b, func_name):
             result = getattr(b, func_name)(**kwargs)
             return result.model_dump() if hasattr(result, "model_dump") else dict(result)
-    except Exception as exc:
+    except Exception:
         pass
     return {
         "_stub": True,
@@ -94,6 +95,7 @@ def test_extract_circular() -> None:
 def test_baml_clients_baml() -> None:
     """The 4 baml_extracts/*.baml files exist."""
     import pathlib
+
     repo = pathlib.Path("/Users/cianmacandeisigh/dev/gemini_hackathon")
     for path in (
         "baml_extracts/learning_graph.baml",

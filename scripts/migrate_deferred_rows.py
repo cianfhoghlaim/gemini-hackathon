@@ -7,6 +7,7 @@ Run once after the openspec archive of `2026-08-31-submission-scope-realignment-
 
 Reversible: see the bottom of the file for the rollback SQL.
 """
+
 from __future__ import annotations
 
 import pathlib
@@ -32,9 +33,9 @@ def main() -> None:
         WHERE jurisdiction NOT IN ('Ireland', 'United Kingdom (NCCE)')
         """
     )
-    deferred_count = con.execute(
-        "SELECT COUNT(*) FROM raw.official_documents_deferred"
-    ).fetchone()[0]
+    deferred_count = con.execute("SELECT COUNT(*) FROM raw.official_documents_deferred").fetchone()[
+        0
+    ]
 
     # Step 3 — delete from the main table
     con.execute(
@@ -43,9 +44,7 @@ def main() -> None:
         WHERE jurisdiction NOT IN ('Ireland', 'United Kingdom (NCCE)')
         """
     )
-    in_scope_count = con.execute(
-        "SELECT COUNT(*) FROM raw.official_documents"
-    ).fetchone()[0]
+    in_scope_count = con.execute("SELECT COUNT(*) FROM raw.official_documents").fetchone()[0]
 
     # Step 4 — create the in-scope view
     con.execute(
@@ -57,9 +56,7 @@ def main() -> None:
                AND UPPER(language) IN ('EN', 'E', 'ENGLISH', ''))
         """
     )
-    view_count = con.execute(
-        "SELECT COUNT(*) FROM raw.official_documents_in_scope"
-    ).fetchone()[0]
+    view_count = con.execute("SELECT COUNT(*) FROM raw.official_documents_in_scope").fetchone()[0]
 
     print(f"deferred: {deferred_count} rows in raw.official_documents_deferred")
     print(f"in-scope: {in_scope_count} rows in raw.official_documents")

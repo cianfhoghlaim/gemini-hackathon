@@ -549,13 +549,17 @@ def generate_certificate(
 
     log_mlflow_metric("ncca_panel.generate_certificate.invocations", 1)
     logger.info(
-        "tool.generate_certificate", subject=subject, learner=learner_name,
-        topic=topic, mastery=mastery_score,
+        "tool.generate_certificate",
+        subject=subject,
+        learner=learner_name,
+        topic=topic,
+        mastery=mastery_score,
     )
 
     # 1. BAML extraction (stub fallback)
     try:
         from baml_client.sync_client import b
+
         syllabus = b.ExtractCurriculumSyllabus(
             pdf_text=f"{subject} syllabus — {topic}",
             subject=subject,
@@ -592,13 +596,15 @@ def generate_certificate(
         ]
         loop = asyncio.new_event_loop()
         try:
-            record = loop.run_until_complete(pipeline.run(
-                learner_id=learner_name.lower().replace("'", "").replace(" ", "-"),
-                learner_name=learner_name,
-                subject_slug=subject,
-                stage="scoil_sinsearach",
-                outcomes=outcomes,
-            ))
+            record = loop.run_until_complete(
+                pipeline.run(
+                    learner_id=learner_name.lower().replace("'", "").replace(" ", "-"),
+                    learner_name=learner_name,
+                    subject_slug=subject,
+                    stage="scoil_sinsearach",
+                    outcomes=outcomes,
+                )
+            )
         finally:
             loop.close()
         asset_bytes_len = len(record.png_bytes)
@@ -613,16 +619,26 @@ def generate_certificate(
     surface_id = f"cert-{subject}-{learner_name.replace(' ', '_')}"
     components = [
         {"id": "root", "component": "Column", "children": ["title", "card", "pill"]},
-        {"id": "title", "component": "Text",
-         "text": f"Certificate for {learner_name}", "variant": "h2"},
-        {"id": "card", "component": "NccaPdfCard",
-         "pdf_id": {"path": "cert_id"},
-         "title": {"path": "title"},
-         "blurb": {"path": "blurb"}},
-        {"id": "pill", "component": "CitationPill",
-         "pdf_id": {"path": "pdf_id"},
-         "page": {"path": "page"},
-         "snippet": {"path": "snippet"}},
+        {
+            "id": "title",
+            "component": "Text",
+            "text": f"Certificate for {learner_name}",
+            "variant": "h2",
+        },
+        {
+            "id": "card",
+            "component": "NccaPdfCard",
+            "pdf_id": {"path": "cert_id"},
+            "title": {"path": "title"},
+            "blurb": {"path": "blurb"},
+        },
+        {
+            "id": "pill",
+            "component": "CitationPill",
+            "pdf_id": {"path": "pdf_id"},
+            "page": {"path": "page"},
+            "snippet": {"path": "snippet"},
+        },
     ]
     data = {
         "cert_id": f"{subject}-lc",

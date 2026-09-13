@@ -8,6 +8,7 @@ openspec change, the headline demo flow is:
 This test verifies that the chain produces non-empty output even when the
 BAML client / certificate pipeline / etc. are stubbed.
 """
+
 from __future__ import annotations
 
 import pathlib
@@ -26,9 +27,12 @@ def _stub_baml_extraction() -> dict:
         "subject": "mathematics",
         "language": "en",
         "module_topics": [
-            {"title": "Differentiation", "learning_outcomes": [
-                {"lo_id": "MA-LC-1.1", "title": "Differentiate basic functions"},
-            ]},
+            {
+                "title": "Differentiation",
+                "learning_outcomes": [
+                    {"lo_id": "MA-LC-1.1", "title": "Differentiate basic functions"},
+                ],
+            },
         ],
         "total_learning_outcomes": 1,
     }
@@ -96,9 +100,15 @@ def test_ncca_panel_agent_has_5_tools() -> None:
     from gemini_hackathon_backend.agents.ncca_panel import build_ncca_panel_agent
 
     agent = build_ncca_panel_agent()
-    tool_names = [t.__name__ if callable(t) else getattr(t, "__name__", str(t)) for t in agent.tools]
-    expected = {"cite_pdf", "fetch_highlight", "list_ncca_pdfs", "generate_asset", "generate_certificate"}
+    tool_names = [
+        t.__name__ if callable(t) else getattr(t, "__name__", str(t)) for t in agent.tools
+    ]
+    expected = {
+        "cite_pdf",
+        "fetch_highlight",
+        "list_ncca_pdfs",
+        "generate_asset",
+        "generate_certificate",
+    }
     actual = set(tool_names)
-    assert expected.issubset(actual), (
-        f"missing tools: {expected - actual}; have: {actual}"
-    )
+    assert expected.issubset(actual), f"missing tools: {expected - actual}; have: {actual}"

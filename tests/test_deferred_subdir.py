@@ -5,12 +5,12 @@ Per `openspec/changes/2026-08-31-submission-scope-realignment-v1/specs/in-scope-
   - The 52 Gaeilge PDFs MUST be in those `ga/` subdirectories
   - `raw.official_documents_deferred` MUST exist and hold ≥30 rows
 """
+
 from __future__ import annotations
 
 import pathlib
 
 import duckdb
-
 
 REPO = pathlib.Path("/Users/cianmacandeisigh/dev/gemini_hackathon")
 DB_PATH = REPO / "gemini_hackathon.duckdb"
@@ -18,9 +18,19 @@ DEFERRED_GA_ROOT = REPO / "data/ireland/leaving_certificate/_deferred_ga"
 
 # The 13 LC subjects that had a `ga/` subdir lifted
 LC_SUBJECTS = (
-    "applied_mathematics", "biology", "business", "chemistry",
-    "computer_science", "english", "french", "gaeilge",
-    "geography", "history", "mathematics", "technology", "ukrainian",
+    "applied_mathematics",
+    "biology",
+    "business",
+    "chemistry",
+    "computer_science",
+    "english",
+    "french",
+    "gaeilge",
+    "geography",
+    "history",
+    "mathematics",
+    "technology",
+    "ukrainian",
 )
 
 
@@ -33,9 +43,7 @@ def test_deferred_ga_root_exists() -> None:
 def test_deferred_ga_has_52_pdfs() -> None:
     assert DEFERRED_GA_ROOT.exists(), "_deferred_ga/ missing"
     pdfs = list(DEFERRED_GA_ROOT.rglob("*.pdf"))
-    assert len(pdfs) >= 50, (
-        f"expected ≥50 Gaeilge PDFs in _deferred_ga/, found {len(pdfs)}"
-    )
+    assert len(pdfs) >= 50, f"expected ≥50 Gaeilge PDFs in _deferred_ga/, found {len(pdfs)}"
 
 
 def test_deferred_ga_subject_subdirs_exist() -> None:
@@ -62,7 +70,7 @@ def test_deferred_table_exists() -> None:
     ).fetchall()
     con.close()
     assert len(rows) == 1, (
-        f"raw.official_documents_deferred table missing — run scripts/migrate_deferred_rows.py"
+        "raw.official_documents_deferred table missing — run scripts/migrate_deferred_rows.py"
     )
 
 
@@ -72,9 +80,7 @@ def test_deferred_table_row_count() -> None:
     ONLY in-scope rows — that is asserted in `test_main_table_excludes_deferred_jurisdictions`.
     """
     con = duckdb.connect(str(DB_PATH), read_only=True)
-    count = con.execute(
-        "SELECT COUNT(*) FROM raw.official_documents_deferred"
-    ).fetchone()[0]
+    count = con.execute("SELECT COUNT(*) FROM raw.official_documents_deferred").fetchone()[0]
     con.close()
     # Either the deferred table has the original 35 rows, or it's empty.
     # Both states are valid; what matters is the main table doesn't have non-in-scope.
